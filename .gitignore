@@ -1,0 +1,40 @@
+# Dependency directories
+node_modules/
+
+# Compiled JavaScript files
+dist/
+build/
+out/
+
+# TypeScript declaration files
+*.d.ts
+
+# Environment variables
+.env
+
+# Editor directories and files
+.vscode/
+*.sublime*
+.idea/
+*.iml
+*.swp
+*.swo
+
+# Operating System generated files
+.DS_Store
+Thumbs.db
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Debug log from npm
+npm-debug.log*
+
+# Project-specific ignore files
+# You can add anything you want to ignore below this line
