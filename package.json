@@ -1,12 +1,13 @@
 {
-  "name": "raspberrypi-salescraper",
+  "name": "discoutscraper",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "ah": "node dist/index.js --config config/ah.json"
   },
   "keywords": [],
   "author": "",
