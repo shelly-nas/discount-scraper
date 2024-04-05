@@ -1,22 +1,33 @@
-import ImapClient from './helpers/ImapClient';
-// import WebScraper from './helpers/WebScraper';
-// import { writeFile } from 'fs/promises';
+import WebClient from './utils/WebClient';
+import Logger from './utils/Logger';
+import ArgumentHandler from './utils/ArgumentHandler';
+import JsonReader from './utils/JsonReader';
+import process from 'process';
 
-const imapClient = new ImapClient();
-imapClient.scanInbox()
-    .then(() => console.log('Inbox scan complete.'))
-    .catch(error => console.error('Failed to scan inbox:', error));
+function getConfig(): any {
+    const argHandler = new ArgumentHandler(process.argv);
+    const configPath = argHandler.getArgByFlag('--config');
 
+    const reader = new JsonReader(configPath);
+    const jsonData = reader.read();
+    
+    Logger.info('JSON data read from file:', jsonData);
+    return jsonData
+}
 
-// const url = 'https://example.com/groceries'; // Replace with the actual URL
+async function main() {
+    const jsonData = getConfig();
 
-// async function main() {
-//   const scraper = new WebScraper();
-//   const products = await scraper.scrapeGroceriesSite(url);
-//   console.log(products);
+    const webClient = new WebClient();
 
-//   // Write to JSON file
-//   await writeFile('products.json', JSON.stringify(products, null, 2), 'utf8');
-// }
+    await webClient.init();
+    await webClient.navigate(jsonData.url);
+    
+    const title = await webClient.getTitle();
+    Logger.info(`The title of the page is: ${title}`);
 
-// main().catch(console.error);
+    await webClient.close();
+
+}
+
+main().catch(Logger.error);
