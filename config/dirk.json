@@ -1,0 +1,26 @@
+{
+    "name": "Dirk van den Broek",
+    "url": "https://www.dirk.nl/aanbiedingen",
+    "productCategories": [
+        "Aardappelen, groente & fruit",
+        "Vlees, vis & vega",
+        "Brood, beleg & koek",
+        "Zuivel & Kaas",
+        "Dranken, sap, koffie & thee",
+        "Voorraadkast",
+        "Maaltijden, salades & tapas",
+        "Diepvries",
+        "Kind & drogisterij",
+        "Huishoud & huisdieren",
+        "Snacks & snoep"
+    ],
+    "discounts": {
+        "current": "<objectName>",
+        "expireData": "<objectName>",
+        "product": {
+            "normalPrice": "<objectName>",
+            "discountPrice": "<objectName>",
+            "discountException": "<objectName>"
+        }
+    }
+}

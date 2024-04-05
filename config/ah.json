@@ -1,0 +1,39 @@
+{
+    "name": "Albert Heijn Eudokiaplein",
+    "url": "https://www.ah.nl/bonus",
+    "productCategories": [
+        "Aardappelen, groente, fruit",
+        "Salades, pizza, maaltijden",
+        "Vlees, vis",
+        "Vegetarisch, vegan en plantaardig",
+        "Kaas, vleeswaren, tapas",
+        "Zuivel, eieren, boter",
+        "Bakkerij",
+        "Ontbijtgranen en beleg",
+        "Chips, noten, toast, popcorn",
+        "Snoep, chocolade, koek",
+        "Tussendoortjes",
+        "Koffie, thee",
+        "Frisdranken, sappen, siropen, water",
+        "Wijn en bubbels",
+        "Bier en aperitieven",
+        "Pasta, rijst en wereldkeuken",
+        "Soepen, sauzen, kruiden, olie",
+        "Diepvries",
+        "Drogisterij",
+        "Baby en kind",
+        "Baby en kind",
+        "Huishouden",
+        "Huisdier",
+        "Koken, tafelen, vrije tijd"
+    ],
+    "discounts": {
+        "current": "<objectName>",
+        "expireData": "<objectName>",
+        "product": {
+            "normalPrice": "<objectName>",
+            "discountPrice": "<objectName>",
+            "discountException": "<objectName>"
+        }
+    }
+}

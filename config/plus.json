@@ -1,0 +1,31 @@
+{
+    "name": "PLUS Blijdorp",
+    "url": "https://www.plus.nl/aanbiedingen",
+    "productCategories": [
+        "Aardappelen, groente, fruit",
+        "Verse kant-en-klaarmaaltijden",
+        "Vlees, kip, vis, vega",
+        "Kaas, vleeswaren, tapas",
+        "Zuivel, eieren, boter",
+        "Brood, gebak, bakproducten",
+        "Ontbijtgranen, broodbeleg, tussendoor",
+        "Frisdrank, sappen, koffie, thee",
+        "Wijn, bier, sterke drank",
+        "Pasta, rijst, internationale keuken",
+        "Soepen, conserven, sauzen, smaakmakers",
+        "Snoep, koek, chocolade, chips, noten",
+        "Diepvries",
+        "Baby, drogisterij",
+        "Huishouden",
+        "Huisdier"
+    ],
+    "discounts": {
+        "current": "<objectName>",
+        "expireData": "<objectName>",
+        "product": {
+            "normalPrice": "<objectName>",
+            "discountPrice": "<objectName>",
+            "discountException": "<objectName>"
+        }
+    }
+}
