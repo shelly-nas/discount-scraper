@@ -1,4 +1,4 @@
-# SaleScraper
+# DiscountScraper
 Go to the discount page of a grocery store, scrape the page of discounts and add them to an all discounts file.
 
 ## Install
