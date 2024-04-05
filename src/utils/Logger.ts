@@ -57,9 +57,9 @@ class Logger {
 
         // Add a newline at the end of the log entry.
         fs.appendFileSync(this.logFilePath, '\n');
-    } catch (error) {
-        console.error('Error writing to log file:', error);
-    }
+        } catch (error) {
+            console.error('Error writing to log file:', error);
+        }
     }
     
     public debug(message: string, ...optionalParams: any[]) {
@@ -77,8 +77,6 @@ class Logger {
     public error(message: string, ...optionalParams: any[]) {
         this.writeToFile('ERROR', message, ...optionalParams);
     }
-
-    // Additional logging methods can be added here
 }
 
-export default Logger.getInstance()
+export const logger = Logger.getInstance();

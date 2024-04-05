@@ -1,6 +1,7 @@
 {
     "name": "Albert Heijn Eudokiaplein",
     "url": "https://www.ah.nl/bonus",
+    "cookieDecline": "#decline-cookies",
     "productCategories": [
         "Aardappelen, groente, fruit",
         "Salades, pizza, maaltijden",

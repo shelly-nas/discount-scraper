@@ -1,4 +1,4 @@
-import Logger from './Logger';
+import { logger } from './Logger';
 import fs from 'fs';
 import path from 'path';
 
@@ -16,7 +16,7 @@ class JsonReader {
             const fileContent = fs.readFileSync(absolutePath, 'utf8');
             return JSON.parse(fileContent);
         } catch (error) {
-            Logger.error(`Failed to read or parse the JSON file at ${this.filePath}:`, error);
+            logger.error(`Failed to read or parse the JSON file at ${this.filePath}:`, error);
             throw error;
         }
     }

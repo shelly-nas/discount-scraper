@@ -1,4 +1,4 @@
-import Logger from './Logger'
+import { logger } from './Logger';
 
 class ArgumentHandler {
     private args: string[];
@@ -8,12 +8,13 @@ class ArgumentHandler {
     }
 
     getArgByFlag(flag: string): string {
-        const flagIndex = this.args.indexOf(flag);
-        if (flagIndex !== -1 && flagIndex + 1 < this.args.length) {
+        try {
+            const flagIndex = this.args.indexOf(flag);
             return this.args[flagIndex + 1];
+        } catch (error) {
+            logger.error(`Error: The required flag "${flag}" is missing.`);
+            throw error;        
         }
-        Logger.error(`Error: The required flag "${flag}" is missing.`);
-        process.exit(1);
     }
 }
 

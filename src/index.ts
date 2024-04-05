@@ -1,5 +1,5 @@
 import WebClient from './utils/WebClient';
-import Logger from './utils/Logger';
+import { logger } from './utils/Logger';
 import ArgumentHandler from './utils/ArgumentHandler';
 import JsonReader from './utils/JsonReader';
 import process from 'process';
@@ -11,7 +11,7 @@ function getConfig(): any {
     const reader = new JsonReader(configPath);
     const jsonData = reader.read();
     
-    Logger.info('JSON data read from file:', jsonData);
+    logger.info('JSON data read from file:', jsonData);
     return jsonData
 }
 
@@ -22,12 +22,12 @@ async function main() {
 
     await webClient.init();
     await webClient.navigate(jsonData.url);
+    await webClient.handleCookiePopup([jsonData.cookieDecline])
     
     const title = await webClient.getTitle();
-    Logger.info(`The title of the page is: ${title}`);
+    logger.info(`The title of the page is: ${title}`);
 
     await webClient.close();
-
 }
 
-main().catch(Logger.error);
+main();

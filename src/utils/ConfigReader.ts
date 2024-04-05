@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { logger } from './Logger';
 
 class ConfigReader {
     private filePath: string;
@@ -13,7 +14,8 @@ class ConfigReader {
         const fileContent = fs.readFileSync(this.filePath, 'utf8');
         return JSON.parse(fileContent);
       } catch (error) {
-        throw new Error(`Failed to read or parse the JSON file: ${error}`);
+        logger.error(`Failed to read or parse the JSON file: ${error}`);
+        throw error;
       }
     }
   }

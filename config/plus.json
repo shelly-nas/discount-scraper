@@ -1,6 +1,7 @@
 {
     "name": "PLUS Blijdorp",
     "url": "https://www.plus.nl/aanbiedingen",
+    "cookieDecline": "<objectName>",
     "productCategories": [
         "Aardappelen, groente, fruit",
         "Verse kant-en-klaarmaaltijden",

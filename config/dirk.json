@@ -1,6 +1,7 @@
 {
     "name": "Dirk van den Broek",
     "url": "https://www.dirk.nl/aanbiedingen",
+    "cookieDecline": "<objectName>",
     "productCategories": [
         "Aardappelen, groente & fruit",
         "Vlees, vis & vega",

@@ -1,35 +1,45 @@
 import { chromium, Browser, Page } from 'playwright';
-import Logger from './Logger';
+import { logger } from './Logger';
 
 class WebClient {
     private browser: Browser | null = null;
     private page: Page | null = null;
 
     async init(): Promise<void> {
-        Logger.debug('Initializing browser...');
-        this.browser = await chromium.launch({ headless: true });
+        logger.debug('Initializing browser...');
+        this.browser = await chromium.launch({ headless: false });
         this.page = await this.browser.newPage();
-        Logger.info('Browser initialized successfully.');
+        logger.info('Browser initialized successfully.');
     }
 
     async navigate(url: string): Promise<void> {
-        if (!this.page) {
-            //Logger.error('Browser or page not initialized. Call init() first.');
-            throw new Error("Browser or page not initialized. Call init() first.");
+        logger.info(`Navigating to URL: ${url}`);
+        await this.page?.goto(url);
+    }
+
+    async handleCookiePopup(selectors: string[]): Promise<void> {
+        for (const selector of selectors) {
+            try {
+                await this.page?.waitForSelector(selector, { timeout: 5000 });
+                logger.debug(`Found cookie popup with selector: ${selector}`);
+                this.page?.click(selector)
+                logger.info('Dismissed cookie popup');
+                break; // Exit the loop if we successfully clicked a popup button
+            } catch (error) {
+                logger.debug(`No cookie popup found with selector: ${selector} or timeout exceeded.`);
+            }
         }
-        //Logger.info(`Navigating to URL: ${url}`);
-        await this.page.goto(url);
     }
 
     async getTitle(): Promise<string | null> {
-        Logger.debug('Retrieving page title...');
+        logger.debug('Retrieving page title...');
         return this.page?.title() ?? null;
     }
 
     async close(): Promise<void> {
-        Logger.debug('Closing browser...');
+        logger.debug('Closing browser...');
         await this.browser?.close();
-        Logger.info('Browser closed.');
+        logger.info('Browser closed.');
     }
 }
 
