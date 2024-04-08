@@ -21,10 +21,11 @@
         "Huisdier"
     ],
     "discounts": {
-        "current": "<objectName>",
-        "expireData": "<objectName>",
+        "currentDate": "<objectName>",
+        "expireDate": "<objectName>",
         "product": {
-            "normalPrice": "<objectName>",
+            "name": "<objectName>",
+            "initialPrice": "<objectName>",
             "discountPrice": "<objectName>",
             "discountException": "<objectName>"
         }

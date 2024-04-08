@@ -29,10 +29,11 @@
         "Koken, tafelen, vrije tijd"
     ],
     "discounts": {
-        "current": "<objectName>",
-        "expireData": "<objectName>",
+        "currentDate": "<objectName>",
+        "expiredDate": "<objectName>",
         "product": {
-            "normalPrice": "<objectName>",
+            "name": "<objectName>",
+            "initialPrice": "<objectName>",
             "discountPrice": "<objectName>",
             "discountException": "<objectName>"
         }

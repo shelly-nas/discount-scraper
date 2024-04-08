@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "cookieDecline": {
+      "type": "string"
+    },
+    "productCategories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "discounts": {
+      "type": "object",
+      "properties": {
+        "currentDate": {
+          "type": "string"
+        },
+        "expireDate": {
+          "type": "string"
+        },
+        "product": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "initialPrice": {
+              "type": "string"
+            },
+            "discountPrice": {
+              "type": "string"
+            },
+            "discountException": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "initialPrice",
+            "discountPrice",
+            "discountException"
+          ]
+        }
+      },
+      "required": [
+        "currentDate",
+        "expireDate",
+        "product"
+      ]
+    }
+  },
+  "required": [
+    "name",
+    "url",
+    "cookieDecline",
+    "productCategories",
+    "discounts"
+  ],
+  "additionalProperties": false
+}
