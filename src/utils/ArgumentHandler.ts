@@ -12,8 +12,8 @@ class ArgumentHandler {
             const flagIndex = this.args.indexOf(flag);
             return this.args[flagIndex + 1];
         } catch (error) {
-            logger.error(`Error: The required flag "${flag}" is missing.`);
-            throw error;        
+            logger.error(`Error: The required flag "${flag}" is missing.`); 
+            process.exit(0);
         }
     }
 }

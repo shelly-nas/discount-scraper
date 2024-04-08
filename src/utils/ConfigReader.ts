@@ -3,21 +3,21 @@ import { logger } from './Logger';
 
 class ConfigReader {
     private filePath: string;
-    
+
     constructor(filePath: string) {
-      this.filePath = filePath;
+        this.filePath = filePath;
     }
-    
+        
     // Reads and parses the JSON file synchronously
     public readConfig(): any {
-      try {
+        try {
         const fileContent = fs.readFileSync(this.filePath, 'utf8');
         return JSON.parse(fileContent);
-      } catch (error) {
+        } catch (error) {
         logger.error(`Failed to read or parse the JSON file: ${error}`);
-        throw error;
-      }
+        process.exit(0);
+        }
     }
-  }
+}
 
 export default ConfigReader;
