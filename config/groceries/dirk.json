@@ -19,7 +19,7 @@
         "currentDate": "<objectName>",
         "expireDate": "<objectName>",
         "product": {
-            "name": "<objectName>",
+            "productName": "<objectName>",
             "initialPrice": "<objectName>",
             "discountPrice": "<objectName>",
             "discountException": "<objectName>"

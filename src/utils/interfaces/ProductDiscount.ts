@@ -1,5 +1,5 @@
 interface ProductDiscount {
-    name: string;
+    productName: string;
     initialPrice: string;
     discountPrice: string;
     specialDiscount?: string;

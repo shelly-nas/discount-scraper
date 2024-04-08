@@ -30,7 +30,7 @@
         "product": {
           "type": "object",
           "properties": {
-            "name": {
+            "productName": {
               "type": "string"
             },
             "initialPrice": {
@@ -44,7 +44,7 @@
             }
           },
           "required": [
-            "name",
+            "productName",
             "initialPrice",
             "discountPrice",
             "discountException"
