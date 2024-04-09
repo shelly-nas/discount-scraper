@@ -4,16 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "ah": "node dist/index.js --config config/groceries/ah.json"
+    "clean": "rm -rf dist/*",
+    "build": "npm run clean && tsc",
+    "test": "playwright test",
+    "ah": "node dist/src/index.js --config config/groceries/ah.json"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.43.0",
     "@types/imap-simple": "^4.2.9",
+    "@types/node": "^20.12.6",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",
     "eslint": "^8.57.0",

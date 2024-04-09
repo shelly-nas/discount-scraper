@@ -38,3 +38,7 @@ npm-debug.log*
 
 # Project-specific ignore files
 log/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
