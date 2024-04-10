@@ -16,14 +16,34 @@ async function getConfig(): Promise<Grocery> {
 }
 
 async function main() {
-    const jsonData = await getConfig();
+    const grocery = await getConfig();
 
     const webClient = new WebClient();
 
     await webClient.init();
-    await webClient.navigate(jsonData.url);
-    await webClient.handleCookiePopup([jsonData.cookieDecline])
+    await webClient.navigate(grocery.url);
+    await webClient.handleCookiePopup([grocery.cookieDecline])
 
+    for (const productCategory of grocery.productCategories) {
+        const discountProducts = await webClient.getProductCategoryDiscountProducts(productCategory, grocery.productDiscounts.name);
+        
+        if (!discountProducts) {
+            logger.error(`No discount products for product category '${productCategory}'.`);
+            break;
+        }
+
+        for (const discountProduct of discountProducts) {
+            const someVariable = await webClient.getDiscountProductDetails(
+                discountProduct, 
+                grocery.productDiscounts.product.productName, 
+                grocery.productDiscounts.product.initialPrice,
+                grocery.productDiscounts.product.discountPrice,
+                grocery.productDiscounts.product.discountException)
+            
+            // Create a module that is called JsonWriter.ts that writes to a JSON file.
+        }
+    }
+    
     await webClient.close();
 }
 
