@@ -24,17 +24,20 @@ class Logger {
 
     private getDateTime(fullDateTime: boolean = true): string {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-        const day = now.getDate().toString().padStart(2, '0');
-        const hours = now.getHours().toString().padStart(2, '0');
-        const minutes = now.getMinutes().toString().padStart(2, '0');
-        const seconds = now.getSeconds().toString().padStart(2, '0');
-        const milliseconds = now.getMilliseconds().toString().padStart(3, '0');
-
+        const year = now.getUTCFullYear();
+        const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
+        const day = now.getUTCDate().toString().padStart(2, '0');
+        const hours = now.getUTCHours().toString().padStart(2, '0');
+        const minutes = now.getUTCMinutes().toString().padStart(2, '0');
+        const seconds = now.getUTCSeconds().toString().padStart(2, '0');
+        const milliseconds = now.getUTCMilliseconds().toString().padStart(3, '0');
+    
         // Format each part of the date/time to ensure it is two digits, except milliseconds which should be three digits
-        return fullDateTime ? `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}` : `${year}${month}${day}-${hours}${minutes}${seconds}`;
+        return fullDateTime 
+            ? `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}` 
+            : `${year}${month}${day}-${hours}${minutes}${seconds}`;
     }
+    
 
     private writeToFile(level: string, message: string, ...optionalParams: any[]): void {
         // Compose the initial part of the log message.
