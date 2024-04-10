@@ -12,7 +12,7 @@ class Logger {
             fs.mkdirSync(this.logDirectory, { recursive: true });
         }
         
-        const logFileName = `${DateTimeHandler.getDateTimeShort()}-discountScraper.log`;
+        const logFileName = `discountScraper_${DateTimeHandler.getDateTimeShort()}.log`;
         this.logFilePath = path.join(this.logDirectory, logFileName);
     } 
 
