@@ -1,22 +1,50 @@
-import ImapClient from './helpers/ImapClient';
-// import WebScraper from './helpers/WebScraper';
-// import { writeFile } from 'fs/promises';
+import WebClient from './utils/WebClient';
+import { logger } from './utils/Logger';
+import ArgumentHandler from './utils/ArgumentHandler';
+import JsonReader from './utils/JsonReader';
+import process from 'process';
 
-const imapClient = new ImapClient();
-imapClient.scanInbox()
-    .then(() => console.log('Inbox scan complete.'))
-    .catch(error => console.error('Failed to scan inbox:', error));
+async function getConfig(): Promise<Grocery> {
+    const argHandler = new ArgumentHandler(process.argv);
+    const configPath = argHandler.getArgByFlag('--config');
 
+    const reader = new JsonReader(configPath);
+    const jsonData = await reader.read();
+    
+    logger.info('JSON data read from file:', jsonData);
+    return jsonData
+}
 
-// const url = 'https://example.com/groceries'; // Replace with the actual URL
+async function main() {
+    const grocery = await getConfig();
 
-// async function main() {
-//   const scraper = new WebScraper();
-//   const products = await scraper.scrapeGroceriesSite(url);
-//   console.log(products);
+    const webClient = new WebClient();
 
-//   // Write to JSON file
-//   await writeFile('products.json', JSON.stringify(products, null, 2), 'utf8');
-// }
+    await webClient.init();
+    await webClient.navigate(grocery.url);
+    await webClient.handleCookiePopup([grocery.cookieDecline])
 
-// main().catch(console.error);
+    for (const productCategory of grocery.productCategories) {
+        const discountProducts = await webClient.getProductCategoryDiscountProducts(productCategory, grocery.productDiscounts.name);
+        
+        if (!discountProducts) {
+            logger.error(`No discount products for product category '${productCategory}'.`);
+            break;
+        }
+
+        for (const discountProduct of discountProducts) {
+            const someVariable = await webClient.getDiscountProductDetails(
+                discountProduct, 
+                grocery.productDiscounts.product.productName, 
+                grocery.productDiscounts.product.initialPrice,
+                grocery.productDiscounts.product.discountPrice,
+                grocery.productDiscounts.product.discountException)
+            
+            // Create a module that is called JsonWriter.ts that writes to a JSON file.
+        }
+    }
+    
+    await webClient.close();
+}
+
+main();

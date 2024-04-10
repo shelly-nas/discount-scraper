@@ -1,0 +1,19 @@
+{
+    "name": "Albert Heijn Eudokiaplein",
+    "url": "https://www.ah.nl/bonus",
+    "cookieDecline": "#decline-cookies",
+    "productCategories": [
+        "#aardappel-groente-fruit"
+    ],
+    "currentPromotion": "<objectName>",
+    "promotionExpireDate": "<objectName>",
+    "productDiscounts": {
+        "name": "a[id]",
+        "product": {
+            "productName": ["[data-testhook=\"card-title\"]"],
+            "initialPrice": [".promotion-price_root__7-qJ1", "data-testpricewas"],
+            "discountPrice": [".promotion-price_root__7-qJ1", "data-testpricenow"],
+            "discountException": ["[data-testhook=\"promotion-text\"]"]
+        }
+    }
+}

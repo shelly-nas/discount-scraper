@@ -37,4 +37,8 @@ Thumbs.db
 npm-debug.log*
 
 # Project-specific ignore files
-# You can add anything you want to ignore below this line
+log/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

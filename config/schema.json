@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "name",
+    "url",
+    "cookieDecline",
+    "productCategories",
+    "currentPromotion",
+    "promotionExpireDate",
+    "productDiscounts"
+  ],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "cookieDecline": {
+      "type": "string"
+    },
+    "productCategories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "currentPromotion": {
+      "type": "string"
+    },
+    "promotionExpireDate": {
+      "type": "string"
+    },
+    "productDiscounts": {
+      "type": "object",
+      "required": [
+        "name",
+        "product"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "product": {
+          "type": "object",
+          "required": [
+            "productName",
+            "initialPrice",
+            "discountPrice",
+            "discountException"
+          ],
+          "properties": {
+            "productName": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "initialPrice": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "discountPrice": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "discountException": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
