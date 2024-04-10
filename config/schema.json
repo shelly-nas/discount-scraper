@@ -1,6 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
+  "required": [
+    "name",
+    "url",
+    "cookieDecline",
+    "productCategories",
+    "currentPromotion",
+    "promotionExpireDate",
+    "productDiscounts"
+  ],
   "properties": {
     "name": {
       "type": "string"
@@ -18,52 +27,58 @@
         "type": "string"
       }
     },
-    "discounts": {
+    "currentPromotion": {
+      "type": "string"
+    },
+    "promotionExpireDate": {
+      "type": "string"
+    },
+    "productDiscounts": {
       "type": "object",
+      "required": [
+        "name",
+        "product"
+      ],
       "properties": {
-        "currentDate": {
-          "type": "string"
-        },
-        "expireDate": {
+        "name": {
           "type": "string"
         },
         "product": {
           "type": "object",
-          "properties": {
-            "productName": {
-              "type": "string"
-            },
-            "initialPrice": {
-              "type": "string"
-            },
-            "discountPrice": {
-              "type": "string"
-            },
-            "discountException": {
-              "type": "string"
-            }
-          },
           "required": [
             "productName",
             "initialPrice",
             "discountPrice",
             "discountException"
-          ]
+          ],
+          "properties": {
+            "productName": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "initialPrice": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "discountPrice": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "discountException": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
         }
-      },
-      "required": [
-        "currentDate",
-        "expireDate",
-        "product"
-      ]
+      }
     }
-  },
-  "required": [
-    "name",
-    "url",
-    "cookieDecline",
-    "productCategories",
-    "discounts"
-  ],
-  "additionalProperties": false
+  }
 }

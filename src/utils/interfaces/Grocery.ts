@@ -1,12 +1,12 @@
 interface ProductDetails {
-    initialPrice: string;
-    discountPrice: string;
-    discountException: string;
+    productName: string[];
+    initialPrice: string[];
+    discountPrice: string[];
+    discountException: string[];
 }
 
-interface Discounts {
-    current: string;
-    expireData: string;
+interface ProductDiscounts {
+    name: string;
     product: ProductDetails;
 }
 
@@ -15,5 +15,7 @@ interface Grocery {
     url: string;
     cookieDecline: string;
     productCategories: string[];
-    discounts: Discounts;
+    currentPromotion: string;
+    promotionExpireDate: string;
+    productDiscounts: ProductDiscounts;
 }

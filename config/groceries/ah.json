@@ -3,39 +3,17 @@
     "url": "https://www.ah.nl/bonus",
     "cookieDecline": "#decline-cookies",
     "productCategories": [
-        "Aardappelen, groente, fruit",
-        "Salades, pizza, maaltijden",
-        "Vlees, vis",
-        "Vegetarisch, vegan en plantaardig",
-        "Kaas, vleeswaren, tapas",
-        "Zuivel, eieren, boter",
-        "Bakkerij",
-        "Ontbijtgranen en beleg",
-        "Chips, noten, toast, popcorn",
-        "Snoep, chocolade, koek",
-        "Tussendoortjes",
-        "Koffie, thee",
-        "Frisdranken, sappen, siropen, water",
-        "Wijn en bubbels",
-        "Bier en aperitieven",
-        "Pasta, rijst en wereldkeuken",
-        "Soepen, sauzen, kruiden, olie",
-        "Diepvries",
-        "Drogisterij",
-        "Baby en kind",
-        "Baby en kind",
-        "Huishouden",
-        "Huisdier",
-        "Koken, tafelen, vrije tijd"
+        "#aardappel-groente-fruit"
     ],
-    "discounts": {
-        "currentDate": "<objectName>",
-        "expiredDate": "<objectName>",
+    "currentPromotion": "<objectName>",
+    "promotionExpireDate": "<objectName>",
+    "productDiscounts": {
+        "name": "a[id]",
         "product": {
-            "productName": "<objectName>",
-            "initialPrice": "<objectName>",
-            "discountPrice": "<objectName>",
-            "discountException": "<objectName>"
+            "productName": ["[data-testhook=\"card-title\"]"],
+            "initialPrice": [".promotion-price_root__7-qJ1", "data-testpricewas"],
+            "discountPrice": [".promotion-price_root__7-qJ1", "data-testpricenow"],
+            "discountException": ["[data-testhook=\"promotion-text\"]"]
         }
     }
 }
