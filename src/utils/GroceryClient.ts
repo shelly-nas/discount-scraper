@@ -25,13 +25,13 @@ export default class GroceryClient extends WebClient{
         return discountProducts
     }
 
-    public async getDiscountProductDetails(productSelector: ElementHandle, productNameSelector: string[], initialPriceSelector: string[], discountPriceSelector: string[], specialDiscountSelector: string[]): Promise<ProductDiscount> {
+    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<Discount> {
         return {
             productCategory: await this.getProductCategoryName(),
-            productName: await this.getProductName(productSelector, productNameSelector),
-            initialPrice: await this.getInitialPrice(productSelector, initialPriceSelector),
-            discountPrice: await this.getDiscountPrice(productSelector, discountPriceSelector),
-            specialDiscount: await this.getSpecialDiscount(productSelector, specialDiscountSelector),
+            productName: await this.getProductName(productSelector, productConfig.productName),
+            initialPrice: await this.getInitialPrice(productSelector, productConfig.initialPrice),
+            discountPrice: await this.getDiscountPrice(productSelector, productConfig.discountPrice),
+            specialDiscount: await this.getSpecialDiscount(productSelector, productConfig.specialDiscount),
         }
     }
 

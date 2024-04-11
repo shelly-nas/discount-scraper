@@ -28,12 +28,13 @@ async function main() {
 
     await groceryClient.init();
     await groceryClient.navigate(groceryConfig.url);
-    await groceryClient.handleCookiePopup([groceryConfig.cookieDecline]);
+    await groceryClient.handleCookiePopup([groceryConfig.webIdentifiers.cookieDecline]);
 
     
-    for (const productCategory of groceryConfig.productCategories) {
-        groceryDiscounts.productCategory = productCategory;
-        const discountProducts = await groceryClient.getProductCategoryDiscountProducts(productCategory, groceryConfig.productDiscounts.name);
+    for (const productCategory of groceryConfig.webIdentifiers.productCategories) {
+        // groceryDiscounts.productCategory = productCategory;
+        const discountProducts = await groceryClient.getProductCategoryDiscountProducts(productCategory, groceryConfig.webIdentifiers.products
+        );
 
         if (!discountProducts) {
             logger.error(`No discount products for product category '${productCategory}'.`);
@@ -41,13 +42,7 @@ async function main() {
         }
 
         for (const discountProduct of discountProducts) {
-            const productDiscountDetails: ProductDiscount = await groceryClient.getDiscountProductDetails(
-                discountProduct,
-                groceryConfig.productDiscounts.product.productName,
-                groceryConfig.productDiscounts.product.initialPrice,
-                groceryConfig.productDiscounts.product.discountPrice,
-                groceryConfig.productDiscounts.product.discountException);
-
+            const productDiscountDetails: Discount = await groceryClient.getDiscountProductDetails(discountProduct, groceryConfig.webIdentifiers.promotionProducts);
             groceryDiscounts.appendDiscount(productDiscountDetails);
         }
     }

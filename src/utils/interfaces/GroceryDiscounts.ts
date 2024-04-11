@@ -1,13 +1,13 @@
 export default class GroceryDiscounts {
     private groceryName: string;
     public productCategory!: string;
-    public discounts: ProductDiscount[] = [];
+    public discounts: Discount[] = [];
 
     constructor (groceryName: string) {
         this.groceryName = groceryName;
     }
 
-    public appendDiscount(newDiscount: ProductDiscount): void {
+    public appendDiscount(newDiscount: Discount): void {
         this.discounts.push(newDiscount);
     }
 

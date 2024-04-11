@@ -1,4 +1,4 @@
-interface ProductDiscount {
+interface Discount {
     productCategory: string;
     productName: string;
     initialPrice?: string;
