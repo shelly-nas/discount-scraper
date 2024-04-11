@@ -3,7 +3,7 @@ import Ajv from 'ajv';
 import fs from 'fs';
 import path from 'path';
 
-class JsonReader {
+export default class JsonReader {
     private schemaPath: string = 'config/schema.json';
     private groceryPath: string;
 
@@ -19,7 +19,7 @@ class JsonReader {
             return JSON.parse(fileContent);
         } catch (error) {
             logger.error(`Failed to read or parse the JSON file at ${this.groceryPath}:`, error);
-            process.exit(0);
+            process.exit(1);
         }
     }   
 
@@ -47,12 +47,10 @@ class JsonReader {
         if (!isValid) {
             const errorMissingProperty = errors?.map(error => error.params.missingProperty).join(', ');
             logger.error(`JSON key validation failed. Properties missing: '${errorMissingProperty}'`)
-            process.exit(0);
+            process.exit(1);
         }
         else {
             return parsedGrocery
         }
     }
 }
-
-export default JsonReader;

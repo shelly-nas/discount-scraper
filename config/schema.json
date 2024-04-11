@@ -4,11 +4,7 @@
   "required": [
     "name",
     "url",
-    "cookieDecline",
-    "productCategories",
-    "currentPromotion",
-    "promotionExpireDate",
-    "productDiscounts"
+    "webIdentifiers"
   ],
   "properties": {
     "name": {
@@ -18,38 +14,38 @@
       "type": "string",
       "format": "uri"
     },
-    "cookieDecline": {
-      "type": "string"
-    },
-    "productCategories": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "currentPromotion": {
-      "type": "string"
-    },
-    "promotionExpireDate": {
-      "type": "string"
-    },
-    "productDiscounts": {
+    "webIdentifiers": {
       "type": "object",
       "required": [
-        "name",
-        "product"
+        "cookieDecline",
+        "promotionExpireDate",
+        "productCategories",
+        "products",
+        "promotionProducts"
       ],
       "properties": {
-        "name": {
+        "cookieDecline": {
           "type": "string"
         },
-        "product": {
+        "promotionExpireDate": {
+          "type": "string"
+        },
+        "productCategories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "products": {
+          "type": "string"
+        },
+        "promotionProducts": {
           "type": "object",
           "required": [
             "productName",
             "initialPrice",
             "discountPrice",
-            "discountException"
+            "specialDiscount"
           ],
           "properties": {
             "productName": {
@@ -70,7 +66,7 @@
                 "type": "string"
               }
             },
-            "discountException": {
+            "specialDiscount": {
               "type": "array",
               "items": {
                 "type": "string"

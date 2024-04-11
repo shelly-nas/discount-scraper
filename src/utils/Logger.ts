@@ -1,3 +1,4 @@
+import DateTimeHandler from './DateTimeHandler';
 import fs from 'fs';
 import path from 'path';
 
@@ -11,7 +12,7 @@ class Logger {
             fs.mkdirSync(this.logDirectory, { recursive: true });
         }
         
-        const logFileName = `${this.getDateTime(false)}-discountScraper.log`;
+        const logFileName = `discountScraper_${DateTimeHandler.getDateTimeShort()}.log`;
         this.logFilePath = path.join(this.logDirectory, logFileName);
     } 
 
@@ -22,26 +23,9 @@ class Logger {
         return Logger.instance;
     }
 
-    private getDateTime(fullDateTime: boolean = true): string {
-        const now = new Date();
-        const year = now.getUTCFullYear();
-        const month = (now.getUTCMonth() + 1).toString().padStart(2, '0');
-        const day = now.getUTCDate().toString().padStart(2, '0');
-        const hours = now.getUTCHours().toString().padStart(2, '0');
-        const minutes = now.getUTCMinutes().toString().padStart(2, '0');
-        const seconds = now.getUTCSeconds().toString().padStart(2, '0');
-        const milliseconds = now.getUTCMilliseconds().toString().padStart(3, '0');
-    
-        // Format each part of the date/time to ensure it is two digits, except milliseconds which should be three digits
-        return fullDateTime 
-            ? `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}` 
-            : `${year}${month}${day}-${hours}${minutes}${seconds}`;
-    }
-    
-
     private writeToFile(level: string, message: string, ...optionalParams: any[]): void {
         // Compose the initial part of the log message.
-    const logMessage = `[${this.getDateTime()}] [${level}] ${message}`;
+    const logMessage = `[${DateTimeHandler.getDateTimeLong()}] [${level}] ${message}`;
 
     try {
         // Append the initial message to the file.

@@ -1,6 +1,6 @@
 import { logger } from './Logger';
 
-class ArgumentHandler {
+export default class ArgumentHandler {
     private args: string[];
 
     constructor(args: string[]) {
@@ -13,9 +13,7 @@ class ArgumentHandler {
             return this.args[flagIndex + 1];
         } catch (error) {
             logger.error(`Error: The required flag "${flag}" is missing.`); 
-            process.exit(0);
+            process.exit(1);
         }
     }
 }
-
-export default ArgumentHandler;

@@ -1,8 +1,13 @@
 import WebClient from './utils/WebClient';
 import { logger } from './utils/Logger';
 import ArgumentHandler from './utils/ArgumentHandler';
+import DateTimeHandler from './utils/DateTimeHandler';
+import GroceryDiscounts from './utils/interfaces/GroceryDiscounts'
 import JsonReader from './utils/JsonReader';
+import JsonWriter from './utils/JsonWriter';
 import process from 'process';
+import GroceryClient from './utils/GroceryClient';
+
 
 async function getConfig(): Promise<Grocery> {
     const argHandler = new ArgumentHandler(process.argv);
@@ -16,35 +21,36 @@ async function getConfig(): Promise<Grocery> {
 }
 
 async function main() {
-    const grocery = await getConfig();
+    const groceryConfig = await getConfig();
+    const groceryClient = new GroceryClient();
+    const jsonWriter = new JsonWriter(`./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`);
+    const groceryDiscounts = new GroceryDiscounts(groceryConfig.name);
 
-    const webClient = new WebClient();
+    await groceryClient.init();
+    await groceryClient.navigate(groceryConfig.url);
+    await groceryClient.handleCookiePopup([groceryConfig.webIdentifiers.cookieDecline]);
 
-    await webClient.init();
-    await webClient.navigate(grocery.url);
-    await webClient.handleCookiePopup([grocery.cookieDecline])
+    
+    for (const productCategory of groceryConfig.webIdentifiers.productCategories) {
+        // groceryDiscounts.productCategory = productCategory;
+        const discountProducts = await groceryClient.getProductCategoryDiscountProducts(productCategory, groceryConfig.webIdentifiers.products
+        );
 
-    for (const productCategory of grocery.productCategories) {
-        const discountProducts = await webClient.getProductCategoryDiscountProducts(productCategory, grocery.productDiscounts.name);
-        
         if (!discountProducts) {
             logger.error(`No discount products for product category '${productCategory}'.`);
             break;
         }
 
         for (const discountProduct of discountProducts) {
-            const someVariable = await webClient.getDiscountProductDetails(
-                discountProduct, 
-                grocery.productDiscounts.product.productName, 
-                grocery.productDiscounts.product.initialPrice,
-                grocery.productDiscounts.product.discountPrice,
-                grocery.productDiscounts.product.discountException)
-            
-            // Create a module that is called JsonWriter.ts that writes to a JSON file.
+            const productDiscountDetails: Discount = await groceryClient.getDiscountProductDetails(discountProduct, groceryConfig.webIdentifiers.promotionProducts);
+            groceryDiscounts.appendDiscount(productDiscountDetails);
         }
     }
-    
-    await webClient.close();
+
+    // Use JsonWriter to write the ProductDiscount details to a JSON file.
+    await jsonWriter.write(groceryDiscounts.exportAsObject());
+
+    await groceryClient.close();
 }
 
 main();

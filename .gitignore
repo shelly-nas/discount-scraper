@@ -37,7 +37,8 @@ Thumbs.db
 npm-debug.log*
 
 # Project-specific ignore files
-log/
+/log/
+/export/
 /test-results/
 /playwright-report/
 /blob-report/

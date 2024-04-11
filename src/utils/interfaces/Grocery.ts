@@ -1,21 +1,20 @@
-interface ProductDetails {
+interface DiscountDetails {
     productName: string[];
     initialPrice: string[];
     discountPrice: string[];
-    discountException: string[];
+    specialDiscount: string[];
 }
 
-interface ProductDiscounts {
-    name: string;
-    product: ProductDetails;
+interface WebIdentifiers {
+    cookieDecline: string;
+    promotionExpireDate: string;
+    productCategories: string[];
+    products: string;
+    promotionProducts: DiscountDetails;
 }
 
 interface Grocery {
     name: string;
     url: string;
-    cookieDecline: string;
-    productCategories: string[];
-    currentPromotion: string;
-    promotionExpireDate: string;
-    productDiscounts: ProductDiscounts;
+    webIdentifiers: WebIdentifiers;
 }
