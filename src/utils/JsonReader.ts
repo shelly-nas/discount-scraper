@@ -24,7 +24,7 @@ export default class JsonReader {
     }   
 
     private async validateObject(jsonData: object): Promise<{ isValid: boolean; errors: any[] | null | undefined }> {
-        const parsedSchema: Grocery = this.createJsonObject(this.schemaPath);
+        const parsedSchema: GroceryWebStore = this.createJsonObject(this.schemaPath);
         
         // Compile the schema
         const ajv = new Ajv({allErrors: true});
@@ -39,8 +39,8 @@ export default class JsonReader {
         };
     }
 
-    public async read(): Promise<Grocery> {         
-        const parsedGrocery: Grocery = this.createJsonObject(this.groceryPath);
+    public async read(): Promise<GroceryWebStore> {         
+        const parsedGrocery: GroceryWebStore = this.createJsonObject(this.groceryPath);
         
         const {isValid, errors} = await this.validateObject(parsedGrocery)
         

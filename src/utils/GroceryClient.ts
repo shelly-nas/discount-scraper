@@ -5,7 +5,7 @@ import WebClient from "./WebClient";
 export default class GroceryClient extends WebClient{
     private productCategory: ElementHandle<SVGElement | HTMLElement> | null | undefined;
     
-    public async getProductCategoryDiscountProducts(parentSelector: string, productSelector: string): Promise<ElementHandle[] | undefined> {
+    public async getDiscountProductsByProductCategory(parentSelector: string, productSelector: string): Promise<ElementHandle[] | undefined> {
         await this.page?.waitForSelector(parentSelector, { state: "visible", timeout: 3000 });
         logger.debug(`Found section for product category with ID '${parentSelector}'.`);
         this.productCategory = await this.page?.$(parentSelector);
@@ -18,21 +18,25 @@ export default class GroceryClient extends WebClient{
         let discountProducts;
         try {
             discountProducts = await this.productCategory.$$(productSelector);
-            logger.debug(`Found ${discountProducts.length} elements for discount products under the parent selector '${parentSelector}'.`);
+            logger.info(`Found ${discountProducts.length} elements for discount products under the parent selector '${parentSelector}'.`);
         } catch (error) {
             logger.error(`Error finding elements for discount products with selector '${productSelector}':`, error);
         }
+
         return discountProducts
     }
 
     public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<Discount> {
-        return {
+        const productDiscountDetails = {
             productCategory: await this.getProductCategoryName(),
             productName: await this.getProductName(productSelector, productConfig.productName),
             initialPrice: await this.getInitialPrice(productSelector, productConfig.initialPrice),
             discountPrice: await this.getDiscountPrice(productSelector, productConfig.discountPrice),
-            specialDiscount: await this.getSpecialDiscount(productSelector, productConfig.specialDiscount),
+            specialDiscount: await this.getSpecialDiscount(productSelector, productConfig.specialDiscount)
         }
+        logger.info(`Product details a scraped for '${productDiscountDetails.productName}'.`);
+
+        return productDiscountDetails
     }
 
     private async getProductCategoryName(): Promise<string> {
@@ -44,7 +48,7 @@ export default class GroceryClient extends WebClient{
                 productCategoryName = await productCategoryHandle.evaluate(el => el.textContent?.trim() || '');
             }
             
-            logger.debug(`Product name retrieved: '${productCategoryName}'.`);
+            logger.debug(`Product category name retrieved: '${productCategoryName}'.`);
             return productCategoryName;
         } catch (error) {
             logger.error(`Error retrieving product name with selector '${this.productCategory}':`, error);
