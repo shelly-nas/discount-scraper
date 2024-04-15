@@ -1,5 +1,5 @@
 import { chromium, Browser, Page } from 'playwright';
-import { logger } from './Logger';
+import { logger } from './helpers/Logger';
 
 export default class WebClient {
     private browser: Browser | null = null;
