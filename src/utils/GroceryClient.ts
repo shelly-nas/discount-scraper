@@ -1,5 +1,5 @@
 import { logger } from "./helpers/Logger";
-import { Page, ElementHandle } from 'playwright';
+import { ElementHandle } from 'playwright';
 import WebClient from "./WebClient";
 
 export default class GroceryClient extends WebClient{
@@ -26,7 +26,7 @@ export default class GroceryClient extends WebClient{
         return discountProducts
     }
 
-    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<ProductDiscount> {
+    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<IProductDiscount> {
         const productDiscountDetails = {
             productCategory: await this.getProductCategoryName(),
             productName: await this.getProductName(productSelector, productConfig.productName),
