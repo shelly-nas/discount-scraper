@@ -11,6 +11,21 @@ export default class JsonReader {
         this.groceryPath = filePath;
     }
 
+    public async read(): Promise<GroceryWebStore> {         
+        const parsedGrocery: GroceryWebStore = this.createJsonObject(this.groceryPath);
+        
+        const {isValid, errors} = await this.validateObject(parsedGrocery)
+        
+        if (!isValid) {
+            const errorMissingProperty = errors?.map(error => error.params.missingProperty).join(', ');
+            logger.error(`JSON key validation failed. Properties missing: '${errorMissingProperty}'`)
+            process.exit(1);
+        }
+        else {
+            return parsedGrocery
+        }
+    }
+    
     private createJsonObject(filePath: string): any {
         try {
             // Ensure the file path is absolute
@@ -37,20 +52,5 @@ export default class JsonReader {
             isValid,
             errors: schemaObject.errors // This will be `null` if data is valid
         };
-    }
-
-    public async read(): Promise<GroceryWebStore> {         
-        const parsedGrocery: GroceryWebStore = this.createJsonObject(this.groceryPath);
-        
-        const {isValid, errors} = await this.validateObject(parsedGrocery)
-        
-        if (!isValid) {
-            const errorMissingProperty = errors?.map(error => error.params.missingProperty).join(', ');
-            logger.error(`JSON key validation failed. Properties missing: '${errorMissingProperty}'`)
-            process.exit(1);
-        }
-        else {
-            return parsedGrocery
-        }
     }
 }

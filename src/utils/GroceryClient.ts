@@ -26,7 +26,7 @@ export default class GroceryClient extends WebClient{
         return discountProducts
     }
 
-    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<Discount> {
+    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<ProductDiscount> {
         const productDiscountDetails = {
             productCategory: await this.getProductCategoryName(),
             productName: await this.getProductName(productSelector, productConfig.productName),

@@ -1,25 +1,9 @@
-export default class GroceryDiscounts {
-    private groceryName: string;
-    public discounts: Discount[] = [];
+export class GroceryDiscounts {
+    public groceryName: string;
+    public discounts: ProductDiscount[] = [];
 
-    constructor (groceryName: string) {
+    constructor (groceryName: string, discounts: ProductDiscount[]) {
         this.groceryName = groceryName;
-    }
-
-    public appendDiscount(newDiscount: Discount): void {
-        this.discounts.push(newDiscount);
-    }
-
-    public exportAsObject(): object {
-        return {
-            groceryName: this.groceryName,
-            discounts: this.discounts.map(discount => ({
-                productCategory: discount.productCategory,
-                productName: discount.productName,
-                initialPrice: discount.initialPrice,
-                discountPrice: discount.discountPrice,
-                specialDiscount: discount.specialDiscount
-            }))
-        };
+        this.discounts = discounts
     }
 }
