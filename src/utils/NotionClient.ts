@@ -3,6 +3,7 @@ import { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
 import { logger } from './helpers/Logger';
 
 export default class NotionClient {
+    private maxBlocks = 100
     private notion: Client;
     private pageId: string;
 
@@ -36,7 +37,7 @@ export default class NotionClient {
         try {
             const response = await this.notion.blocks.children.list({
                 block_id: this.pageId,
-                page_size: 100, // Optional: Adjust page size as needed (max is 100)
+                page_size: this.maxBlocks, // Optional: Adjust page size as needed (max is 100)
             });
             
             logger.info(`Retrieved Notion blocks for page '${this.pageId}'.`);
@@ -51,17 +52,22 @@ export default class NotionClient {
     
     private async setPageBlocks(blocks: BlockObjectRequest[]): Promise<any> {
         try {
-            const response = await this.notion.blocks.children.append({
-                block_id: this.pageId,
-                children: blocks
-            });
-
-            logger.info('Blocks added.');
-            logger.debug('Response:', response)
-
-            return response;
+            for (let i = 0; i < blocks.length; i += this.maxBlocks) {
+                // Get the current segment of blocks not exceeding the MAX_BLOCKS limit
+                const blockSegment = blocks.slice(i, i + this.maxBlocks);
+    
+                // Append the current segment of blocks
+                const response = await this.notion.blocks.children.append({
+                    block_id: this.pageId,
+                    children: blockSegment
+                });
+    
+                logger.info(`Added a segment of blocks to page '${this.pageId}'.`);
+                logger.debug('Response:', response);
+            }
         } catch (error) {
             logger.error('Error setting blocks:', error);
+            throw error; // Re-throw the error after logging it
         }
     }
 
