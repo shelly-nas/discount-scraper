@@ -4,15 +4,16 @@ import fs from 'fs';
 import path from 'path';
 
 export default class JsonReader {
-    private schemaPath: string = 'config/schema.json';
-    private groceryPath: string;
+    private schemaPath: string;
+    private jsonPath: string;
 
-    constructor(filePath: string) {
-        this.groceryPath = filePath;
+    constructor(schemaPath: string, filePath: string) {
+        this.schemaPath = schemaPath;
+        this.jsonPath = filePath;
     }
 
-    public async read(): Promise<GroceryWebStore> {         
-        const parsedGrocery: GroceryWebStore = this.createJsonObject(this.groceryPath);
+    public async read(): Promise<object> {         
+        const parsedGrocery = this.createJsonObject(this.jsonPath);
         
         const {isValid, errors} = await this.validateObject(parsedGrocery)
         
@@ -33,13 +34,13 @@ export default class JsonReader {
             const fileContent: string = fs.readFileSync(absolutePath, 'utf8');
             return JSON.parse(fileContent);
         } catch (error) {
-            logger.error(`Failed to read or parse the JSON file at ${this.groceryPath}:`, error);
+            logger.error(`Failed to read or parse the JSON file at ${this.jsonPath}:`, error);
             process.exit(1);
         }
     }   
 
     private async validateObject(jsonData: object): Promise<{ isValid: boolean; errors: any[] | null | undefined }> {
-        const parsedSchema: GroceryWebStore = this.createJsonObject(this.schemaPath);
+        const parsedSchema = this.createJsonObject(this.schemaPath);
         
         // Compile the schema
         const ajv = new Ajv({allErrors: true});
