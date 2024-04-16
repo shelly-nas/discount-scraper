@@ -1,4 +1,9 @@
-interface Discount {
+interface IGroceryDiscounts {
+    groceryName: string;
+    discounts: IProductDiscount[];
+}
+
+interface IProductDiscount {
     productCategory: string;
     productName: string;
     initialPrice?: string;

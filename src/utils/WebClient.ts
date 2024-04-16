@@ -1,5 +1,5 @@
 import { chromium, Browser, Page } from 'playwright';
-import { logger } from './Logger';
+import { logger } from './helpers/Logger';
 
 export default class WebClient {
     private browser: Browser | null = null;
@@ -21,16 +21,14 @@ export default class WebClient {
         await this.page?.goto(url);
     }
 
-    public async handleCookiePopup(selectors: string[]): Promise<void> {
-        for (const selector of selectors) {
-            try {
-                await this.page?.waitForSelector(selector, { state: "visible", timeout: 3000 });
-                logger.debug(`Found cookie popup with selector '${selector}'.`);
-                await this.page?.click(selector)
-            } catch (error) {
-                logger.error(`No cookie popup found with selector: ${selector} or timeout exceeded.`, error);
-                // process.exit(1);
-            }
+    public async handleCookiePopup(selector: string): Promise<void> {
+        try {
+            await this.page?.waitForSelector(selector, { state: "visible", timeout: 3000 });
+            logger.debug(`Found cookie popup with selector '${selector}'.`);
+            await this.page?.click(selector)
+        } catch (error) {
+            logger.error(`No cookie popup found with selector: ${selector} or timeout exceeded.`, error);
+            // process.exit(1);
         }
         logger.info('Dismissed cookie popup');
     }

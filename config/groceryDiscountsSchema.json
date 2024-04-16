@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": [
+        "groceryName", 
+        "discounts"
+    ],
+    "properties": {
+        "groceryName": {
+            "type": "string"
+        },
+        "discounts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "productCategory",
+                    "productName",
+                    "initialPrice",
+                    "discountPrice",
+                    "specialDiscount"
+                ],
+                "properties": {
+                    "productCategory": {
+                    "type": "string"
+                    },
+                    "productName": {
+                    "type": "string"
+                    },
+                    "initialPrice": {
+                        "type": "string"
+                    },
+                    "discountPrice": {
+                        "type": "string"
+                    },
+                    "specialDiscount": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
+  

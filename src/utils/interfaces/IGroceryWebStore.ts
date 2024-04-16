@@ -13,7 +13,7 @@ interface WebIdentifiers {
     promotionProducts: DiscountDetails;
 }
 
-interface Grocery {
+interface IGroceryWebStore {
     name: string;
     url: string;
     webIdentifiers: WebIdentifiers;

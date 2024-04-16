@@ -33,4 +33,8 @@ export default class JsonWriter {
         this.writeJsonObject(this.filePath, data);
         logger.info(`Successfully wrote data to '${this.filePath}'.`);
     }
+
+    public getFilePath(): string {
+        return this.filePath;
+    }
 }
