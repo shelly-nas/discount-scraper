@@ -2,6 +2,7 @@
 Go to the discount page of a grocery store, scrape the page of discounts and add them to an all discounts file.
 
 ## Install
+Setup the Notion integration key, see https://www.notion.so/help/add-and-manage-connections-with-the-api.
 
 ## Execute
 Build the TypeScript project:
@@ -54,5 +55,3 @@ To save the current list of applications running with PM2 (so they restart on re
 pm2 save
 ```
 This setup allows you to pass a specific JSON file as an argument to your TypeScript project running with Node.js and ensures your application runs continuously as a service using PM2.
-
-
