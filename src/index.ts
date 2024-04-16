@@ -12,11 +12,6 @@ import { ElementHandle } from 'playwright';
 import process from 'process';
 require('dotenv').config();
 
-/**
- * This asynchronous function reads the configuration for the GroceryWebStore from the provided config file.
- * It uses an `ArgumentHandler` to parse command line arguments to locate the configuration file.
- * The JSON data is read using a `JsonReader` and logged before being returned as a Promise.
- */
 async function getConfig(): Promise<GroceryWebStore> {
     const argHandler = new ArgumentHandler(process.argv);
     const configPath = argHandler.getArgByFlag('--config');
@@ -28,21 +23,56 @@ async function getConfig(): Promise<GroceryWebStore> {
     return jsonData;
 }
 
-function setNotionDatabase(jsonPath: string) {
-    if (!process.env.NOTION_SECRET) {
-        logger.error(`The NOTION_SECRET environment variable is not set: '${process.env.NOTION_SECRET}'.`);
-        return;
-    }
-    if (!process.env.DISCOUNT_PAGE_ID) {
-        logger.error(`The DISCOUNT_PAGE_ID environment variable is not set: '${process.env.DISCOUNT_PAGE_ID}'.`);
-        return;
-    }
-    const integrationToken = process.env.NOTION_SECRET;
-    const databaseId = process.env.DISCOUNT_PAGE_ID;
-    const filePath = jsonPath;
-    
-    const notionClient = new NotionClient(integrationToken, databaseId);
+async function getGroceryDiscounts(config: GroceryWebStore): Promise<GroceryDiscounts> {
+    const groceryClient = new GroceryClient();
+    const productDiscounts: ProductDiscount[] = [];
 
+    await groceryClient.init();
+    await groceryClient.navigate(config.url);
+    await groceryClient.handleCookiePopup(config.webIdentifiers.cookieDecline);
+    
+    // Iterate over each product category defined in the grocery store's configuration
+    for (const productCategory of config.webIdentifiers.productCategories) {
+        // Get the products listed under the current category that are on discount
+        const discountProducts: ElementHandle[] | undefined = await groceryClient.getDiscountProductsByProductCategory(productCategory, config.webIdentifiers.products);
+
+        if (!discountProducts) {
+            logger.error(`No discount products for product category '${productCategory}'.`);
+            break;
+        }
+
+        // For each discount product found, get its details and append it to the groceryDiscounts
+        for (const discountProduct of discountProducts) {
+            const productDiscountDetails: ProductDiscount = await groceryClient.getDiscountProductDetails(discountProduct, config.webIdentifiers.promotionProducts);
+            productDiscounts.push(productDiscountDetails);
+        }
+        logger.info(`Discount details are scraped and stored.`);
+    }
+
+    // Close the grocery client (e.g., close browser instance, clear resources)
+    await groceryClient.close();
+
+    // Use JsonWriter to write the ProductDiscount details to a JSON file
+    return new GroceryDiscounts(config.name, productDiscounts);
+}
+
+function getEnvVariable(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        logger.error(`The ${name} environment variable is not set.`);
+        process.exit(1);
+    }
+    return value;
+}
+
+async function flushNotionDiscountPage() {
+    // Use the NotionClient to set the ProductDiscount details to a Notion page
+    const integrationToken = getEnvVariable('NOTION_SECRET');
+    const databaseId = getEnvVariable('DISCOUNT_PAGE_ID');
+
+    const notionClient = new NotionClient(integrationToken, databaseId);
+    
+    
     // TODO: Replace by reading the JSON grocery file and converting to input blocks
     const blocks: any[] = [
         new Heading3([
@@ -60,46 +90,14 @@ function setNotionDatabase(jsonPath: string) {
     notionClient.flushPage(blocks);
 }
 
-/**
- * Main function that initializes and manages the scraping process for grocery discounts.
- */
 async function main() {
     const groceryConfig = await getConfig();
-    const groceryClient = new GroceryClient();
     const jsonWriter = new JsonWriter(`./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`);
-    const productDiscounts: ProductDiscount[] = [];
 
-    await groceryClient.init();
-    await groceryClient.navigate(groceryConfig.url);
-    await groceryClient.handleCookiePopup(groceryConfig.webIdentifiers.cookieDecline);
-    
-    // Iterate over each product category defined in the grocery store's configuration
-    for (const productCategory of groceryConfig.webIdentifiers.productCategories) {
-        // Get the products listed under the current category that are on discount
-        const discountProducts: ElementHandle[] | undefined = await groceryClient.getDiscountProductsByProductCategory(productCategory, groceryConfig.webIdentifiers.products);
-
-        if (!discountProducts) {
-            logger.error(`No discount products for product category '${productCategory}'.`);
-            break;
-        }
-
-        // For each discount product found, get its details and append it to the groceryDiscounts
-        for (const discountProduct of discountProducts) {
-            const productDiscountDetails: ProductDiscount = await groceryClient.getDiscountProductDetails(discountProduct, groceryConfig.webIdentifiers.promotionProducts);
-            productDiscounts.push(productDiscountDetails);
-        }
-        logger.info(`Discount details are scraped and stored.`);
-    }
-
-    // Use JsonWriter to write the ProductDiscount details to a JSON file
-    const groceryDiscounts = new GroceryDiscounts(groceryConfig.name, productDiscounts);
+    const groceryDiscounts = getGroceryDiscounts(groceryConfig)
     await jsonWriter.write(groceryDiscounts);
 
-    // Close the grocery client (e.g., close browser instance, clear resources)
-    await groceryClient.close();
-
-    // Use the NotionClient to set the ProductDiscount details to a Notion page
-    setNotionDatabase(jsonWriter.getFilePath())
+    flushNotionDiscountPage();
 }
 
 main();
