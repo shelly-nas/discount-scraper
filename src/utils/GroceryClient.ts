@@ -6,8 +6,8 @@ export default class GroceryClient extends WebClient{
     private productCategory: ElementHandle<SVGElement | HTMLElement> | null | undefined;
     
     public async getDiscountProductsByProductCategory(parentSelector: string, productSelector: string): Promise<ElementHandle[] | undefined> {
+        logger.debug(`Wait for product category with ID '${parentSelector}' to be visible.`);
         await this.page?.waitForSelector(parentSelector, { state: "visible", timeout: 3000 });
-        logger.debug(`Found section for product category with ID '${parentSelector}'.`);
         this.productCategory = await this.page?.$(parentSelector);
         
         if (!this.productCategory) {
@@ -26,11 +26,11 @@ export default class GroceryClient extends WebClient{
         return discountProducts
     }
 
-    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<IProductDiscount> {
+    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: IDiscountDetails): Promise<IProductDiscount> {
         const productDiscountDetails = {
             productCategory: await this.getProductCategoryName(),
             productName: await this.getProductName(productSelector, productConfig.productName),
-            initialPrice: await this.getInitialPrice(productSelector, productConfig.initialPrice),
+            originalPrice: await this.getOriginalPrice(productSelector, productConfig.originalPrice),
             discountPrice: await this.getDiscountPrice(productSelector, productConfig.discountPrice),
             specialDiscount: await this.getSpecialDiscount(productSelector, productConfig.specialDiscount)
         }
@@ -67,18 +67,18 @@ export default class GroceryClient extends WebClient{
         }
     }
     
-    private async getInitialPrice(anchorHandle: ElementHandle, initialPriceSelector: string[]): Promise<string> {
+    private async getOriginalPrice(anchorHandle: ElementHandle, originalPriceSelector: string[]): Promise<string> {
         try {
-            const priceElementHandle = await anchorHandle.$(initialPriceSelector[0]); // Find the child div with the initial price
+            const priceElementHandle = await anchorHandle.$(originalPriceSelector[0]); // Find the child div with the original price
             if (!priceElementHandle) {
-                logger.warn(`Initial price element with selector '${initialPriceSelector[0]}' not found.`);
+                logger.warn(`Original price element with selector '${originalPriceSelector[0]}' not found.`);
                 return '';
             }
-            const price = await priceElementHandle.getAttribute(initialPriceSelector[1]);
-            logger.debug(`Initial price retrieved: '${price}'.`);
+            const price = await priceElementHandle.getAttribute(originalPriceSelector[1]);
+            logger.debug(`Original price retrieved: '${price}'.`);
             return price !== null ? price : '';
         } catch (error) {
-            logger.warn(`Error retrieving initial price with selector '${initialPriceSelector[1]}':`, error);
+            logger.warn(`Warn retrieving original price with selector '${originalPriceSelector[1]}':`, error);
             return '';
         }
     }
@@ -94,7 +94,7 @@ export default class GroceryClient extends WebClient{
             logger.debug(`Discount price retrieved: '${price}'.`);
             return price !== null ? price : '';
         } catch (error) {
-            logger.warn(`Error retrieving discount price with selector '${discountPriceSelector[1]}':`, error);
+            logger.warn(`Warn retrieving discount price with selector '${discountPriceSelector[1]}':`, error);
             return '';
         }
     }
@@ -108,7 +108,7 @@ export default class GroceryClient extends WebClient{
             logger.debug(`Special discount text retrieved: '${specialDiscount}'.`);
             return specialDiscount;
         } catch (error) {
-            logger.warn(`Error retrieving special discount text with selector '${specialDiscountSelector[0]}':`, error);
+            logger.warn(`Warn retrieving special discount text with selector '${specialDiscountSelector[0]}':`, error);
             return undefined;
         }
     }

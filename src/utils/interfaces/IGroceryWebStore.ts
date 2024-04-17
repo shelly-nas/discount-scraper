@@ -1,20 +1,20 @@
-interface DiscountDetails {
+interface IDiscountDetails {
     productName: string[];
-    initialPrice: string[];
+    originalPrice: string[];
     discountPrice: string[];
     specialDiscount: string[];
 }
 
-interface WebIdentifiers {
+interface IWebIdentifiers {
     cookieDecline: string;
     promotionExpireDate: string;
     productCategories: string[];
     products: string;
-    promotionProducts: DiscountDetails;
+    promotionProducts: IDiscountDetails;
 }
 
 interface IGroceryWebStore {
     name: string;
     url: string;
-    webIdentifiers: WebIdentifiers;
+    webIdentifiers: IWebIdentifiers;
 }

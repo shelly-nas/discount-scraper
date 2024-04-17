@@ -32,7 +32,7 @@
         "products": "a[id]",
         "promotionProducts": {
             "productName": ["[data-testhook=\"card-title\"]"],
-            "initialPrice": [".promotion-price_root__7-qJ1", "data-testpricewas"],
+            "originalPrice": [".promotion-price_root__7-qJ1", "data-testpricewas"],
             "discountPrice": [".promotion-price_root__7-qJ1", "data-testpricenow"],
             "specialDiscount": ["[data-testhook=\"promotion-text\"]"]
         }

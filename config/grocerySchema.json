@@ -17,16 +17,12 @@
     "webIdentifiers": {
       "type": "object",
       "required": [
-        "cookieDecline",
         "promotionExpireDate",
         "productCategories",
         "products",
         "promotionProducts"
       ],
       "properties": {
-        "cookieDecline": {
-          "type": "string"
-        },
         "promotionExpireDate": {
           "type": "string"
         },
@@ -43,7 +39,7 @@
           "type": "object",
           "required": [
             "productName",
-            "initialPrice",
+            "originalPrice",
             "discountPrice",
             "specialDiscount"
           ],
@@ -54,7 +50,7 @@
                 "type": "string"
               }
             },
-            "initialPrice": {
+            "originalPrice": {
               "type": "array",
               "items": {
                 "type": "string"
