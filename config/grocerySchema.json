@@ -38,12 +38,19 @@
         "promotionProducts": {
           "type": "object",
           "required": [
+            "productCategory",
             "productName",
             "originalPrice",
             "discountPrice",
             "specialDiscount"
           ],
           "properties": {
+            "productCategory": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
             "productName": {
               "type": "array",
               "items": {

@@ -5,13 +5,23 @@
         "cookieDecline": null,
         "promotionExpireDate": "<objectName>",
         "productCategories": [
-            "section:has(> h2 > span.desktop:has-text(\"Aardappelen, groente & fruit\"))"
+            "section:has(> h2 > span.desktop:has-text(\"Aardappelen, groente & fruit\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Vlees, vis & vega\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Zuivel & kaas\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Dranken, sap, koffie & thee\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Voorraadkast\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Maaltijden, salades & tapas\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Diepvries\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Kind & drogisterij\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Huishoud & huisdieren\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Snacks & snoep\"))"
         ],
         "products": "article",
         "promotionProducts": {
+            "productCategory": ["h2 span.desktop"], 
             "productName": [".title"],
-            "initialPrice": [".price-container .regular-price span"],
-            "discountPrice": [".price-large"],
+            "originalPrice": [".label price-label span"],
+            "discountPrice": [".price span"],
             "specialDiscount": [".subtitle"]
         }
     }

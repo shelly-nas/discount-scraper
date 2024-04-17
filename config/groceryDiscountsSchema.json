@@ -16,7 +16,7 @@
                 "required": [
                     "productCategory",
                     "productName",
-                    "initialPrice",
+                    "originalPrice",
                     "discountPrice",
                     "specialDiscount"
                 ],
@@ -27,7 +27,7 @@
                     "productName": {
                     "type": "string"
                     },
-                    "initialPrice": {
+                    "originalPrice": {
                         "type": "string"
                     },
                     "discountPrice": {

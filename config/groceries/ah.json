@@ -31,6 +31,7 @@
         ],
         "products": "a[id]",
         "promotionProducts": {
+            "productCategory": ["h3"],
             "productName": ["[data-testhook=\"card-title\"]"],
             "originalPrice": [".promotion-price_root__7-qJ1", "data-testpricewas"],
             "discountPrice": [".promotion-price_root__7-qJ1", "data-testpricenow"],
