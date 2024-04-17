@@ -1,4 +1,5 @@
-interface IDiscountDetails {
+interface IProductDetails {
+    productCategory: string[];
     productName: string[];
     originalPrice: string[];
     discountPrice: string[];
@@ -10,7 +11,7 @@ interface IWebIdentifiers {
     promotionExpireDate: string;
     productCategories: string[];
     products: string;
-    promotionProducts: IDiscountDetails;
+    promotionProducts: IProductDetails;
 }
 
 interface IGroceryWebStore {
