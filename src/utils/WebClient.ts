@@ -13,6 +13,7 @@ export default class WebClient {
             logger.info('Browser initialized successfully.');
         } catch (error) {
             logger.error('Browser initialized unsuccessfully.', error)
+            process.exit(1);
         }
     }
 
@@ -22,17 +23,20 @@ export default class WebClient {
     }
 
     public async handleCookiePopup(selector: string): Promise<void> {
-        try {
-            await this.page?.waitForSelector(selector, { state: "visible", timeout: 3000 });
-            logger.debug(`Found cookie popup with selector '${selector}'.`);
-            await this.page?.click(selector)
-        } catch (error) {
-            logger.error(`No cookie popup found with selector: ${selector} or timeout exceeded.`, error);
-            // process.exit(1);
+        if (selector) {
+            try {
+                await this.page?.waitForSelector(selector, { state: "visible", timeout: 3000 });
+                logger.debug(`Found cookie popup with selector '${selector}'.`);
+                await this.page?.click(selector);
+                logger.info('Dismissed cookie popup');
+            } catch (error) {
+                logger.error(`No cookie popup found with selector: ${selector} or timeout exceeded.`, error);
+            }
+        } else {
+            logger.info('No cookie popup selector provided to dismiss.');
         }
-        logger.info('Dismissed cookie popup');
     }
-
+    
     async close(): Promise<void> {
         logger.debug('Closing browser...');
         await this.browser?.close();
