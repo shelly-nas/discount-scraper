@@ -7,7 +7,8 @@
     "clean": "rm -rf dist/*",
     "build": "npm run clean && tsc",
     "test": "playwright test",
-    "ah": "node dist/src/index.js --config config/groceries/ah.json"
+    "ah": "node dist/src/index.js --config config/groceries/ah.json",
+    "dirk": "node dist/src/index.js --config config/groceries/dirk.json"
   },
   "keywords": [],
   "author": "",

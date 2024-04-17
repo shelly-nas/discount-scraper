@@ -88,10 +88,15 @@ async function discountScraper(): Promise<void> {
 
     const groceryDiscounts = await getGroceryDiscounts(groceryConfig)
     
-    const jsonWriter = new JsonWriter(`./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`);
-    await jsonWriter.write(groceryDiscounts);
+    if (groceryDiscounts.discounts.length > 0) {
+        const jsonWriter = new JsonWriter(`./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`);
+        await jsonWriter.write(groceryDiscounts);
 
-    await flushNotionDiscountPage(jsonWriter.getFilePath());
+        // await flushNotionDiscountPage(jsonWriter.getFilePath());
+    } else {
+        logger.error('No discounts found or could not retrieve discounts.');
+        process.exit(1);
+    }
 
     logger.info('Discount scraper process has been completed.')
 }
