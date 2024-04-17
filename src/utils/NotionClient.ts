@@ -35,15 +35,27 @@ export default class NotionClient {
 
     private async getPageBlocks() {
         try {
-            const response = await this.notion.blocks.children.list({
-                block_id: this.pageId,
-                page_size: this.maxBlocks, // Optional: Adjust page size as needed (max is 100)
-            });
-            
-            logger.info(`Retrieved Notion blocks for page '${this.pageId}'.`);
-            logger.debug('Response:', response)
-            
-            return response.results; // 'results' contains the blocks retrieved from the Notion page
+            let allBlocks = [];
+            let hasMore = true;
+            let startCursor: string | null = null;
+
+            while (hasMore) {
+                const response = await this.notion.blocks.children.list({
+                    block_id: this.pageId,
+                    page_size: this.maxBlocks,
+                    start_cursor: startCursor !== null ? startCursor : undefined,
+                });
+
+                allBlocks.push(...response.results); // Add new blocks to the array
+                
+                hasMore = response.has_more; // Update 'hasMore' depending on the response
+                startCursor = response.next_cursor; // Set the 'startCursor' for the next iteration
+
+                logger.debug(`Found ${allBlocks.length} Notion blocks, adding to batch.`);
+            }
+
+            logger.info(`Retrieved ${allBlocks.length} Notion blocks for page '${this.pageId}'.`);
+            return allBlocks; 
         } catch (error) {
             logger.error('Error listing Notion page blocks:', error);
             process.exit(1);
