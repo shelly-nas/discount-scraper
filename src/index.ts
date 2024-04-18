@@ -13,7 +13,6 @@ import process from 'process';
 import { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
 import AhClient from './utils/AhClient';
 import DirkClient from './utils/DirkClient';
-import PlusClient from './utils/PlusClient';
 require('dotenv').config();
 
 function getEnvVariable(name: string): string {
@@ -43,8 +42,6 @@ function createGroceryClient(configName: string): GroceryClient {
             return new AhClient();
         case 'Dirk':
             return new DirkClient();
-        case 'Plus':
-            return new PlusClient();
         default:
             logger.error('Descendent of Grocery Client could not be found or instantiated.');
             process.exit(1);
