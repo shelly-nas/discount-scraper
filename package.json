@@ -8,7 +8,9 @@
     "build": "npm run clean && tsc",
     "test": "playwright test",
     "ah": "node dist/src/index.js --config config/groceries/ah.json",
-    "dirk": "node dist/src/index.js --config config/groceries/dirk.json"
+    "ah:debug": "LOG_LEVEL=DEBUG node dist/src/index.js --config config/groceries/ah.json",
+    "dirk": "node dist/src/index.js --config config/groceries/dirk.json",
+    "dirk:debug": "LOG_LEVEL=DEBUG node dist/src/index.js --config config/groceries/dirk.json"
   },
   "keywords": [],
   "author": "",

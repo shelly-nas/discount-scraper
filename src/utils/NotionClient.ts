@@ -2,7 +2,7 @@ import { Client } from '@notionhq/client';
 import { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
 import { logger } from './helpers/Logger';
 
-export default class NotionClient {
+class NotionClient {
     private maxBlocks = 100
     private notion: Client;
     private pageId: string;
@@ -22,7 +22,7 @@ export default class NotionClient {
                 await this.deleteBlock(block.id);
             }
 
-            logger.info(`Flushed contents of the page with ID '${this.pageId}'.`);
+            logger.info(`Flushed contents of page with ID '${this.pageId}'.`);
 
             // Append new blocks
             if (replacementBlocks.length > 0) {
@@ -74,9 +74,10 @@ export default class NotionClient {
                     children: blockSegment
                 });
     
-                logger.info(`Added a segment of blocks to page '${this.pageId}'.`);
+                logger.debug(`Add a segment of ${blocks.length} blocks to page '${this.pageId}'.`);
                 logger.debug('Response:', response);
             }
+            logger.info(`Page blocks are a added to page '${this.pageId}'.`);
         } catch (error) {
             logger.error('Error setting blocks:', error);
             throw error; // Re-throw the error after logging it
@@ -91,3 +92,5 @@ export default class NotionClient {
         logger.debug(`Deleted block with ID '${blockId}':`, response);
     }
 }
+
+export default NotionClient;

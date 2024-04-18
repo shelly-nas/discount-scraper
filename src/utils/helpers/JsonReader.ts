@@ -23,6 +23,7 @@ export default class JsonReader {
             process.exit(1);
         }
         else {
+            logger.info(`Read '${this.jsonPath}' file successfully.`)
             return parsedGrocery
         }
     }
