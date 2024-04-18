@@ -1,28 +1,28 @@
 {
-    "name": "Dirk van den Broek",
+    "name": "Dirk",
     "url": "https://www.dirk.nl/aanbiedingen",
-    "cookieDecline": "<objectName>",
-    "productCategories": [
-        "Aardappelen, groente & fruit",
-        "Vlees, vis & vega",
-        "Brood, beleg & koek",
-        "Zuivel & Kaas",
-        "Dranken, sap, koffie & thee",
-        "Voorraadkast",
-        "Maaltijden, salades & tapas",
-        "Diepvries",
-        "Kind & drogisterij",
-        "Huishoud & huisdieren",
-        "Snacks & snoep"
-    ],
-    "discounts": {
-        "currentDate": "<objectName>",
-        "expireDate": "<objectName>",
-        "product": {
-            "productName": "<objectName>",
-            "initialPrice": "<objectName>",
-            "discountPrice": "<objectName>",
-            "discountException": "<objectName>"
+    "webIdentifiers": {
+        "cookieDecline": null,
+        "promotionExpireDate": "<objectName>",
+        "productCategories": [
+            "section:has(> h2 > span.desktop:has-text(\"Aardappelen, groente & fruit\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Vlees, vis & vega\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Zuivel & kaas\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Dranken, sap, koffie & thee\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Voorraadkast\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Maaltijden, salades & tapas\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Diepvries\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Kind & drogisterij\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Huishoud & huisdieren\"))",
+            "section:has(> h2 > span.desktop:has-text(\"Snacks & snoep\"))"
+        ],
+        "products": "article",
+        "promotionProducts": {
+            "productCategory": ["h2 span.desktop"], 
+            "productName": [".title"],
+            "originalPrice": ["div.label.price-label .regular-price", "span"],
+            "discountPrice": [".hasEuros.price-large", ".price-small", ".price-large:not(.hasEuros)"],
+            "specialDiscount": [".subtitle"]
         }
     }
 }

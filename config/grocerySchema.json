@@ -17,16 +17,12 @@
     "webIdentifiers": {
       "type": "object",
       "required": [
-        "cookieDecline",
         "promotionExpireDate",
         "productCategories",
         "products",
         "promotionProducts"
       ],
       "properties": {
-        "cookieDecline": {
-          "type": "string"
-        },
         "promotionExpireDate": {
           "type": "string"
         },
@@ -42,19 +38,26 @@
         "promotionProducts": {
           "type": "object",
           "required": [
+            "productCategory",
             "productName",
-            "initialPrice",
+            "originalPrice",
             "discountPrice",
             "specialDiscount"
           ],
           "properties": {
+            "productCategory": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
             "productName": {
               "type": "array",
               "items": {
                 "type": "string"
               }
             },
-            "initialPrice": {
+            "originalPrice": {
               "type": "array",
               "items": {
                 "type": "string"

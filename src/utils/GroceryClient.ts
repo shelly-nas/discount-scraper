@@ -2,12 +2,12 @@ import { logger } from "./helpers/Logger";
 import { ElementHandle } from 'playwright';
 import WebClient from "./WebClient";
 
-export default class GroceryClient extends WebClient{
+abstract class GroceryClient extends WebClient{
     private productCategory: ElementHandle<SVGElement | HTMLElement> | null | undefined;
     
     public async getDiscountProductsByProductCategory(parentSelector: string, productSelector: string): Promise<ElementHandle[] | undefined> {
+        logger.debug(`Wait for product category with ID '${parentSelector}' to be visible.`);
         await this.page?.waitForSelector(parentSelector, { state: "visible", timeout: 3000 });
-        logger.debug(`Found section for product category with ID '${parentSelector}'.`);
         this.productCategory = await this.page?.$(parentSelector);
         
         if (!this.productCategory) {
@@ -26,11 +26,11 @@ export default class GroceryClient extends WebClient{
         return discountProducts
     }
 
-    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: DiscountDetails): Promise<IProductDiscount> {
+    public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: IProductDetails): Promise<IProductDiscount> {
         const productDiscountDetails = {
-            productCategory: await this.getProductCategoryName(),
+            productCategory: await this.getProductCategoryName(productConfig.productCategory),
             productName: await this.getProductName(productSelector, productConfig.productName),
-            initialPrice: await this.getInitialPrice(productSelector, productConfig.initialPrice),
+            originalPrice: await this.getOriginalPrice(productSelector, productConfig.originalPrice),
             discountPrice: await this.getDiscountPrice(productSelector, productConfig.discountPrice),
             specialDiscount: await this.getSpecialDiscount(productSelector, productConfig.specialDiscount)
         }
@@ -39,17 +39,17 @@ export default class GroceryClient extends WebClient{
         return productDiscountDetails
     }
 
-    private async getProductCategoryName(): Promise<string> {
+    private async getProductCategoryName(productCategorySelector: string[]): Promise<string> {
         try {
-            const productCategoryHandle = await this.productCategory?.$('h3')
+            const productCategoryHandle = await this.productCategory?.$(productCategorySelector[0])
             let productCategoryName = '';
             
             if (productCategoryHandle) {
-                productCategoryName = await productCategoryHandle.evaluate(el => el.textContent?.trim() || '');
+                productCategoryName = await productCategoryHandle.evaluate(el => el.textContent || '');
             }
             
             logger.debug(`Product category name retrieved: '${productCategoryName}'.`);
-            return productCategoryName;
+            return productCategoryName.trim();
         } catch (error) {
             logger.error(`Error retrieving product name with selector '${this.productCategory}':`, error);
             return '';
@@ -60,56 +60,29 @@ export default class GroceryClient extends WebClient{
         try {
             const productName = await anchorHandle.$eval(productNameSelector[0], el => el.textContent?.trim()) || '';
             logger.debug(`Product name retrieved: '${productName}'.`);
-            return productName;
+            return productName.trim();
         } catch (error) {
             logger.error(`Error retrieving product name with selector '${productNameSelector[0]}':`, error);
             return '';
         }
     }
-    
-    private async getInitialPrice(anchorHandle: ElementHandle, initialPriceSelector: string[]): Promise<string> {
-        try {
-            const priceElementHandle = await anchorHandle.$(initialPriceSelector[0]); // Find the child div with the initial price
-            if (!priceElementHandle) {
-                logger.warn(`Initial price element with selector '${initialPriceSelector[0]}' not found.`);
-                return '';
-            }
-            const price = await priceElementHandle.getAttribute(initialPriceSelector[1]);
-            logger.debug(`Initial price retrieved: '${price}'.`);
-            return price !== null ? price : '';
-        } catch (error) {
-            logger.warn(`Error retrieving initial price with selector '${initialPriceSelector[1]}':`, error);
-            return '';
-        }
-    }
-    
-    private async getDiscountPrice(anchorHandle: ElementHandle, discountPriceSelector: string[]): Promise<string> {
-        try {
-            const priceElementHandle = await anchorHandle.$(discountPriceSelector[0]); // Find the child div with the discount price
-            if (!priceElementHandle) {
-                logger.warn(`Discount price element with selector '${discountPriceSelector[0]}' not found.`);
-                return '';
-            }
-            const price = await priceElementHandle.getAttribute(discountPriceSelector[1]);
-            logger.debug(`Discount price retrieved: '${price}'.`);
-            return price !== null ? price : '';
-        } catch (error) {
-            logger.warn(`Error retrieving discount price with selector '${discountPriceSelector[1]}':`, error);
-            return '';
-        }
-    }
-    
+
+    abstract getOriginalPrice(anchorHandle: ElementHandle, originalPriceSelector: string[]): Promise<string>
+
+    abstract getDiscountPrice(anchorHandle: ElementHandle, discountPriceSelector: string[]): Promise<string>
+
     private async getSpecialDiscount(anchorHandle: ElementHandle, specialDiscountSelector: string[]): Promise<string | undefined> {
         try {
-            let specialDiscountText = await anchorHandle.$$eval(specialDiscountSelector[0],
-                (spans) => spans.map((span) => span.textContent).filter(Boolean)
+            const specialDiscount = await anchorHandle.$$eval(specialDiscountSelector[0],
+                spans => spans.map(span => span.textContent).filter(Boolean).join(' ')
             );
-            const specialDiscount = specialDiscountText.join(' ');
             logger.debug(`Special discount text retrieved: '${specialDiscount}'.`);
-            return specialDiscount;
+            return specialDiscount.trim();
         } catch (error) {
-            logger.warn(`Error retrieving special discount text with selector '${specialDiscountSelector[0]}':`, error);
+            logger.warn(`Warn retrieving special discount text with selector '${specialDiscountSelector[0]}':`, error);
             return undefined;
         }
     }
 }
+
+export default GroceryClient;

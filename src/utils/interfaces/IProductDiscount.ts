@@ -1,7 +1,7 @@
 interface IProductDiscount {
     productCategory: string;
     productName: string;
-    initialPrice?: string;
+    originalPrice?: string;
     discountPrice?: string;
     specialDiscount?: string;
 }
