@@ -11,6 +11,9 @@ import { GroceryDiscounts } from './utils/objects/GroceryDiscounts'
 import { ElementHandle } from 'playwright';
 import process from 'process';
 import { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
+import AhClient from './utils/AhClient';
+import DirkClient from './utils/DirkClient';
+import PlusClient from './utils/PlusClient';
 require('dotenv').config();
 
 function getEnvVariable(name: string): string {
@@ -34,8 +37,22 @@ async function getConfig(): Promise<IGroceryWebStore> {
     return jsonData;
 }
 
+function createGroceryClient(configName: string): GroceryClient {
+    switch (configName) {
+        case 'Albert-Heijn':
+            return new AhClient();
+        case 'Dirk':
+            return new DirkClient();
+        case 'Plus':
+            return new PlusClient();
+        default:
+            logger.error('Descendent of Grocery Client could not be found or instantiated.');
+            process.exit(1);
+    }
+}
+
 async function getGroceryDiscounts(config: IGroceryWebStore): Promise<GroceryDiscounts> {
-    const groceryClient = new GroceryClient();
+    const groceryClient = createGroceryClient(config.name);
     const productDiscounts: IProductDiscount[] = [];
 
     await groceryClient.init();
@@ -87,15 +104,15 @@ async function discountScraper(): Promise<void> {
     const groceryConfig = await getConfig();
 
     const groceryDiscounts = await getGroceryDiscounts(groceryConfig)
+
+    const jsonWriter = new JsonWriter(`./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`);
+    await jsonWriter.write(groceryDiscounts);
     
     if (groceryDiscounts.discounts.length > 0) {
-        const jsonWriter = new JsonWriter(`./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`);
-        await jsonWriter.write(groceryDiscounts);
-
-        await flushNotionDiscountPage(jsonWriter.getFilePath());
+        // await flushNotionDiscountPage(jsonWriter.getFilePath());
+        logger.info('Discounts are added to Notion.')
     } else {
-        logger.error('No discounts found or could not retrieve discounts.');
-        process.exit(1);
+        logger.error('No discounts found to add to Notion.');
     }
 
     logger.info('Discount scraper process has been completed.')
