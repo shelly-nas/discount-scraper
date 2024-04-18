@@ -20,8 +20,8 @@
         "promotionProducts": {
             "productCategory": ["h2 span.desktop"], 
             "productName": [".title"],
-            "originalPrice": [".label price-label span"],
-            "discountPrice": [".price span"],
+            "originalPrice": ["div.label.price-label .regular-price", "span"],
+            "discountPrice": [".hasEuros.price-large", ".price-small", ".price-large:not(.hasEuros)"],
             "specialDiscount": [".subtitle"]
         }
     }
