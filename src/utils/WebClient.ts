@@ -1,7 +1,7 @@
 import { chromium, Browser, Page } from 'playwright';
 import { logger } from './helpers/Logger';
 
-export default class WebClient {
+class WebClient {
     private browser: Browser | null = null;
     protected page: Page | null = null;
 
@@ -43,3 +43,5 @@ export default class WebClient {
         logger.info('Browser closed.');
     }
 }
+
+export default WebClient;
