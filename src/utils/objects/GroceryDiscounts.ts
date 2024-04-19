@@ -1,9 +1,9 @@
 export class GroceryDiscounts {
-    public groceryName: string;
-    public discounts: IProductDiscount[] = [];
+  public groceryName: string;
+  public discounts: IProductDiscount[] = [];
 
-    constructor (groceryName: string, discounts: IProductDiscount[]) {
-        this.groceryName = groceryName;
-        this.discounts = discounts
-    }
+  constructor(groceryName: string, discounts: IProductDiscount[]) {
+    this.groceryName = groceryName;
+    this.discounts = discounts;
+  }
 }
