@@ -1,21 +1,21 @@
 interface IProductDetails {
-    productCategory: string[];
-    productName: string[];
-    originalPrice: string[];
-    discountPrice: string[];
-    specialDiscount: string[];
+  productCategory: string[];
+  productName: string[];
+  originalPrice: string[];
+  discountPrice: string[];
+  specialDiscount: string[];
 }
 
 interface IWebIdentifiers {
-    cookieDecline: string;
-    promotionExpireDate: string;
-    productCategories: string[];
-    products: string;
-    promotionProducts: IProductDetails;
+  cookieDecline: string;
+  promotionExpireDate: string;
+  productCategories: string[];
+  products: string;
+  promotionProducts: IProductDetails;
 }
 
 interface IGroceryWebStore {
-    name: string;
-    url: string;
-    webIdentifiers: IWebIdentifiers;
+  name: string;
+  url: string;
+  webIdentifiers: IWebIdentifiers;
 }

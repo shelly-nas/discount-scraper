@@ -1,4 +1,4 @@
 interface IGroceryDiscounts {
-    groceryName: string;
-    discounts: IProductDiscount[];
+  groceryName: string;
+  discounts: IProductDiscount[];
 }

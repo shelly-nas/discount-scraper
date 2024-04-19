@@ -1,44 +1,40 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "required": [
-        "groceryName", 
-        "discounts"
-    ],
-    "properties": {
-        "groceryName": {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["groceryName", "discounts"],
+  "properties": {
+    "groceryName": {
+      "type": "string"
+    },
+    "discounts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "productCategory",
+          "productName",
+          "originalPrice",
+          "discountPrice",
+          "specialDiscount"
+        ],
+        "properties": {
+          "productCategory": {
             "type": "string"
-        },
-        "discounts": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "required": [
-                    "productCategory",
-                    "productName",
-                    "originalPrice",
-                    "discountPrice",
-                    "specialDiscount"
-                ],
-                "properties": {
-                    "productCategory": {
-                    "type": "string"
-                    },
-                    "productName": {
-                    "type": "string"
-                    },
-                    "originalPrice": {
-                        "type": "string"
-                    },
-                    "discountPrice": {
-                        "type": "string"
-                    },
-                    "specialDiscount": {
-                        "type": "string"
-                    }
-                }
-            }
+          },
+          "productName": {
+            "type": "string"
+          },
+          "originalPrice": {
+            "type": "string"
+          },
+          "discountPrice": {
+            "type": "string"
+          },
+          "specialDiscount": {
+            "type": "string"
+          }
         }
+      }
     }
+  }
 }
-  
