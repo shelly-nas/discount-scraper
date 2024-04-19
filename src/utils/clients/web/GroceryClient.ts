@@ -1,4 +1,4 @@
-import { logger } from "./helpers/Logger";
+import { logger } from "../../helpers/Logger";
 import { ElementHandle } from "playwright";
 import WebClient from "./WebClient";
 

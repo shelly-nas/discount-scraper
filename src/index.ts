@@ -3,16 +3,16 @@ import DateTimeHandler from "./utils/helpers/DateTimeHandler";
 import JsonReader from "./utils/helpers/JsonReader";
 import JsonWriter from "./utils/helpers/JsonWriter";
 import NotionPageConverter from "./utils/helpers/NotionPageConverter";
-import GroceryClient from "./utils/GroceryClient";
-import NotionClient from "./utils/NotionClient";
+import GroceryClient from "./utils/clients/web/GroceryClient";
+import NotionClient from "./utils/clients/notion/NotionClient";
 import { logger } from "./utils/helpers/Logger";
 import { GroceryDiscounts } from "./utils/objects/GroceryDiscounts";
 import { ElementHandle } from "playwright";
 import process from "process";
 import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
-import AhClient from "./utils/AhClient";
-import DirkClient from "./utils/DirkClient";
-import PlusClient from "./utils/PlusClient";
+import AhClient from "./utils/clients/web/AhClient";
+import DirkClient from "./utils/clients/web/DirkClient";
+import PlusClient from "./utils/clients/web/PlusClient";
 require("dotenv").config();
 
 function getEnvVariable(name: string): string {

@@ -1,6 +1,6 @@
 import { ElementHandle } from "playwright";
 import GroceryClient from "./GroceryClient";
-import { logger } from "./helpers/Logger";
+import { logger } from "../../helpers/Logger";
 
 class AhClient extends GroceryClient {
   constructor() {

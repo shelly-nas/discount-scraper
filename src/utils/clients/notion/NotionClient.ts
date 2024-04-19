@@ -1,6 +1,6 @@
 import { Client } from "@notionhq/client";
 import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
-import { logger } from "./helpers/Logger";
+import { logger } from "../../helpers/Logger";
 
 class NotionClient {
   private maxBlocks = 100;
