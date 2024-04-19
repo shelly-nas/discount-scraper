@@ -9,7 +9,7 @@ abstract class GroceryClient extends WebClient{
         logger.debug(`Wait for product category with ID '${parentSelector}' to be visible.`);
         await this.page?.waitForSelector(parentSelector, { state: "visible", timeout: 3000 });
         this.productCategory = await this.page?.$(parentSelector);
-        
+
         if (!this.productCategory) {
             logger.error(`Section with ID '${parentSelector}' not found.`);
             return;
@@ -39,7 +39,7 @@ abstract class GroceryClient extends WebClient{
         return productDiscountDetails
     }
 
-    private async getProductCategoryName(productCategorySelector: string[]): Promise<string> {
+    protected async getProductCategoryName(productCategorySelector: string[]): Promise<string> {
         try {
             const productCategoryHandle = await this.productCategory?.$(productCategorySelector[0])
             let productCategoryName = '';
@@ -56,7 +56,7 @@ abstract class GroceryClient extends WebClient{
         }
     }
 
-    private async getProductName(anchorHandle: ElementHandle, productNameSelector: string[]): Promise<string> {
+    protected async getProductName(anchorHandle: ElementHandle, productNameSelector: string[]): Promise<string> {
         try {
             const productName = await anchorHandle.$eval(productNameSelector[0], el => el.textContent?.trim()) || '';
             logger.debug(`Product name retrieved: '${productName}'.`);
@@ -71,7 +71,7 @@ abstract class GroceryClient extends WebClient{
 
     abstract getDiscountPrice(anchorHandle: ElementHandle, discountPriceSelector: string[]): Promise<string>
 
-    private async getSpecialDiscount(anchorHandle: ElementHandle, specialDiscountSelector: string[]): Promise<string | undefined> {
+    protected async getSpecialDiscount(anchorHandle: ElementHandle, specialDiscountSelector: string[]): Promise<string | undefined> {
         try {
             const specialDiscount = await anchorHandle.$$eval(specialDiscountSelector[0],
                 spans => spans.map(span => span.textContent).filter(Boolean).join(' ')

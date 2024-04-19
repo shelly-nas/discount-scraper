@@ -13,6 +13,7 @@ import process from 'process';
 import { BlockObjectRequest } from '@notionhq/client/build/src/api-endpoints';
 import AhClient from './utils/AhClient';
 import DirkClient from './utils/DirkClient';
+import PlusClient from './utils/PlusClient';
 require('dotenv').config();
 
 function getEnvVariable(name: string): string {
@@ -42,6 +43,8 @@ function createGroceryClient(configName: string): GroceryClient {
             return new AhClient();
         case 'Dirk':
             return new DirkClient();
+        case 'PLUS':
+            return new PlusClient();
         default:
             logger.error('Descendent of Grocery Client could not be found or instantiated.');
             process.exit(1);
@@ -106,7 +109,7 @@ async function discountScraper(): Promise<void> {
     await jsonWriter.write(groceryDiscounts);
     
     if (groceryDiscounts.discounts.length > 0) {
-        await flushNotionDiscountPage(jsonWriter.getFilePath());
+        // await flushNotionDiscountPage(jsonWriter.getFilePath());
         logger.info('Discounts are added to Notion.')
     } else {
         logger.error('No discounts found to add to Notion.');

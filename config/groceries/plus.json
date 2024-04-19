@@ -1,33 +1,34 @@
 {
-    "name": "PLUS Blijdorp",
+    "name": "PLUS",
     "url": "https://www.plus.nl/aanbiedingen",
-    "cookieDecline": "<objectName>",
-    "productCategories": [
-        "Aardappelen, groente, fruit",
-        "Verse kant-en-klaarmaaltijden",
-        "Vlees, kip, vis, vega",
-        "Kaas, vleeswaren, tapas",
-        "Zuivel, eieren, boter",
-        "Brood, gebak, bakproducten",
-        "Ontbijtgranen, broodbeleg, tussendoor",
-        "Frisdrank, sappen, koffie, thee",
-        "Wijn, bier, sterke drank",
-        "Pasta, rijst, internationale keuken",
-        "Soepen, conserven, sauzen, smaakmakers",
-        "Snoep, koek, chocolade, chips, noten",
-        "Diepvries",
-        "Baby, drogisterij",
-        "Huishouden",
-        "Huisdier"
-    ],
-    "discounts": {
-        "currentDate": "<objectName>",
-        "expireDate": "<objectName>",
-        "product": {
-            "productName": "<objectName>",
-            "initialPrice": "<objectName>",
-            "discountPrice": "<objectName>",
-            "discountException": "<objectName>"
+    "webIdentifiers": {
+        "cookieDecline": "#b1-b36-b1-FooterRightButtom > button",
+        "promotionExpireDate": "<objectName>",
+        "productCategories": [
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Aardappelen, groente, fruit\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Verse kant-en-klaarmaaltijden\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Vlees, kip, vis, vega\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Kaas, vleeswaren, tapas\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Zuivel, eieren, boter\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Brood, gebak, bakproducten\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Ontbijtgranen, broodbeleg, tussendoor\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Frisdrank, sappen, koffie, thee\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Wijn, bier, sterke drank\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Pasta, rijst, internationale keuken\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Soepen, conserven, sauzen, smaakmakers\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Snoep, koek, chocolade, chips, noten\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Diepvries\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Baby, drogisterij\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Huishouden\"))",
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Huisdier\"))"
+        ],
+        "products": "a[data-link]",
+        "promotionProducts": {
+            "productCategory": ["span[data-expression]"], 
+            "productName": [".ph.plp-item-name .multiline-truncation-text span[data-expression]"],
+            "originalPrice": ["div.ph.product-header-price-previous span"],
+            "discountPrice": [".font-bold.product-header-price-integer span", ".font-black.product-header-price-decimals span"],
+            "specialDiscount": ["div.ph.promo-offer-label div.multiline-truncation-text span"]
         }
     }
 }

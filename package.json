@@ -10,7 +10,9 @@
     "ah": "node dist/src/index.js --config config/groceries/ah.json",
     "ah:debug": "LOG_LEVEL=DEBUG node dist/src/index.js --config config/groceries/ah.json",
     "dirk": "node dist/src/index.js --config config/groceries/dirk.json",
-    "dirk:debug": "LOG_LEVEL=DEBUG node dist/src/index.js --config config/groceries/dirk.json"
+    "dirk:debug": "LOG_LEVEL=DEBUG node dist/src/index.js --config config/groceries/dirk.json",
+    "plus": "node dist/src/index.js --config config/groceries/plus.json",
+    "plus:debug": "LOG_LEVEL=DEBUG node dist/src/index.js --config config/groceries/plus.json"
   },
   "keywords": [],
   "author": "",
