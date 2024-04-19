@@ -1,33 +1,19 @@
 {
-    "name": "PLUS Blijdorp",
+    "name": "PLUS",
     "url": "https://www.plus.nl/aanbiedingen",
-    "cookieDecline": "<objectName>",
-    "productCategories": [
-        "Aardappelen, groente, fruit",
-        "Verse kant-en-klaarmaaltijden",
-        "Vlees, kip, vis, vega",
-        "Kaas, vleeswaren, tapas",
-        "Zuivel, eieren, boter",
-        "Brood, gebak, bakproducten",
-        "Ontbijtgranen, broodbeleg, tussendoor",
-        "Frisdrank, sappen, koffie, thee",
-        "Wijn, bier, sterke drank",
-        "Pasta, rijst, internationale keuken",
-        "Soepen, conserven, sauzen, smaakmakers",
-        "Snoep, koek, chocolade, chips, noten",
-        "Diepvries",
-        "Baby, drogisterij",
-        "Huishouden",
-        "Huisdier"
-    ],
-    "discounts": {
-        "currentDate": "<objectName>",
-        "expireDate": "<objectName>",
-        "product": {
-            "productName": "<objectName>",
-            "initialPrice": "<objectName>",
-            "discountPrice": "<objectName>",
-            "discountException": "<objectName>"
+    "webIdentifiers": {
+        "cookieDecline": "#b1-b36-b1-FooterRightButtom > button",
+        "promotionExpireDate": "<objectName>",
+        "productCategories": [
+            "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Aardappelen, groente, fruit\"))"
+        ],
+        "products": "a[data-link]",
+        "promotionProducts": {
+            "productCategory": ["span[data-expression]"], 
+            "productName": ["title"],
+            "originalPrice": ["div.ph.product-header-price-previous span"],
+            "discountPrice": [".font-bold.product-header-price-integer span", ".font-black.product-header-price-decimals span"],
+            "specialDiscount": ["div.ph.promo-offer-label div.multiline-truncation-text span"]
         }
     }
 }
