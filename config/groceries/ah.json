@@ -1,41 +1,41 @@
 {
-    "name": "Albert-Heijn",
-    "url": "https://www.ah.nl/bonus",
-    "webIdentifiers": {
-        "cookieDecline": "#decline-cookies",
-        "promotionExpireDate": "<objectName>",
-        "productCategories": [
-            "#aardappel-groente-fruit",
-            "#salades-pizza-maaltijden",
-            "#vlees-vis",
-            "#vegetarisch-vegan-en-plantaardig",
-            "#kaas-vleeswaren-tapas",
-            "#zuivel-eieren-boter",
-            "#bakkerij",
-            "#ontbijtgranen-en-beleg",
-            "#chips-noten-toast-popcorn",
-            "#snoep-chocolade-koek",
-            "#tussendoortjes",
-            "#koffie-thee",
-            "#frisdranken-sappen-siropen-water",
-            "#wijn-en-bubbels",
-            "#bier-en-aperitieven",
-            "#pasta-rijst-en-wereldkeuken",
-            "#soepen-sauzen-kruiden-olie",
-            "#diepvries",
-            "#drogisterij",
-            "#baby-en-kind",
-            "#huishouden",
-            "#huisdier",
-            "#koken-tafelen-vrije-tijd"
-        ],
-        "products": "a[id]",
-        "promotionProducts": {
-            "productCategory": ["h3"],
-            "productName": ["[data-testhook=\"card-title\"]"],
-            "originalPrice": [".promotion-price_root__7-qJ1", "data-testpricewas"],
-            "discountPrice": [".promotion-price_root__7-qJ1", "data-testpricenow"],
-            "specialDiscount": ["[data-testhook=\"promotion-text\"]"]
-        }
+  "name": "Albert-Heijn",
+  "url": "https://www.ah.nl/bonus",
+  "webIdentifiers": {
+    "cookieDecline": "#decline-cookies",
+    "promotionExpireDate": "<objectName>",
+    "productCategories": [
+      "#aardappel-groente-fruit",
+      "#salades-pizza-maaltijden",
+      "#vlees-vis",
+      "#vegetarisch-vegan-en-plantaardig",
+      "#kaas-vleeswaren-tapas",
+      "#zuivel-eieren-boter",
+      "#bakkerij",
+      "#ontbijtgranen-en-beleg",
+      "#chips-noten-toast-popcorn",
+      "#snoep-chocolade-koek",
+      "#tussendoortjes",
+      "#koffie-thee",
+      "#frisdranken-sappen-siropen-water",
+      "#wijn-en-bubbels",
+      "#bier-en-aperitieven",
+      "#pasta-rijst-en-wereldkeuken",
+      "#soepen-sauzen-kruiden-olie",
+      "#diepvries",
+      "#drogisterij",
+      "#baby-en-kind",
+      "#huishouden",
+      "#huisdier",
+      "#koken-tafelen-vrije-tijd"
+    ],
+    "products": "a[id]",
+    "promotionProducts": {
+      "productCategory": ["h3"],
+      "productName": ["[data-testhook=\"card-title\"]"],
+      "originalPrice": [".promotion-price_root__7-qJ1", "data-testpricewas"],
+      "discountPrice": [".promotion-price_root__7-qJ1", "data-testpricenow"],
+      "specialDiscount": ["[data-testhook=\"promotion-text\"]"]
     }
+  }
 }
