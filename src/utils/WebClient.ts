@@ -25,7 +25,7 @@ class WebClient {
     public async handleCookiePopup(selector: string): Promise<void> {
         if (selector) {
             try {
-                await this.page?.waitForSelector(selector, { state: "visible", timeout: 3000 });
+                await this.page?.waitForSelector(selector, { state: "visible", timeout: 5000 });
                 logger.debug(`Found cookie popup with selector '${selector}'.`);
                 await this.page?.click(selector);
                 logger.info('Dismissed cookie popup');
