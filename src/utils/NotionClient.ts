@@ -88,7 +88,7 @@ class NotionClient {
       logger.info(`Page blocks are a added to page '${this.pageId}'.`);
     } catch (error) {
       logger.error("Error setting blocks:", error);
-      throw error; // Re-throw the error after logging it
+      process.exit(1);
     }
   }
 
