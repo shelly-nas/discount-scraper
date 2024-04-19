@@ -25,7 +25,7 @@
         "products": "a[data-link]",
         "promotionProducts": {
             "productCategory": ["span[data-expression]"], 
-            "productName": ["title"],
+            "productName": [".ph.plp-item-name .multiline-truncation-text span[data-expression]"],
             "originalPrice": ["div.ph.product-header-price-previous span"],
             "discountPrice": [".font-bold.product-header-price-integer span", ".font-black.product-header-price-decimals span"],
             "specialDiscount": ["div.ph.promo-offer-label div.multiline-truncation-text span"]
