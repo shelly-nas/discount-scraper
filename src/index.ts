@@ -133,7 +133,7 @@ async function discountScraper(): Promise<void> {
   await jsonWriter.write(groceryDiscounts);
 
   if (groceryDiscounts.discounts.length > 0) {
-    // await flushNotionDiscountPage(jsonWriter.getFilePath());
+    await flushNotionDiscountPage(jsonWriter.getFilePath());
     logger.info("Discounts are added to Notion.");
   } else {
     logger.error("No discounts found to add to Notion.");
