@@ -124,7 +124,7 @@ async function flushNotionDiscountPage(
 }
 
 async function discountScraper(): Promise<void> {
-  // const groceryConfig = await getConfig();
+  const groceryConfig = await getConfig();
 
   // const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
 
@@ -158,17 +158,9 @@ async function discountScraper(): Promise<void> {
 
   const notion = new NotionDatabaseClient(integrationToken, databaseId);
 
-  // Use the instance of the converter and use it and transform the type
-  // const databaseEntries = await notion.getDatabaseContents();
-  // logger.info('DatabaseEntries: ', databaseEntries);
+  const propertyFilter = new NotionConverter().querySupermarket(groceryConfig.name)
 
-  const productDiscountEntries = new NotionConverter().toDatabaseEntries(jsonData)
-
-  for (const productDiscountEntry of productDiscountEntries) {
-    console.log(productDiscountEntry)
-    console.log(productDiscountEntry.DiscountPrice.number)
-    await notion.setDatabaseEntry(productDiscountEntry);
-  };
+  await notion.flushDatabase(jsonData, propertyFilter)
 }
 
 discountScraper();
