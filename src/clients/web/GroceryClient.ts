@@ -1,4 +1,4 @@
-import { logger } from "../../helpers/Logger";
+import { logger } from "../../utils/Logger";
 import { ElementHandle } from "playwright";
 import WebClient from "./WebClient";
 
@@ -125,17 +125,17 @@ abstract class GroceryClient extends WebClient {
   abstract getOriginalPrice(
     anchorHandle: ElementHandle,
     originalPriceSelector: string[]
-  ): Promise<string>;
+  ): Promise<number>;
 
   abstract getDiscountPrice(
     anchorHandle: ElementHandle,
     discountPriceSelector: string[]
-  ): Promise<string>;
+  ): Promise<number>;
 
   protected async getSpecialDiscount(
     anchorHandle: ElementHandle,
     specialDiscountSelector: string[]
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     try {
       const specialDiscount = await anchorHandle.$$eval(
         specialDiscountSelector[0],
@@ -152,7 +152,7 @@ abstract class GroceryClient extends WebClient {
         `Warn retrieving special discount text with selector '${specialDiscountSelector[0]}':`,
         error
       );
-      return undefined;
+      return "";
     }
   }
 }

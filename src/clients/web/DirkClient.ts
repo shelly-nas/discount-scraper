@@ -1,6 +1,6 @@
 import { ElementHandle } from "playwright";
 import GroceryClient from "./GroceryClient";
-import { logger } from "../../helpers/Logger";
+import { logger } from "../../utils/Logger";
 
 class DirkClient extends GroceryClient {
   constructor() {
@@ -11,7 +11,7 @@ class DirkClient extends GroceryClient {
   public async getOriginalPrice(
     anchorHandle: ElementHandle,
     originalPriceSelector: string[]
-  ): Promise<string> {
+  ): Promise<number> {
     try {
       // Directly retrieve the nested content if the structure and access pattern are consistent and predictable
       const price = await anchorHandle.$$eval(
@@ -27,7 +27,7 @@ class DirkClient extends GroceryClient {
         originalPriceSelector[1]
       ); // Passing the second selector part as an argument to the page function
       logger.debug(`Original price retrieved: '${price}'.`);
-      return price.trim();
+      return price !== null ? parseFloat(price.trim()) : 0;
     } catch (error) {
       logger.warn(
         `Warn retrieving original price with selector '${originalPriceSelector.join(
@@ -35,14 +35,14 @@ class DirkClient extends GroceryClient {
         )}':`,
         error
       );
-      return "";
+      return 0;
     }
   }
 
   public async getDiscountPrice(
     anchorHandle: ElementHandle,
     discountPriceSelector: string[]
-  ): Promise<string> {
+  ): Promise<number> {
     try {
       // Concatenate the euro and cent values directly within a single evaluate to minimize calls to the browser context
       const price = await anchorHandle.evaluate((node: Element, selectors) => {
@@ -54,7 +54,7 @@ class DirkClient extends GroceryClient {
         return `${euros}.${cents}`;
       }, discountPriceSelector);
       logger.debug(`Discount price retrieved: '${price}'.`);
-      return price.trim();
+      return parseFloat(price.trim());
     } catch (error) {
       logger.warn(
         `Warn retrieving discount price with selector '${discountPriceSelector.join(
@@ -62,7 +62,7 @@ class DirkClient extends GroceryClient {
         )}':`,
         error
       );
-      return "";
+      return 0;
     }
   }
 }

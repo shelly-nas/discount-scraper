@@ -25,10 +25,10 @@
             "type": "string"
           },
           "originalPrice": {
-            "type": "string"
+            "type": "number"
           },
           "discountPrice": {
-            "type": "string"
+            "type": "number"
           },
           "specialDiscount": {
             "type": "string"

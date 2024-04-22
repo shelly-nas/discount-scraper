@@ -1,8 +1,8 @@
 import { Client } from "@notionhq/client";
 import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
-import { logger } from "../../helpers/Logger";
+import { logger } from "../../utils/Logger";
 
-class NotionClient {
+class NotionPageClient {
   private maxBlocks = 100;
   private notion: Client;
   private pageId: string;
@@ -101,4 +101,4 @@ class NotionClient {
   }
 }
 
-export default NotionClient;
+export default NotionPageClient;
