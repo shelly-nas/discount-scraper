@@ -92,7 +92,7 @@ abstract class GroceryClient extends WebClient {
       logger.debug(
         `Product category name retrieved: '${productCategoryName}'.`
       );
-      return productCategoryName.trim();
+      return productCategoryName.trim().replace(/,/g, '').replace(/&/g, '');
     } catch (error) {
       logger.error(
         `Error retrieving product name with selector '${this.productCategory}':`,

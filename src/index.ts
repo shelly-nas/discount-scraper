@@ -98,12 +98,12 @@ async function getGroceryDiscounts(
   return new GroceryDiscountsModel(config.name, productDiscounts);
 }
 
-async function flushNotionDiscountPage(
-  groceryDiscountsFilePath: string
+async function flushNotionDiscountDatabase(
+  groceryDiscountsFilePath: string, groceryName: string
 ): Promise<void> {
-  // Use the NotionClient to set the ProductDiscount details to a Notion page
+  // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
   const integrationToken = getEnvVariable("NOTION_SECRET");
-  const databaseId = getEnvVariable("NOTION_PAGE_ID");
+  const databaseId = getEnvVariable("NOTION_DATABASE_ID");
   const groceryDiscountsSchemaFilePath = getEnvVariable(
     "GROCERY_DISCOUNTS_SCHEMA"
   );
@@ -114,53 +114,33 @@ async function flushNotionDiscountPage(
   );
   const jsonData = (await jsonReader.read()) as IGroceryDiscounts;
 
-  const notionClient = new NotionPageClient(integrationToken, databaseId);
+  const notion = new NotionDatabaseClient(integrationToken, databaseId);
+
+  const propertyFilter = new NotionConverter().querySupermarket(groceryName)
+
+  await notion.flushDatabase(jsonData, propertyFilter)
 
   // Use the instance of the converter and use it and transform the type
-  const pageBlocks = new NotionConverter().toPageBlocks(
-    jsonData
-  ) as BlockObjectRequest[];
-  notionClient.flushPage(pageBlocks);
 }
 
 async function discountScraper(): Promise<void> {
   const groceryConfig = await getConfig();
 
-  // const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
+  const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
 
-  // const jsonWriter = new JsonWriter(
-  //   `./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`
-  // );
-  // await jsonWriter.write(groceryDiscounts);
-
-  // if (groceryDiscounts.discounts.length > 0) {
-  //   await flushNotionDiscountPage(jsonWriter.getFilePath());
-  //   logger.info("Discounts are added to Notion.");
-  // } else {
-  //   logger.error("No discounts found to add to Notion.");
-  // }
-
-  // logger.info("Discount scraper process has been completed.");
-
-  // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
-  const integrationToken = getEnvVariable("NOTION_SECRET");
-  const databaseId = getEnvVariable("NOTION_DATABASE_ID");
-  const groceryDiscountsSchemaFilePath = getEnvVariable(
-    "GROCERY_DISCOUNTS_SCHEMA"
+  const jsonWriter = new JsonWriter(
+    `./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`
   );
-  const jsonDiscounts = "export/PLUS_20240419-123132.json"
+  await jsonWriter.write(groceryDiscounts);
 
-  const jsonReader = new JsonReader(
-    groceryDiscountsSchemaFilePath,
-    jsonDiscounts
-  );
-  const jsonData = (await jsonReader.read()) as IGroceryDiscounts;
+  if (groceryDiscounts.discounts.length > 0) {
+    await flushNotionDiscountDatabase(jsonWriter.getFilePath(), groceryConfig.name);
+    logger.info("Discounts are added to Notion database.");
+  } else {
+    logger.error("No discounts found to add to Notion.");
+  }
 
-  const notion = new NotionDatabaseClient(integrationToken, databaseId);
-
-  const propertyFilter = new NotionConverter().querySupermarket(groceryConfig.name)
-
-  await notion.flushDatabase(jsonData, propertyFilter)
+  logger.info("Discount scraper process has been completed.");
 }
 
 discountScraper();
