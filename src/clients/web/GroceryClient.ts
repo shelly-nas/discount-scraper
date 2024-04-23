@@ -15,19 +15,20 @@ abstract class GroceryClient extends WebClient {
     logger.debug(
       `Wait for product category with ID '${parentSelector}' to be visible.`
     );
-    await this.page?.waitForSelector(parentSelector, {
-      state: "visible",
-      timeout: 3000,
-    });
-    this.productCategory = await this.page?.$(parentSelector);
-
-    if (!this.productCategory) {
-      logger.error(`Section with ID '${parentSelector}' not found.`);
-      return;
-    }
-
     let discountProducts;
+
     try {
+      await this.page?.waitForSelector(parentSelector, {
+        state: "visible",
+        timeout: 3000,
+      });
+      this.productCategory = await this.page?.$(parentSelector);
+
+      if (!this.productCategory) {
+        logger.error(`Section with ID '${parentSelector}' not found.`);
+        return;
+      }
+      
       discountProducts = await this.productCategory.$$(productSelector);
       logger.info(
         `Found ${discountProducts.length} elements for discount products under the parent selector '${parentSelector}'.`
@@ -92,7 +93,7 @@ abstract class GroceryClient extends WebClient {
       logger.debug(
         `Product category name retrieved: '${productCategoryName}'.`
       );
-      return productCategoryName.trim().replace(/,/g, '').replace(/&/g, '');
+      return productCategoryName.trim().replace(/,/g, '').replace(/& /g, '');
     } catch (error) {
       logger.error(
         `Error retrieving product name with selector '${this.productCategory}':`,
