@@ -18,12 +18,7 @@ export default class JsonReader {
     const { isValid, errors } = await this.validateObject(parsedGrocery);
 
     if (!isValid) {
-      const errorMissingProperty = errors
-        ?.map((error) => error.params.missingProperty)
-        .join(", ");
-      logger.error(
-        `JSON key validation failed. Properties missing: '${errorMissingProperty}'`
-      );
+      logger.error("JSON key validation failed:", errors);
       process.exit(1);
     } else {
       logger.info(`Read '${this.jsonPath}' file successfully.`);
