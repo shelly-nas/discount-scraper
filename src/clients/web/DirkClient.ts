@@ -7,32 +7,30 @@ class DirkClient extends GroceryClient {
     super();
     logger.info("Created a Dirk Grocery Client instance.");
   }
-
+  
   public async getOriginalPrice(
     anchorHandle: ElementHandle,
     originalPriceSelector: string[]
   ): Promise<number> {
     try {
       // Directly retrieve the nested content if the structure and access pattern are consistent and predictable
-      const price = await anchorHandle.$$eval(
+      const price: string | null | undefined = await anchorHandle.$$eval(
         originalPriceSelector[0],
         (elements, selector) => {
           return elements
             .map((element) => {
               const span = element.querySelector(selector);
-              return span ? span.textContent : "";
+              return span ? span.textContent : null;
             })
-            .join("");
+            .find(textContent => textContent !== null); // Find the first non-null textContent
         },
         originalPriceSelector[1]
-      ); // Passing the second selector part as an argument to the page function
+      ); // Passing the second selector part as an argument to the evaluator function
       logger.debug(`Original price retrieved: '${price}'.`);
-      return price !== null ? parseFloat(price.trim()) : 0;
+      return price ? parseFloat(price.trim()) : 0; // Parse the price or return 0 if null
     } catch (error) {
       logger.warn(
-        `Warn retrieving original price with selector '${originalPriceSelector.join(
-          " > "
-        )}':`,
+        `Warning retrieving original price with selector '${originalPriceSelector.join(" > ")}':`,
         error
       );
       return 0;
