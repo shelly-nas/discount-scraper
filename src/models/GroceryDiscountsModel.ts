@@ -1,4 +1,4 @@
-export class GroceryDiscounts {
+export class GroceryDiscountsModel {
   public groceryName: string;
   public discounts: IProductDiscount[] = [];
 

@@ -1,6 +1,6 @@
 import { ElementHandle } from "playwright";
 import GroceryClient from "./GroceryClient";
-import { logger } from "../../helpers/Logger";
+import { logger } from "../../utils/Logger";
 
 class PlusClient extends GroceryClient {
   constructor() {
@@ -11,7 +11,7 @@ class PlusClient extends GroceryClient {
   public async getOriginalPrice(
     anchorHandle: ElementHandle,
     originalPriceSelector: string[]
-  ): Promise<string> {
+  ): Promise<number> {
     try {
       const price = await anchorHandle.$eval(
         originalPriceSelector[0],
@@ -19,20 +19,20 @@ class PlusClient extends GroceryClient {
       );
 
       logger.debug(`Original price retrieved: '${price}'.`);
-      return price !== null ? price.trim() : "";
+      return price !== null ? parseFloat(price.trim()) : 0;
     } catch (error) {
       logger.warn(
         `Warn retrieving original price with selector '${originalPriceSelector[0]}':`,
         error
       );
-      return "";
+      return 0;
     }
   }
 
   public async getDiscountPrice(
     anchorHandle: ElementHandle,
     discountPriceSelector: string[]
-  ): Promise<string> {
+  ): Promise<number> {
     try {
       const price = await anchorHandle.evaluate(
         (node: Element, selectors: string[]) => {
@@ -44,13 +44,13 @@ class PlusClient extends GroceryClient {
       );
 
       logger.debug(`Discount price retrieved: '${price}'.`);
-      return price !== null ? price.trim() : "";
+      return price !== null ? parseFloat(price.trim()) : 0;
     } catch (error) {
       logger.warn(
         `Warn retrieving discount price with selector '${discountPriceSelector[1]}':`,
         error
       );
-      return "";
+      return 0;
     }
   }
 }

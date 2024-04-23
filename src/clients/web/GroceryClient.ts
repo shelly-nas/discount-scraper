@@ -1,4 +1,4 @@
-import { logger } from "../../helpers/Logger";
+import { logger } from "../../utils/Logger";
 import { ElementHandle } from "playwright";
 import WebClient from "./WebClient";
 
@@ -15,19 +15,20 @@ abstract class GroceryClient extends WebClient {
     logger.debug(
       `Wait for product category with ID '${parentSelector}' to be visible.`
     );
-    await this.page?.waitForSelector(parentSelector, {
-      state: "visible",
-      timeout: 3000,
-    });
-    this.productCategory = await this.page?.$(parentSelector);
-
-    if (!this.productCategory) {
-      logger.error(`Section with ID '${parentSelector}' not found.`);
-      return;
-    }
-
     let discountProducts;
+
     try {
+      await this.page?.waitForSelector(parentSelector, {
+        state: "visible",
+        timeout: 3000,
+      });
+      this.productCategory = await this.page?.$(parentSelector);
+
+      if (!this.productCategory) {
+        logger.error(`Section with ID '${parentSelector}' not found.`);
+        return;
+      }
+      
       discountProducts = await this.productCategory.$$(productSelector);
       logger.info(
         `Found ${discountProducts.length} elements for discount products under the parent selector '${parentSelector}'.`
@@ -92,7 +93,7 @@ abstract class GroceryClient extends WebClient {
       logger.debug(
         `Product category name retrieved: '${productCategoryName}'.`
       );
-      return productCategoryName.trim();
+      return productCategoryName.trim().replace(/,/g, '').replace(/& /g, '');
     } catch (error) {
       logger.error(
         `Error retrieving product name with selector '${this.productCategory}':`,
@@ -125,17 +126,17 @@ abstract class GroceryClient extends WebClient {
   abstract getOriginalPrice(
     anchorHandle: ElementHandle,
     originalPriceSelector: string[]
-  ): Promise<string>;
+  ): Promise<number>;
 
   abstract getDiscountPrice(
     anchorHandle: ElementHandle,
     discountPriceSelector: string[]
-  ): Promise<string>;
+  ): Promise<number>;
 
   protected async getSpecialDiscount(
     anchorHandle: ElementHandle,
     specialDiscountSelector: string[]
-  ): Promise<string | undefined> {
+  ): Promise<string> {
     try {
       const specialDiscount = await anchorHandle.$$eval(
         specialDiscountSelector[0],
@@ -152,7 +153,7 @@ abstract class GroceryClient extends WebClient {
         `Warn retrieving special discount text with selector '${specialDiscountSelector[0]}':`,
         error
       );
-      return undefined;
+      return "";
     }
   }
 }

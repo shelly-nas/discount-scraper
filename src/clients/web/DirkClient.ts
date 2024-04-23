@@ -1,48 +1,46 @@
 import { ElementHandle } from "playwright";
 import GroceryClient from "./GroceryClient";
-import { logger } from "../../helpers/Logger";
+import { logger } from "../../utils/Logger";
 
 class DirkClient extends GroceryClient {
   constructor() {
     super();
     logger.info("Created a Dirk Grocery Client instance.");
   }
-
+  
   public async getOriginalPrice(
     anchorHandle: ElementHandle,
     originalPriceSelector: string[]
-  ): Promise<string> {
+  ): Promise<number> {
     try {
       // Directly retrieve the nested content if the structure and access pattern are consistent and predictable
-      const price = await anchorHandle.$$eval(
+      const price: string | null | undefined = await anchorHandle.$$eval(
         originalPriceSelector[0],
         (elements, selector) => {
           return elements
             .map((element) => {
               const span = element.querySelector(selector);
-              return span ? span.textContent : "";
+              return span ? span.textContent : null;
             })
-            .join("");
+            .find(textContent => textContent !== null); // Find the first non-null textContent
         },
         originalPriceSelector[1]
-      ); // Passing the second selector part as an argument to the page function
+      ); // Passing the second selector part as an argument to the evaluator function
       logger.debug(`Original price retrieved: '${price}'.`);
-      return price.trim();
+      return price ? parseFloat(price.trim()) : 0; // Parse the price or return 0 if null
     } catch (error) {
       logger.warn(
-        `Warn retrieving original price with selector '${originalPriceSelector.join(
-          " > "
-        )}':`,
+        `Warning retrieving original price with selector '${originalPriceSelector.join(" > ")}':`,
         error
       );
-      return "";
+      return 0;
     }
   }
 
   public async getDiscountPrice(
     anchorHandle: ElementHandle,
     discountPriceSelector: string[]
-  ): Promise<string> {
+  ): Promise<number> {
     try {
       // Concatenate the euro and cent values directly within a single evaluate to minimize calls to the browser context
       const price = await anchorHandle.evaluate((node: Element, selectors) => {
@@ -54,7 +52,7 @@ class DirkClient extends GroceryClient {
         return `${euros}.${cents}`;
       }, discountPriceSelector);
       logger.debug(`Discount price retrieved: '${price}'.`);
-      return price.trim();
+      return parseFloat(price.trim());
     } catch (error) {
       logger.warn(
         `Warn retrieving discount price with selector '${discountPriceSelector.join(
@@ -62,7 +60,7 @@ class DirkClient extends GroceryClient {
         )}':`,
         error
       );
-      return "";
+      return 0;
     }
   }
 }

@@ -1,18 +1,19 @@
-import ArgumentHandler from "./utils/helpers/ArgumentHandler";
-import DateTimeHandler from "./utils/helpers/DateTimeHandler";
-import JsonReader from "./utils/helpers/JsonReader";
-import JsonWriter from "./utils/helpers/JsonWriter";
-import NotionPageConverter from "./utils/helpers/NotionPageConverter";
-import GroceryClient from "./utils/clients/web/GroceryClient";
-import NotionClient from "./utils/clients/notion/NotionClient";
-import { logger } from "./utils/helpers/Logger";
-import { GroceryDiscounts } from "./utils/objects/GroceryDiscounts";
+import ArgumentHandler from "./utils/ArgumentHandler";
+import DateTimeHandler from "./utils/DateTimeHandler";
+import JsonReader from "./utils/JsonReader";
+import JsonWriter from "./utils/JsonWriter";
+import NotionConverter from "./utils/NotionConverter";
+import GroceryClient from "./clients/web/GroceryClient";
+import NotionPageClient from "./clients/notion/NotionPageClient";
+import { logger } from "./utils/Logger";
+import { GroceryDiscountsModel } from "./models/GroceryDiscountsModel";
 import { ElementHandle } from "playwright";
 import process from "process";
 import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
-import AhClient from "./utils/clients/web/AhClient";
-import DirkClient from "./utils/clients/web/DirkClient";
-import PlusClient from "./utils/clients/web/PlusClient";
+import AhClient from "./clients/web/AhClient";
+import DirkClient from "./clients/web/DirkClient";
+import PlusClient from "./clients/web/PlusClient";
+import NotionDatabaseClient from "./clients/notion/NotionDatabaseClient";
 require("dotenv").config();
 
 function getEnvVariable(name: string): string {
@@ -54,7 +55,7 @@ function createGroceryClient(configName: string): GroceryClient {
 
 async function getGroceryDiscounts(
   config: IGroceryWebStore
-): Promise<GroceryDiscounts> {
+): Promise<GroceryDiscountsModel> {
   const groceryClient = createGroceryClient(config.name);
   const productDiscounts: IProductDiscount[] = [];
 
@@ -94,15 +95,15 @@ async function getGroceryDiscounts(
   await groceryClient.close();
 
   // Use JsonWriter to write the ProductDiscount details to a JSON file
-  return new GroceryDiscounts(config.name, productDiscounts);
+  return new GroceryDiscountsModel(config.name, productDiscounts);
 }
 
-async function flushNotionDiscountPage(
-  groceryDiscountsFilePath: string
+async function flushNotionDiscountDatabase(
+  groceryDiscountsFilePath: string, groceryName: string
 ): Promise<void> {
-  // Use the NotionClient to set the ProductDiscount details to a Notion page
+  // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
   const integrationToken = getEnvVariable("NOTION_SECRET");
-  const databaseId = getEnvVariable("DISCOUNT_PAGE_ID");
+  const databaseId = getEnvVariable("NOTION_DATABASE_ID");
   const groceryDiscountsSchemaFilePath = getEnvVariable(
     "GROCERY_DISCOUNTS_SCHEMA"
   );
@@ -113,13 +114,13 @@ async function flushNotionDiscountPage(
   );
   const jsonData = (await jsonReader.read()) as IGroceryDiscounts;
 
-  const notionClient = new NotionClient(integrationToken, databaseId);
+  const notion = new NotionDatabaseClient(integrationToken, databaseId);
+
+  const propertyFilter = new NotionConverter().querySupermarket(groceryName)
+
+  await notion.flushDatabase(jsonData, propertyFilter)
 
   // Use the instance of the converter and use it and transform the type
-  const pageBlocks = new NotionPageConverter().getPageBlocks(
-    jsonData
-  ) as BlockObjectRequest[];
-  notionClient.flushPage(pageBlocks);
 }
 
 async function discountScraper(): Promise<void> {
@@ -133,8 +134,8 @@ async function discountScraper(): Promise<void> {
   await jsonWriter.write(groceryDiscounts);
 
   if (groceryDiscounts.discounts.length > 0) {
-    await flushNotionDiscountPage(jsonWriter.getFilePath());
-    logger.info("Discounts are added to Notion.");
+    await flushNotionDiscountDatabase(jsonWriter.getFilePath(), groceryConfig.name);
+    logger.info("Discounts are added to Notion database.");
   } else {
     logger.error("No discounts found to add to Notion.");
   }
