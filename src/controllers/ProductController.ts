@@ -7,32 +7,54 @@ class ProductController {
 
   constructor(context: JsonDataContext<ProductModel>) {
     this.context = context;
+    logger.info("ProductController initialized.");
+  }
+
+  async exists(): Promise<void> {
+    logger.debug("Checking if the product database exists.");
+    return await this.context.exists();
   }
 
   async getProducts(): Promise<ProductModel[]> {
+    logger.info("Fetching all products.");
     return await this.context.load();
   }
 
-  async addProduct(name: string, category: number): Promise<void> {
-    const product = await this.context.load();
-    const alreadyExists = product.some((product) => product.name === name);
+  async getProductId(name: string): Promise<number> {
+    const products = await this.context.load();
+    const productIndex = products.findIndex((product) => product.name === name);
 
-    if (!alreadyExists) {
-      // Get all the existing IDs sorted in ascending order
-      const existingIds = product.map((p) => p.id).sort((a, b) => a - b);
-
-      // Find the first missing ID in the sequence
-      let newId = 1; // Start checking from the first ID
-      for (let i = 0; i < existingIds.length; ++i) {
-        if (existingIds[i] > newId) break; // Found a gap in the sequence
-        newId++; // No gap, move to next ID
-      }
-
-      const newProduct = new ProductModel(name, category, newId);
-      product.push(newProduct);
-
-      await this.context.save(product);
+    if (productIndex !== -1) {
+      logger.debug(
+        `Product '${name}' found with ID '${products[productIndex].id}'.`
+      );
+      return products[productIndex].id;
+    } else {
+      logger.error(`Product '${name}' not found.`);
+      return -1;
     }
+  }
+
+  async addProduct(name: string, category: number): Promise<void> {
+    const products = await this.context.load();
+    const alreadyExists = products.some((product) => product.name === name);
+
+    if (alreadyExists) {
+      logger.warn(`Product '${name}' already exists. No action taken.`);
+      return;
+    }
+
+    const existingIds = products.map((p) => p.id).sort((a, b) => a - b);
+    let newId = 1;
+    for (let i = 0; i < existingIds.length; ++i) {
+      if (existingIds[i] > newId) break;
+      newId++;
+    }
+
+    const newProduct = new ProductModel(name, category, newId);
+    products.push(newProduct);
+    await this.context.save(products);
+    logger.debug(`New product '${name}' added with ID '${newId}'.`);
   }
 
   async updateProducts(
@@ -40,22 +62,27 @@ class ProductController {
     updateObjects: Partial<ProductModel>[]
   ): Promise<void> {
     const products = await this.context.load();
+    let changesMade = false;
 
-    // Iterate through each update object
     for (const updateObj of updateObjects) {
-      // Find the index using the 'id' from the updateObj
       const productIndex = products.findIndex(
         (product) => product.id === updateObj.id
       );
-
       if (productIndex !== -1 && updateObj[key] !== undefined) {
-        // Update the key value of the product
         products[productIndex][key] = updateObj[key] as never;
+        changesMade = true;
+        logger.debug(
+          `Product ID '${updateObj.id}' updated: '${key}' set to '${updateObj[key]}'.`
+        );
       }
     }
 
-    // Save the updated products array back to the context
-    await this.context.save(products);
+    if (changesMade) {
+      await this.context.save(products);
+      logger.info("Products updated successfully.");
+    } else {
+      logger.info("No updates were made to products.");
+    }
   }
 }
 

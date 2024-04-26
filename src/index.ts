@@ -16,6 +16,7 @@ import {
   createProductDb,
   createProductCategoryDb,
   updateProductDb,
+  createDiscountDb,
 } from "./data/JsonDataManager";
 import ProductModel from "./models/ProductModel";
 import ProductCategoryModel from "./models/ProductCategoryModel";
@@ -129,14 +130,9 @@ async function discountScraper(): Promise<void> {
   const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
 
   await createProductDb(groceryDiscounts.discounts);
-  // await createDiscountDb(groceryDiscounts.discounts);
+  await createDiscountDb(groceryDiscounts.discounts);
 
-  // const jsonDiscounts = new JsonWriter(
-  //   `./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`
-  // );
-  // await jsonDiscounts.write(groceryDiscounts);
-
-  await setProductCategory();
+  // await setProductCategory();
 
   // if (groceryDiscounts.discounts.length > 0) {
   //   await flushNotionDiscountDatabase(
