@@ -6,7 +6,6 @@ import ProductCategoryModel from "../models/ProductCategoryModel";
 import ProductModel from "../models/ProductModel";
 import { getEnvVariable } from "../utils/ConfigHelper";
 import { logger } from "../utils/Logger";
-import NotionManager from "../utils/NotionManager";
 import JsonDataContext from "./JsonDataContext";
 
 export class JsonDataManager {
