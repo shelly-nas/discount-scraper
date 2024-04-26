@@ -23,7 +23,7 @@ export async function getConfig(): Promise<IGroceryWebStore> {
     const jsonReader = new JsonReader(configPath, groceryWebStoreSchemaFilePath);
     const jsonData = (await jsonReader.read()) as IGroceryWebStore;
   
-    logger.info("JSON data read from file:", jsonData);
+    logger.debug("JSON data read from file:", jsonData);
     return jsonData;
   }
   

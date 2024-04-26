@@ -7,7 +7,7 @@ class ProductController {
 
   constructor(context: JsonDataContext<ProductModel>) {
     this.context = context;
-    logger.info("ProductController initialized.");
+    logger.debug("ProductController initialized.");
   }
 
   async exists(): Promise<void> {

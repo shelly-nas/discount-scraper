@@ -22,7 +22,7 @@ class OpenAIClient {
     const removeName = "In the response only keep the 'id' and 'category' to minimize token use. ";
     const prompt = "Match the products with a single product category. For each 'productName' fill the 'category' key, with the 'id' key of corresponding ProductCategories. ";
     const customizedPrompt = prompt + inputJson + infoJson + onlyJson + removeName;
-    logger.debug("AI Request:", customizedPrompt)
+    logger.debug("GPT Request:", customizedPrompt)
 
     await this
       .sendPrompt(customizedPrompt)
@@ -32,6 +32,7 @@ class OpenAIClient {
   }
 
   private async sendPrompt(prompt: string): Promise<void> {
+    logger.info("Sending prompt to GPT...")
     const completion = await this.openAI.chat.completions.create({
       messages: [
         { role: "system", content: prompt },
@@ -44,7 +45,7 @@ class OpenAIClient {
       // },
     });
     logger.info("Categorize product into custom set of product categories.");
-    logger.debug("AI Response:", completion);
+    logger.debug("GTP Response:", completion);
     
     this.completion = completion;
   }
