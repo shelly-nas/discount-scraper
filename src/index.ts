@@ -60,8 +60,8 @@ async function getGroceryDiscounts(
 }
 
 async function setProductCategory(): Promise<void> {
-  const jsonProducts = jsonDataManager.getProductController().getProducts();
-  const jsonProductCategories = jsonDataManager.getProductCategoryController().getCategories();
+  const jsonProducts = await jsonDataManager.getProductController().getProducts();
+  const jsonProductCategories = await jsonDataManager.getProductCategoryController().getCategories();
 
   const apiKey = getEnvVariable("CHATGPT_API_KEY");
   const ai = new AIClient(apiKey);
@@ -71,7 +71,7 @@ async function setProductCategory(): Promise<void> {
     JSON.stringify(jsonProductCategories)
   );
 
-  logger.info("Defined category for discount products.");
+  logger.info("Products are categorized.");
 
   logger.info(`Update the '${getEnvVariable("DB_PRODUCT")}' database.`);
   const productDb = JSON.parse(ai.getCompletionContent());
