@@ -19,7 +19,7 @@ class OpenAIClient {
     const onlyJson = "Only respond with the completed JSON, without a code block wrapper. ";
     const inputJson = `The JSON structure to complete: '${discountProducts}'. `;
     const infoJson = `The ProductCategories JSON structure: '${productCategories}'. `;
-    const removeName = "In the response remove the 'name' key, to minimize token use. ";
+    const removeName = "In the response only keep the 'id' and 'category' to minimize token use. ";
     const prompt = "Match the products with a single product category. For each 'productName' fill the 'category' key, with the 'id' key of corresponding ProductCategories. ";
     const customizedPrompt = prompt + inputJson + infoJson + onlyJson + removeName;
     logger.debug("AI Request:", customizedPrompt)
