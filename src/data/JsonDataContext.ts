@@ -1,0 +1,55 @@
+import { promises as fs } from "fs";
+import * as path from "path";
+import { logger } from "../utils/Logger";
+
+class JsonDataContext<T> {
+  private filename: string;
+
+  constructor(filename: string) {
+    this.filename = filename;
+  }
+
+  public async load(): Promise<T[]> {
+    try {
+      await this.exists();
+      const data = await fs.readFile(this.filename, "utf-8");
+      return JSON.parse(data);
+    } catch (error) {
+      logger.error(`Failed to read from ${this.filename}:`, error);
+      process.exit(1);
+    }
+  }
+
+  public async save(data: T[]): Promise<void> {
+    try {
+      await this.exists();
+      const jsonData = JSON.stringify(data, null, 2);
+      await fs.writeFile(this.filename, jsonData, "utf-8");
+    } catch (error) {
+      logger.error(`Failed to write to ${this.filename}:`, error);
+      process.exit(1);
+    }
+  }
+
+  public async exists(): Promise<void> {
+    try {
+      await fs.access(this.filename);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        // If the file does not exist, ensure the directory exists first
+        await this.ensureDirectoryExists();
+        // Then, create the file with an empty array JSON content
+        await fs.writeFile(this.filename, JSON.stringify([]), "utf-8");
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  private async ensureDirectoryExists(): Promise<void> {
+    const dir = path.dirname(this.filename);
+    await fs.mkdir(dir, { recursive: true });
+  }
+}
+
+export default JsonDataContext;
