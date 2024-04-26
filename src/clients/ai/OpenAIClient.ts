@@ -28,6 +28,7 @@ class OpenAIClient {
       .sendPrompt(customizedPrompt)
       .catch((error) => {
         logger.error("Failed to get response:", error);
+        process.exit(1);
       });
   }
 
