@@ -31,6 +31,7 @@
     "@notionhq/client": "^2.2.15",
     "dotenv": "^16.4.5",
     "imap-simple": "^1.6.3",
+    "openai": "^4.38.3",
     "playwright": "^1.41.2"
   }
 }
