@@ -35,7 +35,7 @@ class ProductController {
     }
   }
 
-  async addProduct(name: string, category: number): Promise<void> {
+  async addProduct(name: string, category: number, supermarket: string): Promise<void> {
     const products = await this.context.load();
     const alreadyExists = products.some((product) => product.name === name);
 
@@ -51,7 +51,7 @@ class ProductController {
       newId++;
     }
 
-    const newProduct = new ProductModel(name, category, newId);
+    const newProduct = new ProductModel(newId, name, category, supermarket);
     products.push(newProduct);
     await this.context.save(products);
     logger.debug(`New product '${name}' added with ID '${newId}'.`);
