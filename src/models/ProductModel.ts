@@ -8,7 +8,7 @@ class ProductModel {
         this.id = id;
         this.name = name;
         this.category = category; // Index of ProductCategoryModel
-        this.supermarket = supermarket; // Index of ProductCategoryModel
+        this.supermarket = supermarket;
     }
 }
 
