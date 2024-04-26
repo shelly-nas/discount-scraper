@@ -31,9 +31,10 @@ class JsonDataContext<T> {
     }
   }
 
-  public async exists(): Promise<void> {
+  public async exists(): Promise<boolean> {
     try {
       await fs.access(this.filename);
+      return true;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         // If the file does not exist, ensure the directory exists first
@@ -41,14 +42,29 @@ class JsonDataContext<T> {
         // Then, create the file with an empty array JSON content
         await fs.writeFile(this.filename, JSON.stringify([]), "utf-8");
       } else {
-        throw error;
+        logger.error
+        process.exit(1);
       }
+      return false
     }
   }
 
   private async ensureDirectoryExists(): Promise<void> {
     const dir = path.dirname(this.filename);
     await fs.mkdir(dir, { recursive: true });
+  }
+
+  public async deleteFile(): Promise<void> {
+    if (await this.exists()) {
+      try {
+        await fs.unlink(this.filename);
+        logger.info(`Successfully deleted ${this.filename}`);
+      } catch (error) {
+        logger.error(`Failed to delete ${this.filename}:`, error);
+      }
+    } else {
+      logger.warn("No file found to delete.");
+    }  
   }
 }
 

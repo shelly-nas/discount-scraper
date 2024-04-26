@@ -9,9 +9,14 @@ class DiscountController {
     this.context = context;
   }
 
-  async exists(): Promise<void> {
+  async exists(): Promise<boolean> {
     logger.debug("Checking if the discount database exist.");
     return await this.context.exists();
+  }
+
+  async delete(): Promise<void> {
+    logger.debug("Delete the discount database exist.");
+    return await this.context.deleteFile();
   }
 
   async getDiscounts(): Promise<DiscountModel[]> {

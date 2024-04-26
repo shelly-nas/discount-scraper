@@ -115,11 +115,14 @@ async function discountScraper(): Promise<void> {
     productCategoriesReferencePath
   ).read();
 
+  await jsonDataManager.getProductCategoryController().delete();
   await jsonDataManager.addProductCategoryDb(jsonReader);
 
   const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
 
+  await jsonDataManager.getProductController().delete();
   await jsonDataManager.addProductDb(groceryConfig.name, groceryDiscounts);
+  await jsonDataManager.getDiscountController().delete();
   await jsonDataManager.addDiscountDb(groceryDiscounts);
 
   await setProductCategory();

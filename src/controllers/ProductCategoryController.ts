@@ -10,9 +10,14 @@ class ProductCategoryController {
     logger.debug("ProductCategoryController initialized.");
   }
 
-  async exists(): Promise<void> {
+  async exists(): Promise<boolean> {
     logger.debug("Checking if the product categories database exist.");
     return await this.context.exists();
+  }
+
+  async delete(): Promise<void> {
+    logger.debug("Delete the product categories database exist.");
+    return await this.context.deleteFile();
   }
 
   async getCategories(): Promise<ProductCategoryModel[]> {
