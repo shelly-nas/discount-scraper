@@ -1,0 +1,3 @@
+interface IProductCategories {
+    productCategories: string[]
+}

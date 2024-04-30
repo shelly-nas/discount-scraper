@@ -1,61 +1,25 @@
-import ArgumentHandler from "./utils/ArgumentHandler";
-import DateTimeHandler from "./utils/DateTimeHandler";
 import JsonReader from "./utils/JsonReader";
-import JsonWriter from "./utils/JsonWriter";
-import NotionConverter from "./utils/NotionConverter";
-import GroceryClient from "./clients/web/GroceryClient";
-import NotionPageClient from "./clients/notion/NotionPageClient";
+import NotionManager from "./utils/NotionManager";
 import { logger } from "./utils/Logger";
-import { GroceryDiscountsModel } from "./models/GroceryDiscountsModel";
 import { ElementHandle } from "playwright";
-import process from "process";
-import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
-import AhClient from "./clients/web/AhClient";
-import DirkClient from "./clients/web/DirkClient";
-import PlusClient from "./clients/web/PlusClient";
-import NotionDatabaseClient from "./clients/notion/NotionDatabaseClient";
+import NotionDatabaseClient from "./clients/database/NotionDatabaseClient";
+import {
+  createGroceryClient,
+  getConfig,
+  getEnvVariable,
+} from "./utils/ConfigHelper";
+
+import JsonDataManager from "./data/JsonDataManager";
+import OpenAIClient from "./clients/ai/OpenAIClient";
+import OllamaClient from "./clients/ai/AIClient";
+
 require("dotenv").config();
 
-function getEnvVariable(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    logger.error(`The ${name} environment variable is not set.`);
-    process.exit(1);
-  }
-  return value;
-}
-
-async function getConfig(): Promise<IGroceryWebStore> {
-  const groceryWebStoreSchemaFilePath = getEnvVariable("GROCERY_SCHEMA");
-  const argHandler = new ArgumentHandler(process.argv);
-  const configPath = argHandler.getArgByFlag("--config");
-
-  const jsonReader = new JsonReader(groceryWebStoreSchemaFilePath, configPath);
-  const jsonData = (await jsonReader.read()) as IGroceryWebStore;
-
-  logger.info("JSON data read from file:", jsonData);
-  return jsonData;
-}
-
-function createGroceryClient(configName: string): GroceryClient {
-  switch (configName) {
-    case "Albert-Heijn":
-      return new AhClient();
-    case "Dirk":
-      return new DirkClient();
-    case "PLUS":
-      return new PlusClient();
-    default:
-      logger.error(
-        "Descendent of Grocery Client could not be found or instantiated."
-      );
-      process.exit(1);
-  }
-}
+const jsonDataManager = new JsonDataManager();
 
 async function getGroceryDiscounts(
   config: IGroceryWebStore
-): Promise<GroceryDiscountsModel> {
+): Promise<IProductDiscount[]> {
   const groceryClient = createGroceryClient(config.name);
   const productDiscounts: IProductDiscount[] = [];
 
@@ -95,52 +59,82 @@ async function getGroceryDiscounts(
   await groceryClient.close();
 
   // Use JsonWriter to write the ProductDiscount details to a JSON file
-  return new GroceryDiscountsModel(config.name, productDiscounts);
+  return productDiscounts;
 }
 
-async function flushNotionDiscountDatabase(
-  groceryDiscountsFilePath: string, groceryName: string
+async function setProductCategory(): Promise<void> {
+  const jsonProducts = await jsonDataManager.getProductController().getProducts();
+  const jsonProductCategories = await jsonDataManager.getProductCategoryController().getCategories();
+
+  const apiKey = getEnvVariable("CHATGPT_API_KEY");
+  const ai = new OpenAIClient(apiKey);
+  // const ai = new OllamaClient();
+
+  await ai.categorizeProducts(
+    JSON.stringify(jsonProducts),
+    JSON.stringify(jsonProductCategories)
+  );
+
+  logger.info("Products are categorized.");
+
+  logger.info(`Update the '${getEnvVariable("DB_PRODUCT")}' database.`);
+  const productDb = JSON.parse(ai.getCompletionContent());
+  await jsonDataManager.updateProductDb("category", productDb);
+}
+
+async function flushNotionDiscountDatabaseByGrocery(
+  groceryName: string
 ): Promise<void> {
   // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
   const integrationToken = getEnvVariable("NOTION_SECRET");
   const databaseId = getEnvVariable("NOTION_DATABASE_ID");
-  const groceryDiscountsSchemaFilePath = getEnvVariable(
-    "GROCERY_DISCOUNTS_SCHEMA"
-  );
-
-  const jsonReader = new JsonReader(
-    groceryDiscountsSchemaFilePath,
-    groceryDiscountsFilePath
-  );
-  const jsonData = (await jsonReader.read()) as IGroceryDiscounts;
-
   const notion = new NotionDatabaseClient(integrationToken, databaseId);
+  const propertyFilter = new NotionManager().querySupermarket(groceryName);
 
-  const propertyFilter = new NotionConverter().querySupermarket(groceryName)
+  // Construct a IGroceryDiscounts object from the JsonDataContext
+  const discounts: IGroceryDiscount[] =
+    await jsonDataManager.getGroceryDiscountsVerbose();
 
-  await notion.flushDatabase(jsonData, propertyFilter)
-
-  // Use the instance of the converter and use it and transform the type
-}
-
-async function discountScraper(): Promise<void> {
-  const groceryConfig = await getConfig();
-
-  const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
-
-  const jsonWriter = new JsonWriter(
-    `./export/${groceryConfig.name}_${DateTimeHandler.getDateTimeShort()}.json`
+  // Convert product discounts to database entries
+  const discountEntries = new NotionManager().toDatabaseEntries(discounts);
+  logger.info(
+    `Converted product discounts to ${discountEntries.length} new database entries.`
   );
-  await jsonWriter.write(groceryDiscounts);
 
-  if (groceryDiscounts.discounts.length > 0) {
-    await flushNotionDiscountDatabase(jsonWriter.getFilePath(), groceryConfig.name);
+  if (discountEntries.length > 0) {
+    await notion.flushDatabase(discountEntries, propertyFilter);
     logger.info("Discounts are added to Notion database.");
   } else {
     logger.error("No discounts found to add to Notion.");
   }
+}
 
-  logger.info("Discount scraper process has been completed.");
+async function discountScraper(): Promise<void> {
+  logger.info("Discount scraper process has started!");
+
+  const productCategoriesReferencePath = getEnvVariable(
+    "PRODUCT_CATEGORIES_REFERENCE_PATH"
+  );
+  const groceryConfig = await getConfig();
+  const jsonReader = await new JsonReader<string[]>(
+    productCategoriesReferencePath
+  ).read();
+
+  await jsonDataManager.getProductCategoryController().delete();
+  await jsonDataManager.addProductCategoryDb(jsonReader);
+
+  const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
+
+  await jsonDataManager.getProductController().delete();
+  await jsonDataManager.addProductDb(groceryConfig.name, groceryDiscounts);
+  await jsonDataManager.getDiscountController().delete();
+  await jsonDataManager.addDiscountDb(groceryDiscounts);
+
+  // await setProductCategory();
+
+  await flushNotionDiscountDatabaseByGrocery(groceryConfig.name);
+
+  logger.info("Discount scraper process has stopped!");
 }
 
 discountScraper();

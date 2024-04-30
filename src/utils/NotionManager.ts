@@ -10,22 +10,22 @@ import {
 } from "../models/NotionModel";
 import { logger } from "./Logger";
 
-export default class NotionConverter {
+export default class NotionManager {
   private blocks: IBlock[] = [];
 
   public querySupermarket(value: string) {
     return {
       property: "Supermarket",
       select: {
-        equals: value
-      }
-    }
+        equals: value,
+      },
+    };
   }
-  
-  public toPageBlocks(groceryDiscounts: IGroceryDiscounts): IBlock[] {
+
+  public toPageBlocks(groceryDiscounts: IGroceryDiscount[]): IBlock[] {
     try {
-      this.addHeading3(groceryDiscounts.groceryName);
-      groceryDiscounts.discounts.forEach((discount) => {
+      this.addHeading3(groceryDiscounts[0].supermarket);
+      groceryDiscounts.forEach((discount) => {
         this.addTodo(
           `${discount.productName}: ${discount.discountPrice} (${discount.specialDiscount})`
         );
@@ -33,12 +33,12 @@ export default class NotionConverter {
       this.addDivider();
 
       logger.info(
-        `Converted grocery discounts for '${groceryDiscounts.groceryName}' to Notion page blocks.`
+        `Converted grocery discounts for '${groceryDiscounts[0].supermarket}' to Notion page blocks.`
       );
       return this.blocks;
     } catch (error) {
       logger.error(
-        `Error converting grocery discounts for '${groceryDiscounts.groceryName}' to Notion page blocks: ${error}`
+        `Error converting grocery discounts for '${groceryDiscounts[0].supermarket}' to Notion page blocks: ${error}`
       );
       // Handling error appropriately, here we simply throw it to be dealt by the caller
       throw error;
@@ -60,39 +60,35 @@ export default class NotionConverter {
   }
 
   public toDatabaseEntries(
-    groceryDiscounts: IGroceryDiscounts
+    discounts: IGroceryDiscount[]
   ): IProductDiscountDatabase[] {
     try {
-      const entries = groceryDiscounts.discounts.map((productDiscount) =>
-        this.toDatabaseEntry(groceryDiscounts.groceryName, productDiscount)
+      const discountEntries = discounts.map((discount) =>
+        this.toDatabaseEntry(discount)
       );
-
       logger.info(
-        `Converted grocery discounts for '${groceryDiscounts.groceryName}' to Notion database entries.`
+        `Converted grocery discounts for '${discounts[0].supermarket}' to Notion database entries.`
       );
-      return entries;
+      return discountEntries;
     } catch (error) {
-      logger.error(
-        `Error converting grocery discounts for '${groceryDiscounts.groceryName}': ${error}`
-      );
-      throw error; // Rethrow the error to let the caller handle it
+      logger.error("Error converting grocery discounts for:", error);
+      process.exit(1);
     }
   }
 
   private toDatabaseEntry(
-    groceryName: string,
-    productDiscount: IProductDiscount
+    discount: IGroceryDiscount
   ): IProductDiscountDatabase {
     const productDiscountEntry: IProductDiscountDatabase = {
-      ProductName: this.addTitle(productDiscount.productName),
-      OriginalPrice: this.addNumber(productDiscount.originalPrice),
-      DiscountPrice: this.addNumber(productDiscount.discountPrice),
-      SpecialDiscount: this.addText(productDiscount.specialDiscount),
-      ProductCategory: this.addSelect(productDiscount.productCategory),
-      Supermarket: this.addSelect(groceryName),
+      ProductName: this.addTitle(discount.productName),
+      OriginalPrice: this.addNumber(discount.originalPrice),
+      DiscountPrice: this.addNumber(discount.discountPrice),
+      SpecialDiscount: this.addText(discount.specialDiscount),
+      ProductCategory: this.addSelect(discount.productCategory),
+      Supermarket: this.addSelect(discount.supermarket),
     };
     logger.debug(
-      `Created a product discount entry for '${productDiscount.productName}'.`
+      `Created a product discount entry for '${discount.productName}'.`
     );
     return productDiscountEntry;
   }

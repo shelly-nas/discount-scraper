@@ -3,30 +3,36 @@ import Ajv from "ajv";
 import fs from "fs";
 import path from "path";
 
-export default class JsonReader {
+export default class JsonReader<T> {
   private schemaPath: string;
   private jsonPath: string;
 
-  constructor(schemaPath: string, filePath: string) {
+  constructor(filePath: string, schemaPath: string = "") {
     this.schemaPath = schemaPath;
     this.jsonPath = filePath;
   }
 
-  public async read(): Promise<object> {
-    const parsedGrocery = this.createJsonObject(this.jsonPath);
+  public getFilePath(): string {
+    return this.jsonPath;
+  }
+  
+  public async read(): Promise<T> {
+    const jsonObject: T = this.createJsonObject(this.jsonPath);
 
-    const { isValid, errors } = await this.validateObject(parsedGrocery);
-
-    if (!isValid) {
-      logger.error("JSON key validation failed:", errors);
-      process.exit(1);
-    } else {
-      logger.info(`Read '${this.jsonPath}' file successfully.`);
-      return parsedGrocery;
+    if (this.schemaPath != "") {
+      const { isValid, errors } = await this.validateObject(jsonObject);
+      
+      if (!isValid) {
+        logger.error("JSON key validation failed:", errors);
+        process.exit(1);
+      }
     }
+
+    logger.info(`Read '${this.jsonPath}' file successfully.`);
+    return jsonObject;
   }
 
-  private createJsonObject(filePath: string): any {
+  private createJsonObject(filePath: string): T {
     try {
       // Ensure the file path is absolute
       const absolutePath: string = path.resolve(filePath);
@@ -42,9 +48,9 @@ export default class JsonReader {
   }
 
   private async validateObject(
-    jsonData: object
+    jsonData: T
   ): Promise<{ isValid: boolean; errors: any[] | null | undefined }> {
-    const parsedSchema = this.createJsonObject(this.schemaPath);
+    const parsedSchema = this.createJsonObject(this.schemaPath) as object;
 
     // Compile the schema
     const ajv = new Ajv({ allErrors: true });

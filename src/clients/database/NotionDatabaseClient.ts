@@ -1,6 +1,5 @@
 import { Client } from "@notionhq/client";
 import { logger } from "../../utils/Logger";
-import NotionConverter from "../../utils/NotionConverter";
 import { PageObjectResponse, PartialPageObjectResponse, PartialDatabaseObjectResponse, DatabaseObjectResponse} from "@notionhq/client/build/src/api-endpoints";
 
 class NotionDatabaseClient {
@@ -12,7 +11,7 @@ class NotionDatabaseClient {
     this.databaseId = databaseId;
   }
 
-  public async flushDatabase(productDiscounts: IGroceryDiscounts, filter: any = undefined): Promise<void> {
+  public async flushDatabase(discountEntries: IProductDiscountDatabase[], filter: any = undefined): Promise<void> {
     logger.info('Starting to flush the database.');
 
     // Retrieve the current entries from the database
@@ -25,13 +24,9 @@ class NotionDatabaseClient {
         logger.debug(`Archived database entry with ID: ${databaseEntry.id}`);
     }
 
-    // Convert product discounts to database entries
-    const productDiscountEntries = new NotionConverter().toDatabaseEntries(productDiscounts);
-    logger.info(`Converted product discounts to ${productDiscountEntries.length} new database entries.`);
-
     // Set new database entries
-    for (const productDiscountEntry of productDiscountEntries) {
-        await this.setDatabaseEntry(productDiscountEntry);
+    for (const discountEntry of discountEntries) {
+        await this.setDatabaseEntry(discountEntry);
     }
 
     logger.info('Completed flushing the database.');
