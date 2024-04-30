@@ -99,21 +99,26 @@ export class JsonDataManager {
     const categories = await this.productCategoryController.getCategories();
 
     for (const discount of discounts) {
-      const productIndex = products.findIndex(
-        (product) => product.id === discount.product
-      );
-      const categoryIndex = categories.findIndex(
-        (category) => category.id === products[productIndex].category
-      );
-      const groceryDiscount: IGroceryDiscount = {
-        productCategory: categories[categoryIndex].name,
-        productName: products[productIndex].name,
-        originalPrice: discount.originalPrice,
-        discountPrice: discount.discountPrice,
-        specialDiscount: discount.specialDiscount,
-        supermarket: products[productIndex].supermarket,
-      };
-      groceryDiscounts.push(groceryDiscount);
+      try {
+        const productIndex = products.findIndex(
+          (product) => product.id === discount.product
+        );
+        const categoryIndex = categories.findIndex(
+          (category) => category.id === products[productIndex].category
+        );
+        const groceryDiscount: IGroceryDiscount = {
+          productCategory: categories[categoryIndex].name,
+          productName: products[productIndex].name,
+          originalPrice: discount.originalPrice,
+          discountPrice: discount.discountPrice,
+          specialDiscount: discount.specialDiscount,
+          supermarket: products[productIndex].supermarket,
+        };
+        groceryDiscounts.push(groceryDiscount);
+      } catch (error) {
+        logger.error("Error:", error);
+      }
+      
     }
     return groceryDiscounts;
   }
