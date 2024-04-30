@@ -1,0 +1,180 @@
+<mxfile host="65bd71144e">
+    <diagram id="7AE_cHmPOMvJOLEgviVe" name="Page-1">
+        <mxGraphModel dx="1221" dy="848" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="48" value="Front-end Integration" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fontColor=#000000;dashed=1;fillColor=none;verticalAlign=top;" vertex="1" parent="1">
+                    <mxGeometry x="860" y="220" width="160" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="Internal Data Storage" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fontColor=#000000;dashed=1;fillColor=none;verticalAlign=top;" vertex="1" parent="1">
+                    <mxGeometry x="520" y="90" width="160" height="430" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="Scrape Products" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fontColor=#000000;dashed=1;fillColor=none;verticalAlign=top;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="200" width="160" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="420" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="50" y="430" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;" edge="1" parent="1" source="5" target="6">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Supermarkets&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;JSON File With WebIdentifiers&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="60" y="440" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;" edge="1" parent="1" source="6" target="8">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="JsonReader&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;Validate agains JSON Schema&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="220" y="440" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;" edge="1" parent="1" source="8" target="9">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="WebClient&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;General Web Functions (open, navigate, etc.)&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="440" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;" edge="1" parent="1" target="10">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="440" y="350" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="9" value="SupermarketClient&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;General Supermarket Functions (getProductName, getProductCatagory, etc.)&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="350" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="370" y="240" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="380" y="250" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="&amp;lt;Supermarket&amp;gt;Clients&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;Specific Supermarket Functions (getDiscountPrice, getOriginalPrice, etc.)&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="390" y="260" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="JsonDataManager&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;Interactions With JSON Database Structure&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="440" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="8" target="17">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="350" y="480" as="sourcePoint"/>
+                        <mxPoint x="390" y="480" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="21" value="" style="endArrow=classic;html=1;fontSize=12;fontColor=#000000;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;startArrow=classic;startFill=1;dashed=1;" edge="1" parent="1" source="5" target="10">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="180" y="420" as="sourcePoint"/>
+                        <mxPoint x="300" y="320" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="23" value="JsonDataContext&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;i style=&quot;border-color: var(--border-color);&quot;&gt;&lt;font style=&quot;border-color: var(--border-color); font-size: 8px;&quot; color=&quot;#cccccc&quot;&gt;General Data Functions&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="350" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="530" y="240" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="250" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="Controllers&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;i style=&quot;border-color: var(--border-color);&quot;&gt;&lt;font style=&quot;border-color: var(--border-color); font-size: 8px;&quot; color=&quot;#cccccc&quot;&gt;Interactions With Database Functions&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="550" y="260" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="23" target="26">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="455" y="360" as="sourcePoint"/>
+                        <mxPoint x="460" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="28" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="17" target="23">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="465" y="370" as="sourcePoint"/>
+                        <mxPoint x="470" y="340" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="33" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="26" target="32">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="610" y="360" as="sourcePoint"/>
+                        <mxPoint x="620" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="34" style="edgeStyle=none;html=1;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="25" target="31">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="620" y="270" as="sourcePoint"/>
+                        <mxPoint x="620" y="220" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="35" style="edgeStyle=none;html=1;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" target="30">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="590" y="240" as="sourcePoint"/>
+                        <mxPoint x="615.7142857142858" y="220" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="30" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="530" y="130" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="540" y="140" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="Models&lt;br style=&quot;border-color: var(--border-color);&quot;&gt;&lt;i style=&quot;border-color: var(--border-color);&quot;&gt;&lt;font style=&quot;border-color: var(--border-color); font-size: 8px;&quot; color=&quot;#cccccc&quot;&gt;Database Structure Definitions&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="550" y="150" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="" style="endArrow=classic;html=1;fontSize=12;fontColor=#000000;exitX=1;exitY=0;exitDx=0;exitDy=0;startArrow=classic;startFill=1;dashed=1;entryX=0;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="3" target="12">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="189.99999999999977" y="450" as="sourcePoint"/>
+                        <mxPoint x="400" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="38" value="" style="endArrow=classic;html=1;fontSize=12;fontColor=#000000;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;startArrow=classic;startFill=1;dashed=1;" edge="1" parent="1" source="4" target="13">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="199.99999999999977" y="460" as="sourcePoint"/>
+                        <mxPoint x="410" y="340" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="40" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="700" y="430" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="17" target="40">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="510" y="480" as="sourcePoint"/>
+                        <mxPoint x="550" y="480" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="43" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="710" y="440" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="44" value="Product Discounts&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;JSON Files With Product Discounts Data&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="720" y="450" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="45" value="NotionClient&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;JSON Files With Product Discounts Data&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="880" y="440" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="47" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="44" target="45">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="670" y="479.9999999999999" as="sourcePoint"/>
+                        <mxPoint x="710" y="469.9999999999999" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="49" value="NotionManager&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;Manages &amp;amp; Converts Datastructures&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="880" y="350" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" value="Models&lt;br&gt;&lt;i&gt;&lt;font color=&quot;#cccccc&quot; style=&quot;font-size: 8px;&quot;&gt;Notion Structure Definitions&lt;/font&gt;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="880" y="260" width="120" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="49" target="45">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="610" y="360" as="sourcePoint"/>
+                        <mxPoint x="620" y="330" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="52" style="edgeStyle=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=8;fontColor=#CCCCCC;startArrow=classic;startFill=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="49" target="50">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="620" y="370" as="sourcePoint"/>
+                        <mxPoint x="630" y="340" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
