@@ -40,10 +40,8 @@ class OpenAIClient {
       ],
       model: "gpt-4-turbo-preview",
       max_tokens: this.maxTokens,
-      temperature: 0,
-      // response_format: { 
-      //   type: "json_object",
-      // },
+      seed: 123, // For reproducible outputs
+      temperature: 0, // For reproducible outputs
     });
     logger.info("Categorize product into custom set of product categories.");
     logger.debug("GTP Response:", completion);
