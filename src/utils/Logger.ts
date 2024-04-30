@@ -43,11 +43,7 @@ class Logger {
     return level <= this.currentLogLevel;
   }
 
-  private writeToFile(
-    level: string,
-    message: string,
-    ...optionalParams: any[]
-  ): void {
+  private writeToFile(level: string, message: string, ...optionalParams: any[]): void {
     if (!this.shouldLog(LogLevel[level as keyof typeof LogLevel])) {
       return;
     }
@@ -59,7 +55,7 @@ class Logger {
       // Append the initial message to the file.
       fs.appendFileSync(this.logFilePath, logMessage);
 
-      // Append each optional parameter as a new entry in the log file.
+      // Append each optional parameter as addition to the initial entry in the log file.
       optionalParams.forEach((param) => {
         let paramAsString;
         if (typeof param === "object") {

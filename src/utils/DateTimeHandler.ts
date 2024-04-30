@@ -1,4 +1,4 @@
-export default class DateTimeHandler {
+class DateTimeHandler {
   private static getFormattedDateTime(): {
     year: string;
     month: string;
@@ -33,3 +33,5 @@ export default class DateTimeHandler {
     return `${year}${month}${day}-${hours}${minutes}${seconds}`;
   }
 }
+
+export default DateTimeHandler;

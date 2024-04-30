@@ -1,6 +1,6 @@
 import { logger } from "./Logger";
 
-export default class ArgumentHandler {
+class ArgumentHandler {
   private args: string[];
 
   constructor(args: string[]) {
@@ -17,3 +17,5 @@ export default class ArgumentHandler {
     }
   }
 }
+
+export default ArgumentHandler;
