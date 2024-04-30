@@ -8,8 +8,11 @@ import {
   getConfig,
   getEnvVariable,
 } from "./utils/ConfigHelper";
-import AIClient from "./clients/ai/OpenAIClient";
+
 import JsonDataManager from "./data/JsonDataManager";
+import OpenAIClient from "./clients/ai/OpenAIClient";
+import OllamaClient from "./clients/ai/AIClient";
+
 require("dotenv").config();
 
 const jsonDataManager = new JsonDataManager();
@@ -64,7 +67,8 @@ async function setProductCategory(): Promise<void> {
   const jsonProductCategories = await jsonDataManager.getProductCategoryController().getCategories();
 
   const apiKey = getEnvVariable("CHATGPT_API_KEY");
-  const ai = new AIClient(apiKey);
+  const ai = new OpenAIClient(apiKey);
+  // const ai = new OllamaClient();
 
   await ai.categorizeProducts(
     JSON.stringify(jsonProducts),
@@ -107,6 +111,7 @@ async function flushNotionDiscountDatabaseByGrocery(
 
 async function discountScraper(): Promise<void> {
   logger.info("Discount scraper process has started!");
+
   const productCategoriesReferencePath = getEnvVariable(
     "PRODUCT_CATEGORIES_REFERENCE_PATH"
   );
