@@ -29,7 +29,7 @@ export async function getConfig(): Promise<IGroceryWebStore> {
   
 export function createGroceryClient(configName: string): GroceryClient {
   switch (configName) {
-    case "Albert-Heijn":
+    case "Albert Heijn":
       return new AhClient();
     case "Dirk":
       return new DirkClient();
