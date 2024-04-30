@@ -66,9 +66,6 @@ abstract class SupermarketClient extends WebClient {
 
   public async getDiscountProductDetails(productSelector: ElementHandle,productConfig: IProductDetails): Promise<IProductDiscountDetails> {
     const productDiscountDetails = {
-      productCategory: await this.getProductCategoryName(
-        productConfig.productCategory
-      ),
       productName: await this.getProductName(
         productSelector,
         productConfig.productName
@@ -84,6 +81,9 @@ abstract class SupermarketClient extends WebClient {
       specialDiscount: await this.getSpecialDiscount(
         productSelector,
         productConfig.specialDiscount
+      ),
+      productCategory: await this.getProductCategoryName(
+        productConfig.productCategory
       ),
       supermarket: this.name,
     };

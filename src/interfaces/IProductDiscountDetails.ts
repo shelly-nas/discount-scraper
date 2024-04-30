@@ -1,7 +1,8 @@
-interface IProductDiscount {
-  productCategory: string;
+interface IProductDiscountDetails {
   productName: string;
   originalPrice: number;
   discountPrice: number;
   specialDiscount: string;
+  productCategory: string;
+  supermarket: string;
 }

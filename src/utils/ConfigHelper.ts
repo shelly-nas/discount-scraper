@@ -11,13 +11,13 @@ export function getEnvVariable(name: string): string {
   return value;
 }
 
-export async function getConfig(): Promise<IGroceryWebStore> {
+export async function getConfig(): Promise<ISupermarketWebIdentifiers> {
     const groceryWebStoreSchemaFilePath = getEnvVariable("GROCERY_SCHEMA");
     const argHandler = new ArgumentHandler(process.argv);
     const configPath = argHandler.getArgByFlag("--config");
   
     const jsonReader = new JsonReader(configPath, groceryWebStoreSchemaFilePath);
-    const jsonData = (await jsonReader.read()) as IGroceryWebStore;
+    const jsonData = (await jsonReader.read()) as ISupermarketWebIdentifiers;
   
     logger.debug("JSON data read from file:", jsonData);
     return jsonData;

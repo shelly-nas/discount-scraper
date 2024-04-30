@@ -14,7 +14,7 @@ interface IWebIdentifiers {
   promotionProducts: IProductDetails;
 }
 
-interface IGroceryWebStore {
+interface ISupermarketWebIdentifiers {
   name: string;
   url: string;
   webIdentifiers: IWebIdentifiers;
