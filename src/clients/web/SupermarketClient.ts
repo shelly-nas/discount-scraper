@@ -1,8 +1,29 @@
 import { logger } from "../../utils/Logger";
 import { ElementHandle } from "playwright";
 import WebClient from "./WebClient";
+import AhClient from "./AhClient";
+import DirkClient from "./DirkClient";
+import PlusClient from "./PlusClient";
 
-abstract class GroceryClient extends WebClient {
+export function getSupermarketClient(name: string): SupermarketClient {
+  switch (name) {
+    case "Albert Heijn":
+      return new AhClient();
+    case "Dirk":
+      return new DirkClient();
+    case "PLUS":
+      return new PlusClient();
+    default:
+      logger.error(
+        "Descendent of Grocery Client could not be found or instantiated."
+      );
+      process.exit(1);
+  }
+}
+
+abstract class SupermarketClient extends WebClient {
+  abstract name: string;
+  
   private productCategory:
     | ElementHandle<SVGElement | HTMLElement>
     | null
@@ -43,10 +64,7 @@ abstract class GroceryClient extends WebClient {
     return discountProducts;
   }
 
-  public async getDiscountProductDetails(
-    productSelector: ElementHandle,
-    productConfig: IProductDetails
-  ): Promise<IProductDiscount> {
+  public async getDiscountProductDetails(productSelector: ElementHandle,productConfig: IProductDetails): Promise<IProductDiscountDetails> {
     const productDiscountDetails = {
       productCategory: await this.getProductCategoryName(
         productConfig.productCategory
@@ -67,6 +85,7 @@ abstract class GroceryClient extends WebClient {
         productSelector,
         productConfig.specialDiscount
       ),
+      supermarket: this.name,
     };
     logger.info(
       `Product details a scraped for '${productDiscountDetails.productName}'.`
@@ -158,4 +177,4 @@ abstract class GroceryClient extends WebClient {
   }
 }
 
-export default GroceryClient;
+export default SupermarketClient;
