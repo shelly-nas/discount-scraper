@@ -96,18 +96,18 @@ export class JsonDataManager {
     const groceryDiscounts: IGroceryDiscount[] = [];
     const products = await this.productController.getProducts();
     const discounts = await this.discountController.getDiscounts();
-    const categories = await this.productCategoryController.getCategories();
+    // const categories = await this.productCategoryController.getCategories();
 
     for (const discount of discounts) {
       try {
         const productIndex = products.findIndex(
           (product) => product.id === discount.product
         );
-        const categoryIndex = categories.findIndex(
-          (category) => category.id === products[productIndex].category
-        );
+        // const categoryIndex = categories.findIndex(
+        //   (category) => category.id === products[productIndex].category
+        // );
         const groceryDiscount: IGroceryDiscount = {
-          productCategory: categories[categoryIndex].name,
+          productCategory: "Various",
           productName: products[productIndex].name,
           originalPrice: discount.originalPrice,
           discountPrice: discount.discountPrice,

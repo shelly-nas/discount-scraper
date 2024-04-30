@@ -130,7 +130,7 @@ async function discountScraper(): Promise<void> {
   await jsonDataManager.getDiscountController().delete();
   await jsonDataManager.addDiscountDb(groceryDiscounts);
 
-  await setProductCategory();
+  // await setProductCategory();
 
   await flushNotionDiscountDatabaseByGrocery(groceryConfig.name);
 
