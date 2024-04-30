@@ -40,7 +40,7 @@ class ProductController {
     }
   }
 
-  async addProduct(name: string, category: number, supermarket: string): Promise<void> {
+  async addProduct(name: string, category: string, supermarket: string): Promise<void> {
     const products = await this.context.load();
     const alreadyExists = products.some((product) => product.name === name);
 

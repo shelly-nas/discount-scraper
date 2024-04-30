@@ -1,108 +1,95 @@
 import JsonReader from "./utils/JsonReader";
-import NotionManager from "./utils/NotionManager";
+import NotionManager from "./data/NotionManager";
 import { logger } from "./utils/Logger";
 import { ElementHandle } from "playwright";
 import NotionDatabaseClient from "./clients/database/NotionDatabaseClient";
+import JsonDataManager from "./data/JsonDataManager";
+import SupermarketClient from "./clients/web/SupermarketClient";
 import {
-  createGroceryClient,
   getConfig,
   getEnvVariable,
 } from "./utils/ConfigHelper";
+import DirkClient from "./clients/web/DirkClient";
+import PlusClient from "./clients/web/PlusClient";
+import AhClient from "./clients/web/AhClient";
 
-import JsonDataManager from "./data/JsonDataManager";
-import OpenAIClient from "./clients/ai/OpenAIClient";
-import OllamaClient from "./clients/ai/AIClient";
+export function getSupermarketClient(name: string): SupermarketClient {
+  switch (name) {
+    case "Albert Heijn":
+      return new AhClient();
+    case "Dirk":
+      return new DirkClient();
+    case "PLUS":
+      return new PlusClient();
+    default:
+      logger.error("Descendent of Grocery Client could not be found or instantiated.");
+      process.exit(1);
+  }
+}
 
 require("dotenv").config();
 
 const jsonDataManager = new JsonDataManager();
 
-async function getGroceryDiscounts(
-  config: IGroceryWebStore
-): Promise<IProductDiscount[]> {
-  const groceryClient = createGroceryClient(config.name);
-  const productDiscounts: IProductDiscount[] = [];
 
-  await groceryClient.init();
-  await groceryClient.navigate(config.url);
-  await groceryClient.handleCookiePopup(config.webIdentifiers.cookieDecline);
+async function getSupermarketDiscounts(config: ISupermarketWebIdentifiers): Promise<IProductDiscountDetails[]> {
+  const supermarketClient = getSupermarketClient(config.name);
+  let productDiscountDetails: IProductDiscountDetails[] = [];
+
+  await supermarketClient.init();
+  await supermarketClient.navigate(config.url);
+  await supermarketClient.handleCookiePopup(config.webIdentifiers.cookieDecline);
 
   // Iterate over each product category defined in the grocery store's configuration
   for (const productCategory of config.webIdentifiers.productCategories) {
     // Get the products listed under the current category that are on discount
-    const discountProducts: ElementHandle[] | undefined =
-      await groceryClient.getDiscountProductsByProductCategory(
-        productCategory,
-        config.webIdentifiers.products
-      );
+    const discountProducts: ElementHandle[] | undefined = await supermarketClient.getDiscountProductsByProductCategory(
+      productCategory,
+      config.webIdentifiers.products
+    );
 
     if (!discountProducts) {
-      logger.error(
-        `No discount products for product category '${productCategory}'.`
-      );
+      logger.error(`No discount products for product category '${productCategory}'.`);
       break;
     }
 
     // For each discount product found, get its details and append it to the groceryDiscounts
     for (const discountProduct of discountProducts) {
-      const productDiscountDetails: IProductDiscount =
-        await groceryClient.getDiscountProductDetails(
+      const details: IProductDiscountDetails = await supermarketClient.getDiscountProductDetails(
           discountProduct,
           config.webIdentifiers.promotionProducts
         );
-      productDiscounts.push(productDiscountDetails);
+      productDiscountDetails.push(details);
     }
     logger.info(`Discount details are scraped and stored.`);
   }
 
   // Close the grocery client (e.g., close browser instance, clear resources)
-  await groceryClient.close();
+  await supermarketClient.close();
 
   // Use JsonWriter to write the ProductDiscount details to a JSON file
-  return productDiscounts;
+  return productDiscountDetails;
 }
 
-async function setProductCategory(): Promise<void> {
-  const jsonProducts = await jsonDataManager.getProductController().getProducts();
-  const jsonProductCategories = await jsonDataManager.getProductCategoryController().getCategories();
-
-  const apiKey = getEnvVariable("CHATGPT_API_KEY");
-  const ai = new OpenAIClient(apiKey);
-  // const ai = new OllamaClient();
-
-  await ai.categorizeProducts(
-    JSON.stringify(jsonProducts),
-    JSON.stringify(jsonProductCategories)
-  );
-
-  logger.info("Products are categorized.");
-
-  logger.info(`Update the '${getEnvVariable("DB_PRODUCT")}' database.`);
-  const productDb = JSON.parse(ai.getCompletionContent());
-  await jsonDataManager.updateProductDb("category", productDb);
-}
-
-async function flushNotionDiscountDatabaseByGrocery(
-  groceryName: string
-): Promise<void> {
+async function flushNotionDatabaseBySupermarket(supermarket: string): Promise<void> {
   // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
   const integrationToken = getEnvVariable("NOTION_SECRET");
   const databaseId = getEnvVariable("NOTION_DATABASE_ID");
   const notion = new NotionDatabaseClient(integrationToken, databaseId);
-  const propertyFilter = new NotionManager().querySupermarket(groceryName);
+  const supermarketFilter = new NotionManager().querySupermarket(supermarket);
 
-  // Construct a IGroceryDiscounts object from the JsonDataContext
-  const discounts: IGroceryDiscount[] =
-    await jsonDataManager.getGroceryDiscountsVerbose();
+  // Construct a IProductDiscountDetails object from the JsonDataContext
+  const productDiscounts: IProductDiscountDetails[] =
+    await jsonDataManager.getSupermarketDiscountsVerbose();
 
   // Convert product discounts to database entries
-  const discountEntries = new NotionManager().toDatabaseEntries(discounts);
+  const productDiscountEntries = new NotionManager().toDatabaseEntries(productDiscounts);
   logger.info(
-    `Converted product discounts to ${discountEntries.length} new database entries.`
+    `Converted product discounts to ${productDiscountEntries.length} new database entries.`
   );
 
-  if (discountEntries.length > 0) {
-    await notion.flushDatabase(discountEntries, propertyFilter);
+  if (productDiscountEntries.length > 0) {
+    await notion.flushDatabase(productDiscountEntries, supermarketFilter);
     logger.info("Discounts are added to Notion database.");
   } else {
     logger.error("No discounts found to add to Notion.");
@@ -112,27 +99,17 @@ async function flushNotionDiscountDatabaseByGrocery(
 async function discountScraper(): Promise<void> {
   logger.info("Discount scraper process has started!");
 
-  const productCategoriesReferencePath = getEnvVariable(
-    "PRODUCT_CATEGORIES_REFERENCE_PATH"
-  );
-  const groceryConfig = await getConfig();
-  const jsonReader = await new JsonReader<string[]>(
-    productCategoriesReferencePath
-  ).read();
+  logger.info("Get the configuration details.")
+  const supermarketConfig: ISupermarketWebIdentifiers = await getConfig();
 
-  await jsonDataManager.getProductCategoryController().delete();
-  await jsonDataManager.addProductCategoryDb(jsonReader);
-
-  const groceryDiscounts = await getGroceryDiscounts(groceryConfig);
+  const supermarketDiscounts: IProductDiscountDetails[] = await getSupermarketDiscounts(supermarketConfig);
 
   await jsonDataManager.getProductController().delete();
-  await jsonDataManager.addProductDb(groceryConfig.name, groceryDiscounts);
+  await jsonDataManager.addProductDb(supermarketConfig.name, supermarketDiscounts);
   await jsonDataManager.getDiscountController().delete();
-  await jsonDataManager.addDiscountDb(groceryDiscounts);
+  await jsonDataManager.addDiscountDb(supermarketDiscounts);
 
-  // await setProductCategory();
-
-  await flushNotionDiscountDatabaseByGrocery(groceryConfig.name);
+  await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
   logger.info("Discount scraper process has stopped!");
 }
