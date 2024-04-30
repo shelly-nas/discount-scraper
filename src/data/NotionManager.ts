@@ -1,3 +1,4 @@
+import { logger } from "../utils/Logger";
 import {
   Heading3,
   Todo,
@@ -8,7 +9,6 @@ import {
   Number,
   Select,
 } from "../models/NotionModel";
-import { logger } from "./Logger";
 
 export default class NotionManager {
   private blocks: IBlock[] = [];
@@ -22,12 +22,12 @@ export default class NotionManager {
     };
   }
 
-  public toPageBlocks(groceryDiscounts: IGroceryDiscount[]): IBlock[] {
+  public toPageBlocks(groceryDiscounts: IProductDiscountDetails[]): IBlock[] {
     try {
       this.addHeading3(groceryDiscounts[0].supermarket);
       groceryDiscounts.forEach((discount) => {
         this.addTodo(
-          `${discount.productName}: ${discount.discountPrice} (${discount.specialDiscount})`
+          `${discount.name}: ${discount.discountPrice} (${discount.specialDiscount})`
         );
       });
       this.addDivider();
@@ -60,14 +60,14 @@ export default class NotionManager {
   }
 
   public toDatabaseEntries(
-    discounts: IGroceryDiscount[]
+    productDiscounts: IProductDiscountDetails[]
   ): IProductDiscountDatabase[] {
     try {
-      const discountEntries = discounts.map((discount) =>
+      const discountEntries = productDiscounts.map((discount) =>
         this.toDatabaseEntry(discount)
       );
       logger.info(
-        `Converted grocery discounts for '${discounts[0].supermarket}' to Notion database entries.`
+        `Converted grocery discounts for '${productDiscounts[0].supermarket}' to Notion database entries.`
       );
       return discountEntries;
     } catch (error) {
@@ -77,18 +77,18 @@ export default class NotionManager {
   }
 
   private toDatabaseEntry(
-    discount: IGroceryDiscount
+    productDiscount: IProductDiscountDetails
   ): IProductDiscountDatabase {
     const productDiscountEntry: IProductDiscountDatabase = {
-      ProductName: this.addTitle(discount.productName),
-      OriginalPrice: this.addNumber(discount.originalPrice),
-      DiscountPrice: this.addNumber(discount.discountPrice),
-      SpecialDiscount: this.addText(discount.specialDiscount),
-      ProductCategory: this.addSelect(discount.productCategory),
-      Supermarket: this.addSelect(discount.supermarket),
+      ProductName: this.addTitle(productDiscount.name),
+      OriginalPrice: this.addNumber(productDiscount.originalPrice),
+      DiscountPrice: this.addNumber(productDiscount.discountPrice),
+      SpecialDiscount: this.addText(productDiscount.specialDiscount),
+      ProductCategory: this.addSelect(productDiscount.category),
+      Supermarket: this.addSelect(productDiscount.supermarket),
     };
     logger.debug(
-      `Created a product discount entry for '${discount.productName}'.`
+      `Created a product discount entry for '${productDiscount.name}'.`
     );
     return productDiscountEntry;
   }
