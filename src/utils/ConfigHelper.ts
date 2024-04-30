@@ -1,3 +1,7 @@
+import AhClient from "../clients/web/AhClient";
+import DirkClient from "../clients/web/DirkClient";
+import PlusClient from "../clients/web/PlusClient";
+import SupermarketClient from "../clients/web/SupermarketClient";
 import ArgumentHandler from "./ArgumentHandler";
 import JsonReader from "./JsonReader";
 import { logger } from "./Logger";
@@ -22,3 +26,17 @@ export async function getConfig(): Promise<ISupermarketWebIdentifiers> {
     logger.debug("JSON data read from file:", jsonData);
     return jsonData;
   }
+
+export function getSupermarketClient(name: string): SupermarketClient {
+  switch (name) {
+    case "Albert Heijn":
+      return new AhClient();
+    case "Dirk":
+      return new DirkClient();
+    case "PLUS":
+      return new PlusClient();
+    default:
+      logger.error("Descendent of Grocery Client could not be found or instantiated.");
+      process.exit(1);
+  }
+}

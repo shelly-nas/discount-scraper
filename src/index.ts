@@ -1,31 +1,13 @@
-import JsonReader from "./utils/JsonReader";
 import NotionManager from "./data/NotionManager";
 import { logger } from "./utils/Logger";
 import { ElementHandle } from "playwright";
 import NotionDatabaseClient from "./clients/database/NotionDatabaseClient";
 import JsonDataManager from "./data/JsonDataManager";
-import SupermarketClient from "./clients/web/SupermarketClient";
 import {
   getConfig,
   getEnvVariable,
+  getSupermarketClient,
 } from "./utils/ConfigHelper";
-import DirkClient from "./clients/web/DirkClient";
-import PlusClient from "./clients/web/PlusClient";
-import AhClient from "./clients/web/AhClient";
-
-export function getSupermarketClient(name: string): SupermarketClient {
-  switch (name) {
-    case "Albert Heijn":
-      return new AhClient();
-    case "Dirk":
-      return new DirkClient();
-    case "PLUS":
-      return new PlusClient();
-    default:
-      logger.error("Descendent of Grocery Client could not be found or instantiated.");
-      process.exit(1);
-  }
-}
 
 require("dotenv").config();
 

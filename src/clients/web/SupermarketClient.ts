@@ -1,25 +1,6 @@
 import { logger } from "../../utils/Logger";
 import { ElementHandle } from "playwright";
 import WebClient from "./WebClient";
-import AhClient from "./AhClient";
-import DirkClient from "./DirkClient";
-import PlusClient from "./PlusClient";
-
-export function getSupermarketClient(name: string): SupermarketClient {
-  switch (name) {
-    case "Albert Heijn":
-      return new AhClient();
-    case "Dirk":
-      return new DirkClient();
-    case "PLUS":
-      return new PlusClient();
-    default:
-      logger.error(
-        "Descendent of Grocery Client could not be found or instantiated."
-      );
-      process.exit(1);
-  }
-}
 
 abstract class SupermarketClient extends WebClient {
   abstract name: string;
@@ -33,9 +14,7 @@ abstract class SupermarketClient extends WebClient {
     parentSelector: string,
     productSelector: string
   ): Promise<ElementHandle[] | undefined> {
-    logger.debug(
-      `Wait for product category with ID '${parentSelector}' to be visible.`
-    );
+    logger.debug(`Wait for product category with ID '${parentSelector}' to be visible.`);
     let discountProducts;
 
     try {
@@ -66,7 +45,7 @@ abstract class SupermarketClient extends WebClient {
 
   public async getDiscountProductDetails(productSelector: ElementHandle,productConfig: IProductDetails): Promise<IProductDiscountDetails> {
     const productDiscountDetails = {
-      productName: await this.getProductName(
+      name: await this.getProductName(
         productSelector,
         productConfig.productName
       ),
@@ -82,13 +61,13 @@ abstract class SupermarketClient extends WebClient {
         productSelector,
         productConfig.specialDiscount
       ),
-      productCategory: await this.getProductCategoryName(
+      category: await this.getProductCategoryName(
         productConfig.productCategory
       ),
       supermarket: this.name,
     };
     logger.info(
-      `Product details a scraped for '${productDiscountDetails.productName}'.`
+      `Product details a scraped for '${productDiscountDetails.name}'.`
     );
 
     return productDiscountDetails;
