@@ -1,5 +1,3 @@
-import ProductModel from './ProductModel';
-
 export class DiscountModel {
     product: number; // Index fo ProductModel
     originalPrice: number;

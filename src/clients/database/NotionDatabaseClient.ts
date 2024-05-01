@@ -30,8 +30,7 @@ class NotionDatabaseClient {
     }
 
     logger.info('Completed flushing the database.');
-}
-
+  }
 
   public async getDatabaseContents(filter: any = undefined): Promise<(PageObjectResponse | PartialPageObjectResponse | PartialDatabaseObjectResponse | DatabaseObjectResponse)[]> {
     try {
@@ -40,9 +39,7 @@ class NotionDatabaseClient {
         filter: filter,
       });
 
-      logger.info(
-        `Retrieved contents of database with ID '${this.databaseId}'.`
-      );
+      logger.info(`Retrieved contents of database with ID '${this.databaseId}'.`);
       return response.results;
     } catch (error) {
       logger.error("Error retrieving database contents:", error);
@@ -50,7 +47,6 @@ class NotionDatabaseClient {
     }
   }
 
-  // Create a new entry in the database (a new page with properties)
   public async setDatabaseEntry(databaseEntry: any) {
     try {
       const response = await this.notion.pages.create({
@@ -68,7 +64,6 @@ class NotionDatabaseClient {
     }
   }
 
-  // Delete an entry in the database (delete a page)
   public async archiveDatabaseEntry(pageId: string) {
     try {
       const response = await this.notion.pages.update({

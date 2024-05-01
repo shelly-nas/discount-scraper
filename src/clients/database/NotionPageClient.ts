@@ -3,7 +3,7 @@ import { BlockObjectRequest } from "@notionhq/client/build/src/api-endpoints";
 import { logger } from "../../utils/Logger";
 
 class NotionPageClient {
-  private maxBlocks = 100;
+  private maxBlocks = 100; // Limit of Notion API
   private notion: Client;
   private pageId: string;
 
@@ -12,9 +12,7 @@ class NotionPageClient {
     this.pageId = pageId;
   }
 
-  public async flushPage(
-    replacementBlocks: BlockObjectRequest[]
-  ): Promise<void> {
+  public async flushPage(replacementBlocks: BlockObjectRequest[]): Promise<void> {
     try {
       // Retrieve all the current blocks on the page
       const currentBlocks = await this.getPageBlocks();
@@ -58,9 +56,7 @@ class NotionPageClient {
         );
       }
 
-      logger.info(
-        `Retrieved ${allBlocks.length} Notion blocks for page '${this.pageId}'.`
-      );
+      logger.info(`Retrieved ${allBlocks.length} Notion blocks for page '${this.pageId}'.`);
       return allBlocks;
     } catch (error) {
       logger.error("Error listing Notion page blocks:", error);

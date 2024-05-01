@@ -1,10 +1,10 @@
-import ArgumentHandler from "./ArgumentHandler";
-import JsonReader from "./JsonReader";
-import { logger } from "./Logger";
-import GroceryClient from "../clients/web/GroceryClient";
 import AhClient from "../clients/web/AhClient";
 import DirkClient from "../clients/web/DirkClient";
 import PlusClient from "../clients/web/PlusClient";
+import SupermarketClient from "../clients/web/SupermarketClient";
+import ArgumentHandler from "./ArgumentHandler";
+import JsonReader from "./JsonReader";
+import { logger } from "./Logger";
 
 export function getEnvVariable(name: string): string {
   const value = process.env[name];
@@ -15,20 +15,20 @@ export function getEnvVariable(name: string): string {
   return value;
 }
 
-export async function getConfig(): Promise<IGroceryWebStore> {
+export async function getConfig(): Promise<ISupermarketWebIdentifiers> {
     const groceryWebStoreSchemaFilePath = getEnvVariable("GROCERY_SCHEMA");
     const argHandler = new ArgumentHandler(process.argv);
     const configPath = argHandler.getArgByFlag("--config");
   
     const jsonReader = new JsonReader(configPath, groceryWebStoreSchemaFilePath);
-    const jsonData = (await jsonReader.read()) as IGroceryWebStore;
+    const jsonData = (await jsonReader.read()) as ISupermarketWebIdentifiers;
   
     logger.debug("JSON data read from file:", jsonData);
     return jsonData;
   }
-  
-export function createGroceryClient(configName: string): GroceryClient {
-  switch (configName) {
+
+export function getSupermarketClient(name: string): SupermarketClient {
+  switch (name) {
     case "Albert Heijn":
       return new AhClient();
     case "Dirk":
@@ -36,9 +36,7 @@ export function createGroceryClient(configName: string): GroceryClient {
     case "PLUS":
       return new PlusClient();
     default:
-      logger.error(
-        "Descendent of Grocery Client could not be found or instantiated."
-      );
+      logger.error("Descendent of Grocery Client could not be found or instantiated.");
       process.exit(1);
   }
 }

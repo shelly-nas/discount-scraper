@@ -37,19 +37,16 @@ export default class JsonReader<T> {
       // Ensure the file path is absolute
       const absolutePath: string = path.resolve(filePath);
       const fileContent: string = fs.readFileSync(absolutePath, "utf8");
-      return JSON.parse(fileContent);
+      const jsonObject: T = JSON.parse(fileContent)
+      logger.debug("JSON Object created:", jsonObject)
+      return jsonObject;
     } catch (error) {
-      logger.error(
-        `Failed to read or parse the JSON file at ${this.jsonPath}:`,
-        error
-      );
+      logger.error(`Failed to read or parse the JSON file at ${this.jsonPath}:`,error);
       process.exit(1);
     }
   }
 
-  private async validateObject(
-    jsonData: T
-  ): Promise<{ isValid: boolean; errors: any[] | null | undefined }> {
+  private async validateObject(jsonData: T): Promise<{ isValid: boolean; errors: any[] | null | undefined }> {
     const parsedSchema = this.createJsonObject(this.schemaPath) as object;
 
     // Compile the schema

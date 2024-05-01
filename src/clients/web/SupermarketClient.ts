@@ -2,7 +2,9 @@ import { logger } from "../../utils/Logger";
 import { ElementHandle } from "playwright";
 import WebClient from "./WebClient";
 
-abstract class GroceryClient extends WebClient {
+abstract class SupermarketClient extends WebClient {
+  abstract name: string;
+  
   private productCategory:
     | ElementHandle<SVGElement | HTMLElement>
     | null
@@ -12,9 +14,7 @@ abstract class GroceryClient extends WebClient {
     parentSelector: string,
     productSelector: string
   ): Promise<ElementHandle[] | undefined> {
-    logger.debug(
-      `Wait for product category with ID '${parentSelector}' to be visible.`
-    );
+    logger.debug(`Wait for product category with ID '${parentSelector}' to be visible.`);
     let discountProducts;
 
     try {
@@ -43,15 +43,9 @@ abstract class GroceryClient extends WebClient {
     return discountProducts;
   }
 
-  public async getDiscountProductDetails(
-    productSelector: ElementHandle,
-    productConfig: IProductDetails
-  ): Promise<IProductDiscount> {
+  public async getDiscountProductDetails(productSelector: ElementHandle,productConfig: IProductDetails): Promise<IProductDiscountDetails> {
     const productDiscountDetails = {
-      productCategory: await this.getProductCategoryName(
-        productConfig.productCategory
-      ),
-      productName: await this.getProductName(
+      name: await this.getProductName(
         productSelector,
         productConfig.productName
       ),
@@ -67,9 +61,13 @@ abstract class GroceryClient extends WebClient {
         productSelector,
         productConfig.specialDiscount
       ),
+      category: await this.getProductCategoryName(
+        productConfig.productCategory
+      ),
+      supermarket: this.name,
     };
     logger.info(
-      `Product details a scraped for '${productDiscountDetails.productName}'.`
+      `Product details a scraped for '${productDiscountDetails.name}'.`
     );
 
     return productDiscountDetails;
@@ -158,4 +156,4 @@ abstract class GroceryClient extends WebClient {
   }
 }
 
-export default GroceryClient;
+export default SupermarketClient;

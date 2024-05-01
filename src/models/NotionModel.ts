@@ -1,6 +1,6 @@
 // Class models for Database Entries
 abstract class Properties {
-  constructor(public type: string) { }  // Base class only needs a type
+  constructor(public type: string) { }
 }
 
 export class Title extends Properties {
@@ -76,7 +76,7 @@ export class Divider extends Block {
   }
 }
 
-// Class models for general use
+// Class models for ambagious objects
 export class RichText {
   public type: string = "text";
   public text: Content;

@@ -1,11 +1,13 @@
 import { ElementHandle } from "playwright";
-import GroceryClient from "./GroceryClient";
+import SupermarketClient from "./SupermarketClient";
 import { logger } from "../../utils/Logger";
 
-class PlusClient extends GroceryClient {
+class PlusClient extends SupermarketClient {
+  public name: string = "PLUS";
+
   constructor() {
     super();
-    logger.info("Created a PLUS Grocery Client instance.");
+    logger.debug(`Created a '${this.name}' Supermarket Client instance.`);
   }
 
   public async getOriginalPrice(

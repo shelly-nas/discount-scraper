@@ -1,8 +1,8 @@
-interface IGroceryDiscount {
-  productName: string;
+interface IProductDiscountDetails {
+  name: string;
   originalPrice: number;
   discountPrice: number;
   specialDiscount: string;
-  productCategory: string;
+  category: string;
   supermarket: string;
 }
