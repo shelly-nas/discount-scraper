@@ -1,0 +1,67 @@
+name: Deploy to Raspberry Pi
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.PI_SSH }}
+
+      - name: Stop Services and Clone Project
+        run: |
+          ssh ${{ vars.PI_USER }}@${{ secrets.PI_IP }} << EOF
+            # Go to correct base directory
+            cd "~/services"
+
+            # Stop the service if it's running
+            if sudo systemctl is-active --quiet ${SERVICE_NAME}; then
+              sudo systemctl stop ${SERVICE_NAME}
+            fi
+
+            # Remove the existing repository if it exists
+            if [ -d "${{ env.REPO_NAME }}" ]; then
+              rm -rf "${{ env.REPO_NAME }}"
+            fi
+
+            # Clone the repository again
+            git clone git@github.com:${{ env.GITHUB_USER }}/${{ env.REPO_NAME }}.git
+
+            cd "${{ env.REPO_NAME }}"
+            bash init.sh
+          EOF
+    outputs:
+      success: ${{ steps.clone.success }}
+
+  deploy_config:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config_name: [ah, dirk, plus]  # List all your configurations here
+
+    steps:
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.PI_SSH }}
+
+      - name: Deploy with Specific Config
+        run: |
+          ssh ${{ vars.PI_USER }}@${{ secrets.PI_IP }} << EOF
+            cd "${{ env.REPO_NAME }}"
+            bash deploy.sh ${MATRIX.config_name} ${{ env.REPO_NAME }}
+          EOF
