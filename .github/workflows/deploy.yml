@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  WORK_DIR: /home/admin/services
+
 jobs:
   setup:
     runs-on: raspberrypi
@@ -15,6 +18,8 @@ jobs:
       # Add steps that stops the services running
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          path: $WORK_DIR
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
@@ -30,6 +35,7 @@ jobs:
           NOTION_SECRET: ${{ secrets.NOTION_SECRET }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: bash ./init.sh
+        working-directory: $WORK_DIR
         
   deploy:
     needs: setup
@@ -39,6 +45,5 @@ jobs:
         config_name: [ah, dirk, plus] # List all your configurations here
     steps:
       - name: Deploy with Specific Config
-        run: |
-          cd ~/services/${GITHUB_REPOSITORY#*/}  # Remove 'username/' prefix from repo name
-          bash deploy.sh ${{ matrix.config_name }}
+        run: bash deploy.sh ${{ matrix.config_name }}
+        working-directory: $WORK_DIR
