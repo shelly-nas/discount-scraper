@@ -8,9 +8,6 @@ on:
     branches:
       - main
 
-env:
-  WORK_DIR: /home/admin/services
-
 jobs:
   setup:
     runs-on: raspberrypi
@@ -18,8 +15,6 @@ jobs:
       # Add steps that stops the services running
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          path: ${{ env.WORK_DIR }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
@@ -35,7 +30,6 @@ jobs:
           NOTION_SECRET: ${{ secrets.NOTION_SECRET }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: bash ./init.sh
-        working-directory: ${{ env.WORK_DIR }}
         
   deploy:
     needs: setup
@@ -46,4 +40,3 @@ jobs:
     steps:
       - name: Deploy with Specific Config
         run: bash deploy.sh ${{ matrix.config_name }}
-        working-directory: ${{ env.WORK_DIR }}
