@@ -10,58 +10,35 @@ on:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
-
+    runs-on: raspberrypi
     steps:
-      - name: Checkout Code
+      # Add steps that stops the services running
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          ssh-private-key: ${{ secrets.PI_SSH }}
+          node-version: "14"
 
-      - name: Stop Services and Clone Project
-        run: |
-          ssh ${{ vars.PI_USER }}@${{ secrets.PI_IP }} << EOF
-            # Go to correct base directory
-            cd "~/services"
-
-            # Stop the service if it's running
-            if sudo systemctl is-active --quiet ${SERVICE_NAME}; then
-              sudo systemctl stop ${SERVICE_NAME}
-            fi
-
-            # Remove the existing repository if it exists
-            if [ -d "${{ env.REPO_NAME }}" ]; then
-              rm -rf "${{ env.REPO_NAME }}"
-            fi
-
-            # Clone the repository again
-            git clone git@github.com:${{ env.GITHUB_USER }}/${{ env.REPO_NAME }}.git
-
-            cd "${{ env.REPO_NAME }}"
-            bash init.sh
-          EOF
-    outputs:
-      success: ${{ steps.clone.success }}
-
-  deploy_config:
+      - name: Install dependencies and compile
+        env:
+          LOG_LEVEL: "INFO"
+          DB_PRODUCT: "./database/Product.json"
+          DB_DISCOUNT: "./database/Discount.json"
+          SUPERMARKET_WEB_CONFIG_SCHEMA: "config/supermarketWebConfigSchema.json"
+          NOTION_SECRET: ${{ secrets.NOTION_SECRET }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: bash ./init.sh
+        
+  deploy:
     needs: setup
-    runs-on: ubuntu-latest
+    runs-on: respberrypi
     strategy:
       matrix:
-        config_name: [ah, dirk, plus]  # List all your configurations here
-
+        config_name: [ah, dirk, plus] # List all your configurations here
     steps:
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.PI_SSH }}
-
       - name: Deploy with Specific Config
         run: |
-          ssh ${{ vars.PI_USER }}@${{ secrets.PI_IP }} << EOF
-            cd "${{ env.REPO_NAME }}"
-            bash deploy.sh ${MATRIX.config_name} ${{ env.REPO_NAME }}
-          EOF
+          cd ~/services/${GITHUB_REPOSITORY#*/}  # Remove 'username/' prefix from repo name
+          bash deploy.sh ${{ matrix.config_name }}
