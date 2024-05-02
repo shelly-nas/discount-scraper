@@ -22,10 +22,10 @@ export default class NotionManager {
     };
   }
 
-  public toPageBlocks(groceryDiscounts: IProductDiscountDetails[]): IBlock[] {
+  public toPageBlocks(productDiscountsDetails: IProductDiscountDetails[]): IBlock[] {
     try {
-      this.addHeading3(groceryDiscounts[0].supermarket);
-      groceryDiscounts.forEach((discount) => {
+      this.addHeading3(productDiscountsDetails[0].supermarket);
+      productDiscountsDetails.forEach((discount) => {
         this.addTodo(
           `${discount.name}: ${discount.discountPrice} (${discount.specialDiscount})`
         );
@@ -33,12 +33,12 @@ export default class NotionManager {
       this.addDivider();
 
       logger.info(
-        `Converted grocery discounts for '${groceryDiscounts[0].supermarket}' to Notion page blocks.`
+        `Converted supermarket discounts for '${productDiscountsDetails[0].supermarket}' to Notion page blocks.`
       );
       return this.blocks;
     } catch (error) {
       logger.error(
-        `Error converting grocery discounts for '${groceryDiscounts[0].supermarket}' to Notion page blocks: ${error}`
+        `Error converting supermarket discounts for '${productDiscountsDetails[0].supermarket}' to Notion page blocks: ${error}`
       );
       // Handling error appropriately, here we simply throw it to be dealt by the caller
       throw error;
@@ -67,11 +67,11 @@ export default class NotionManager {
         this.toDatabaseEntry(discount)
       );
       logger.info(
-        `Converted grocery discounts for '${productDiscounts[0].supermarket}' to Notion database entries.`
+        `Converted supermarket discounts for '${productDiscounts[0].supermarket}' to Notion database entries.`
       );
       return discountEntries;
     } catch (error) {
-      logger.error("Error converting grocery discounts for:", error);
+      logger.error("Error converting supermarket discounts for:", error);
       process.exit(1);
     }
   }

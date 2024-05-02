@@ -14,7 +14,7 @@ require("dotenv").config();
 const jsonDataManager = new JsonDataManager();
 
 
-async function getSupermarketDiscounts(config: ISupermarketWebIdentifiers): Promise<IProductDiscountDetails[]> {
+async function getSupermarketDiscounts(config: ISupermarketWebConfig): Promise<IProductDiscountDetails[]> {
   const supermarketClient = getSupermarketClient(config.name);
   let productDiscountDetails: IProductDiscountDetails[] = [];
 
@@ -22,7 +22,7 @@ async function getSupermarketDiscounts(config: ISupermarketWebIdentifiers): Prom
   await supermarketClient.navigate(config.url);
   await supermarketClient.handleCookiePopup(config.webIdentifiers.cookieDecline);
 
-  // Iterate over each product category defined in the grocery store's configuration
+  // Iterate over each product category defined in the supermarket's configuration
   for (const productCategory of config.webIdentifiers.productCategories) {
     // Get the products listed under the current category that are on discount
     const discountProducts: ElementHandle[] | undefined = await supermarketClient.getDiscountProductsByProductCategory(
@@ -35,7 +35,7 @@ async function getSupermarketDiscounts(config: ISupermarketWebIdentifiers): Prom
       break;
     }
 
-    // For each discount product found, get its details and append it to the groceryDiscounts
+    // For each discount product found, get its details and append it to the supermarketDiscounts
     for (const discountProduct of discountProducts) {
       const details: IProductDiscountDetails = await supermarketClient.getDiscountProductDetails(
           discountProduct,
@@ -46,7 +46,7 @@ async function getSupermarketDiscounts(config: ISupermarketWebIdentifiers): Prom
     logger.info(`Discount details are scraped and stored.`);
   }
 
-  // Close the grocery client (e.g., close browser instance, clear resources)
+  // Close the supermarket client (e.g., close browser instance, clear resources)
   await supermarketClient.close();
 
   // Use JsonWriter to write the ProductDiscount details to a JSON file
@@ -82,7 +82,7 @@ async function discountScraper(): Promise<void> {
   logger.info("Discount scraper process has started!");
 
   logger.info("Get the configuration details.")
-  const supermarketConfig: ISupermarketWebIdentifiers = await getConfig();
+  const supermarketConfig: ISupermarketWebConfig = await getConfig();
 
   const supermarketDiscounts: IProductDiscountDetails[] = await getSupermarketDiscounts(supermarketConfig);
 

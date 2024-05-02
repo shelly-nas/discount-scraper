@@ -1,5 +1,5 @@
 # DiscountScraper
-Go to the discount page of a grocery store, scrape the page of discounts and add them to an all discounts file.
+Go to the discount page of a supermarket, scrape the page of discounts and add them to an all discounts file.
 
 ## Install
 Setup the Notion integration key, see https://www.notion.so/help/add-and-manage-connections-with-the-api.
@@ -22,16 +22,16 @@ Feature: Fetch discounts
 
 Scenario: 
     Given the discounts are renewed
-    And the discounts webpage of '<grocery>' is visible
+    And the discounts webpage of '<supermarket>' is visible
     When the current discounts are fetched
     Then the discounts are stored
     And the discount expire date is known
 
     Examples:
-        | grocery |
-        | ah      |
-        | dirk    |
-        | plus    | 
+        | supermarket |
+        | ah          |
+        | dirk        |
+        | plus        | 
 ```
 
 ## Run as a service

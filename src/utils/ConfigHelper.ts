@@ -15,13 +15,13 @@ export function getEnvVariable(name: string): string {
   return value;
 }
 
-export async function getConfig(): Promise<ISupermarketWebIdentifiers> {
-    const groceryWebStoreSchemaFilePath = getEnvVariable("GROCERY_SCHEMA");
+export async function getConfig(): Promise<ISupermarketWebConfig> {
+    const supermarketWebConfigSchemaFilePath = getEnvVariable("SUPERMARKET_WEB_CONFIG_SCHEMA");
     const argHandler = new ArgumentHandler(process.argv);
     const configPath = argHandler.getArgByFlag("--config");
   
-    const jsonReader = new JsonReader(configPath, groceryWebStoreSchemaFilePath);
-    const jsonData = (await jsonReader.read()) as ISupermarketWebIdentifiers;
+    const jsonReader = new JsonReader(configPath, supermarketWebConfigSchemaFilePath);
+    const jsonData = (await jsonReader.read()) as ISupermarketWebConfig;
   
     logger.debug("JSON data read from file:", jsonData);
     return jsonData;
@@ -36,7 +36,7 @@ export function getSupermarketClient(name: string): SupermarketClient {
     case "PLUS":
       return new PlusClient();
     default:
-      logger.error("Descendent of Grocery Client could not be found or instantiated.");
+      logger.error("Descendent of Supermarket Client could not be found or instantiated.");
       process.exit(1);
   }
 }
