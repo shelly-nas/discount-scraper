@@ -1,17 +1,18 @@
 #!/bin/bash
 
-# Usage: ./deploy.sh <config> <repo_name>
+# Usage: ./deploy.sh <config> 
 # Example: ./deploy.sh ah DiscountScraper 
 
 # Validate arguments
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <config> <repo_name>"
+    echo "Usage: $0 <config>
+    configs=[ah or dirk or plus]"
     exit 1
 fi
 
 # Read command-line arguments
 CONFIG="$1"
-REPO_NAME="$2"
+REPO_NAME="discount-scraper"
 SERVICE_NAME="$REPO_NAME-$CONFIG"
 
 # Path for the systemd service file
