@@ -4,6 +4,9 @@ npm install
 # Compile TypeScript
 npm run build
 
+# Remove the .env file if it exists
+sudo rm -f .env
+
 # Create .env file
 cat <<EOL >> .env
 LOG_LEVEL=$LOG_LEVEL
