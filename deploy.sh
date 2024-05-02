@@ -4,7 +4,7 @@
 # Example: ./deploy.sh ah DiscountScraper 
 
 # Validate arguments
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <config> <repo_name>"
     exit 1
 fi
