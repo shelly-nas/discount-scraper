@@ -19,7 +19,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          path: $WORK_DIR
+          path: ${{ env.WORK_DIR }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v2
@@ -31,11 +31,11 @@ jobs:
           LOG_LEVEL: "INFO"
           DB_PRODUCT: "./database/Product.json"
           DB_DISCOUNT: "./database/Discount.json"
-          SUPERMARKET_WEB_CONFIG_SCHEMA: "config/supermarketWebConfigSchema.json"
+          SUPERMARKET_WEB_CONFIG_SCHEMA: "./config/supermarketWebConfigSchema.json"
           NOTION_SECRET: ${{ secrets.NOTION_SECRET }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: bash ./init.sh
-        working-directory: $WORK_DIR
+        working-directory: ${{ env.WORK_DIR }}
         
   deploy:
     needs: setup
@@ -46,4 +46,4 @@ jobs:
     steps:
       - name: Deploy with Specific Config
         run: bash deploy.sh ${{ matrix.config_name }}
-        working-directory: $WORK_DIR
+        working-directory: ${{ env.WORK_DIR }}
