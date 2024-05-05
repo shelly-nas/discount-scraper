@@ -4,12 +4,16 @@ import { logger } from "../../utils/Logger";
 class WebClient {
   private browser: Browser | null = null;
   protected page: Page | null = null;
+  private headless: boolean = false;
 
   public async init(): Promise<void> {
     try {
       logger.debug("Initializing browser...");
       this.browser = await chromium.launch({ headless: false, slowMo: 50 });
-      this.page = await this.browser.newPage();
+      
+      const context = await this.browser.newContext();
+      this.page = await context.newPage(); 
+      
       logger.info("Browser initialized successfully.");
     } catch (error) {
       logger.error("Browser initialized unsuccessfully.", error);
@@ -25,10 +29,11 @@ class WebClient {
   public async handleCookiePopup(selector: string): Promise<void> {
     if (selector) {
       try {
-        await this.page?.waitForSelector(selector, {
-          state: "visible",
-          timeout: 5000,
-        });
+        await this.page?.waitForLoadState('networkidle');
+        // await this.page?.waitForSelector(selector, {
+        //   state: "attached",
+        //   timeout: 5000,
+        // });
         logger.debug(`Found cookie popup with selector '${selector}'.`);
         await this.page?.click(selector);
         logger.info("Dismissed cookie popup");
