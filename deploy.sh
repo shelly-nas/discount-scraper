@@ -4,7 +4,7 @@
 # Example: ./deploy.sh ah DiscountScraper 
 
 # Validate arguments
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <config> <workspace>
     configs=[ah, dirk or plus]
     workspace=[\"Full/directory/path\"]"
