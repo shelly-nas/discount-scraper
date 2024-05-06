@@ -33,7 +33,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/npm run $CONFIG
+ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/npm run $CONFIG
 WorkingDirectory=$WORKSPACE/$REPO_NAME
 Restart=always
 User=pi
