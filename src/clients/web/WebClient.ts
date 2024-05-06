@@ -4,14 +4,15 @@ import { logger } from "../../utils/Logger";
 class WebClient {
   private browser: Browser | null = null;
   protected page: Page | null = null;
-  private headless: boolean = false;
+  private headless: boolean = true;
+  private userAgent: string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36";
 
   public async init(): Promise<void> {
     try {
       logger.debug("Initializing browser...");
-      this.browser = await chromium.launch({ headless: false, slowMo: 50 });
+      this.browser = await chromium.launch({ headless: this.headless, slowMo: 50 });
 
-      const context = await this.browser.newContext();
+      const context = await this.browser.newContext({ userAgent: this.userAgent, bypassCSP: true, viewport: { width: 1280, height: 720 } });
       this.page = await context.newPage();
 
       logger.info("Browser initialized successfully.");
@@ -23,7 +24,7 @@ class WebClient {
 
   public async navigate(url: string): Promise<void> {
     logger.info(`Navigating to URL: ${url}`);
-    await this.page?.goto(url);
+    await this.page?.goto(url, { waitUntil: "commit" });
   }
 
   public async handleCookiePopup(selector: string): Promise<void> {
