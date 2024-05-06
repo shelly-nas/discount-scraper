@@ -5,14 +5,16 @@
 
 # Validate arguments
 if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <config>
-    configs=[ah, dirk or plus]"
+    echo "Usage: $0 <config> <workspace>
+    configs=[ah, dirk or plus]
+    workspace=[\"Full/directory/path\"]"
     exit 1
 fi
 
 # Read command-line arguments
 CONFIG="$1"
 REPO_NAME="discount-scraper"
+WORKSPACE=$2
 SERVICE_NAME="$REPO_NAME-$CONFIG"
 
 # Path for the systemd service file
@@ -25,7 +27,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/npm run $CONFIG
-WorkingDirectory=/home/admin/service/$REPO_NAME
+WorkingDirectory=$WORKSPACE/$REPO_NAME
 Restart=always
 User=admin
 Group=admin
