@@ -10,7 +10,7 @@ on:
 
 jobs:
   setup:
-    runs-on: raspberrypi
+    runs-on: raspberry-pi
     steps:
       # Add steps that stops the services running
       - name: Checkout code
@@ -33,7 +33,7 @@ jobs:
         
   deploy:
     needs: setup
-    runs-on: respberrypi
+    runs-on: raspberry-pi
     strategy:
       matrix:
         config_name: [ah, dirk, plus] # List all your configurations here
