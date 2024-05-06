@@ -12,7 +12,7 @@ enum LogLevel {
 class Logger {
   private static instance: Logger;
   private readonly logFilePath: string;
-  private readonly logDirectory: string = "./log";
+  private readonly logDirectory: string = "./logs";
   private currentLogLevel: LogLevel = LogLevel.INFO; // Default to INFO
 
   private constructor() {
