@@ -18,7 +18,7 @@ abstract class SupermarketClient extends WebClient {
     let discountProducts;
 
     try {
-      await this.page?.waitForLoadState('networkidle');
+      await this.page?.waitForLoadState("networkidle", { timeout: 10000 });
       this.productCategory = await this.page?.$(parentSelector);
 
       if (!this.productCategory) {
