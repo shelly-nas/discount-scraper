@@ -1,6 +1,9 @@
 # Install dependencies
 npm install
 
+# Install playwright dependencies
+npx playwright install --with-deps
+
 # Compile TypeScript
 npm run build
 
