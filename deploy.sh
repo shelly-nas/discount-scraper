@@ -20,19 +20,23 @@ SERVICE_NAME="$REPO_NAME-$CONFIG"
 # Path for the systemd service file
 SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 
+# Disable and remove system service file
+sudo systemctl stop $SERVICE_NAME
+sudo systemctl disable $SERVICE_NAME
+sudo rm $SERVICE_PATH
+
 # Create the systemd service configuration
 echo "[Unit]
 Description=${REPO_NAME}
+Documentation=https://github.com/GRJX/DiscountScraper
 After=network.target
 
 [Service]
+Type=simple
 ExecStart=/usr/bin/npm run $CONFIG
 WorkingDirectory=$WORKSPACE/$REPO_NAME
 Restart=always
-User=admin
-Group=admin
-Environment=PATH=/usr/bin:/usr/local/bin
-Environment=NODE_ENV=production
+User=pi
 
 [Install]
 WantedBy=multi-user.target" | sudo tee $SERVICE_PATH
