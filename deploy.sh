@@ -4,9 +4,9 @@
 # Example: ./deploy.sh ah DiscountScraper 
 
 # Validate arguments
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 1 ]; then
     echo "Usage: $0 <config>
-    configs=[ah or dirk or plus]"
+    configs=[ah, dirk or plus]"
     exit 1
 fi
 
