@@ -5,4 +5,5 @@ interface IProductDiscountDetails {
   specialDiscount: string;
   category: string;
   supermarket: string;
+  expireDate: string;
 }

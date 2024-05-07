@@ -3,7 +3,7 @@
   "url": "https://www.ah.nl/bonus",
   "webIdentifiers": {
     "cookieDecline": "#decline-cookies",
-    "promotionExpireDate": "<objectName>",
+    "promotionExpireDate": "#dropdown-button > span",
     "productCategories": [
       "#aardappel-groente-fruit",
       "#salades-pizza-maaltijden",

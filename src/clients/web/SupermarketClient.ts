@@ -1,14 +1,41 @@
 import { logger } from "../../utils/Logger";
 import { ElementHandle } from "playwright";
 import WebClient from "./WebClient";
+import DateTimeHandler from "../../utils/DateTimeHandler";
 
 abstract class SupermarketClient extends WebClient {
   abstract name: string;
-  
+  private expireDate: string = '';
   private productCategory:
     | ElementHandle<SVGElement | HTMLElement>
     | null
     | undefined;
+
+  public async getPromotionExpireDate(selector: string): Promise<void> {
+    try {
+      await this.page?.waitForLoadState("networkidle", { timeout: 30000 });
+      const expireStringRaw = await this.page?.textContent(selector);
+      if (!expireStringRaw) {
+        logger.warn(`No promotion expire date found for '${selector}'.`);
+        return;
+      }
+      
+      // Extract the substring after "t/m"
+      const tmIndex = expireStringRaw.indexOf("t/m");
+      let expireDateRaw = '';
+      if (tmIndex === -1) {
+        logger.warn(`No "t/m" found in promotion expire date: '${expireStringRaw}'`);
+        expireDateRaw = expireStringRaw;
+      } else {
+        expireDateRaw = expireStringRaw.substring(tmIndex + 3).trim(); // +3 to skip over "t/m"
+      }
+      
+      this.expireDate = DateTimeHandler.parseDateISOString(expireDateRaw);
+      logger.info(`Promotion Expire Date: ${this.expireDate}`);
+    } catch (error) {
+      logger.error("Failed to get promotion expire date:", error);
+    }
+  }
 
   public async getDiscountProductsByProductCategory(
     parentSelector: string,
@@ -40,7 +67,7 @@ abstract class SupermarketClient extends WebClient {
     return discountProducts;
   }
 
-  public async getDiscountProductDetails(productSelector: ElementHandle,productConfig: IProductDetails): Promise<IProductDiscountDetails> {
+  public async getDiscountProductDetails(productSelector: ElementHandle, productConfig: IProductDetails): Promise<IProductDiscountDetails> {
     const productDiscountDetails = {
       name: await this.getProductName(
         productSelector,
@@ -62,6 +89,7 @@ abstract class SupermarketClient extends WebClient {
         productConfig.productCategory
       ),
       supermarket: this.name,
+      expireDate: this.expireDate,
     };
     logger.info(
       `Product details a scraped for '${productDiscountDetails.name}'.`
