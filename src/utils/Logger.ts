@@ -24,7 +24,7 @@ class Logger {
       (process.env.LOG_LEVEL as keyof typeof LogLevel) || "INFO";
     this.setLogLevel(LogLevel[levelName]);
 
-    const logFileName = `discountScraper_${DateTimeHandler.getDateTimeShort()}.log`;
+    const logFileName = `discountScraper_${DateTimeHandler.getDateTimeString("YYYYMMDD-HHmmss")}.log`;
     this.logFilePath = path.join(this.logDirectory, logFileName);
   }
 
@@ -49,7 +49,7 @@ class Logger {
     }
 
     // Compose the initial part of the log message.
-    const logMessage = `[${DateTimeHandler.getDateTimeLong()}] [${level}] ${message}`;
+    const logMessage = `[${DateTimeHandler.getDateTimeString("YYYY-MM-DD HH:mm:ss.SSS")}] [${level}] ${message}`;
 
     try {
       // Append the initial message to the file.
