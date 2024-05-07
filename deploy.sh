@@ -34,7 +34,7 @@ After=network.target
 [Service]
 Type=simple
 ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/npm run $CONFIG
-WorkingDirectory=$WORKSPACE/$REPO_NAME
+WorkingDirectory=$WORKSPACE
 Restart=always
 User=pi
 
