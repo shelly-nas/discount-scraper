@@ -29,7 +29,7 @@ jobs:
           SUPERMARKET_WEB_CONFIG_SCHEMA: "./config/supermarketWebConfigSchema.json"
           NOTION_SECRET: ${{ secrets.NOTION_SECRET }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-        run: bash ./init.sh
+        run: bash ./scripts/init.sh
         
   deploy:
     needs: setup
@@ -39,4 +39,4 @@ jobs:
         config_name: [ah, dirk, plus] # List all your configurations here
     steps:
       - name: Deploy with Specific Config
-        run: bash ./deploy.sh ${{ matrix.config_name }} "${{ github.workspace }}"
+        run: bash ./scripts/deploy.sh ${{ matrix.config_name }} "${{ github.workspace }}"
