@@ -38,7 +38,7 @@ class DateTimeHandler {
     }
 
     const date = moment(match[0], "D MMMM", true);
-    return date.toISOString();
+    return date.toISOString(true);
   }
 
   public static getDateTimeString(pattern: string, toUTC: boolean = true): string {

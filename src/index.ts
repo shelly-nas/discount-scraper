@@ -99,7 +99,9 @@ async function setupScheduler(supermarket: string): Promise<void> {
   logger.info(`Setup scheduler for "${supermarket}".`);
 
   const expireDate = await jsonDataManager.getSupermarketExpireDate(supermarket);
-  const scheduleDateTime = DateTimeHandler.addToISOString(expireDate, 1, "days");
+  // Set scheduler at 04:00 in the morning
+  const scheduleDay = DateTimeHandler.addToISOString(expireDate, 1, "days");
+  const scheduleDateTime = DateTimeHandler.addToISOString(scheduleDay, 4, "hours");
   const dateTime = DateTimeHandler.fromISOToDateTimeString(scheduleDateTime, "YYYY-MM-DD HH:mm:ss");
 
   const { execSync } = require("child_process");
@@ -130,7 +132,7 @@ async function discountScraper(): Promise<void> {
 
   await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  // await setupScheduler(supermarketConfig.name);
+  await setupScheduler(supermarketConfig.name);
 
   logger.info("Discount scraper process has stopped!");
 }
