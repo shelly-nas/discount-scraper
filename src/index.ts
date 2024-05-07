@@ -117,20 +117,20 @@ async function discountScraper(): Promise<void> {
   logger.info("Get the configuration details.");
   const supermarketConfig: ISupermarketWebConfig = await getConfig();
 
-  // const supermarketDiscounts: IProductDiscountDetails[] =
-  //   await getSupermarketDiscounts(supermarketConfig);
+  const supermarketDiscounts: IProductDiscountDetails[] =
+    await getSupermarketDiscounts(supermarketConfig);
 
-  // await jsonDataManager.getProductController().delete();
-  // await jsonDataManager.addProductDb(
-  //   supermarketConfig.name,
-  //   supermarketDiscounts
-  // );
-  // await jsonDataManager.getDiscountController().delete();
-  // await jsonDataManager.addDiscountDb(supermarketDiscounts);
+  await jsonDataManager.getProductController().delete();
+  await jsonDataManager.addProductDb(
+    supermarketConfig.name,
+    supermarketDiscounts
+  );
+  await jsonDataManager.getDiscountController().delete();
+  await jsonDataManager.addDiscountDb(supermarketDiscounts);
 
-  // await flushNotionDatabaseBySupermarket(supermarketConfig.name);
+  await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  await setupScheduler(supermarketConfig.name);
+  // await setupScheduler(supermarketConfig.name);
 
   logger.info("Discount scraper process has stopped!");
 }
