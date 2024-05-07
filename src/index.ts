@@ -77,7 +77,7 @@ async function flushNotionDatabaseBySupermarket(
 
   // Construct a IProductDiscountDetails object from the JsonDataContext
   const productDiscounts: IProductDiscountDetails[] =
-    await jsonDataManager.getSupermarketDiscountsVerbose();
+    await jsonDataManager.getSupermarketDiscountsVerbose(supermarket);
 
   // Convert product discounts to database entries
   const productDiscountEntries = new NotionManager().toDatabaseEntries(
@@ -98,9 +98,9 @@ async function flushNotionDatabaseBySupermarket(
 async function setupScheduler(supermarket: string): Promise<void> {
   logger.info(`Setup scheduler for "${supermarket}".`);
 
-  const discounts = await jsonDataManager.getDiscountController().getDiscounts();
-  const expireDate = discounts[0].expireDate;
-  const dateTime = DateTimeHandler.fromISOToDateTimeString(expireDate, "YYYY-MM-DD HH:mm:ss");
+  const expireDate = await jsonDataManager.getSupermarketExpireDate(supermarket);
+  const scheduleDateTime = DateTimeHandler.addToISOString(expireDate, 1, "days");
+  const dateTime = DateTimeHandler.fromISOToDateTimeString(scheduleDateTime, "YYYY-MM-DD HH:mm:ss");
 
   const { execSync } = require("child_process");
   try {
@@ -117,20 +117,20 @@ async function discountScraper(): Promise<void> {
   logger.info("Get the configuration details.");
   const supermarketConfig: ISupermarketWebConfig = await getConfig();
 
-  const supermarketDiscounts: IProductDiscountDetails[] =
-    await getSupermarketDiscounts(supermarketConfig);
+  // const supermarketDiscounts: IProductDiscountDetails[] =
+  //   await getSupermarketDiscounts(supermarketConfig);
 
-  await jsonDataManager.getProductController().delete();
-  await jsonDataManager.addProductDb(
-    supermarketConfig.name,
-    supermarketDiscounts
-  );
-  await jsonDataManager.getDiscountController().delete();
-  await jsonDataManager.addDiscountDb(supermarketDiscounts);
+  // await jsonDataManager.getProductController().delete();
+  // await jsonDataManager.addProductDb(
+  //   supermarketConfig.name,
+  //   supermarketDiscounts
+  // );
+  // await jsonDataManager.getDiscountController().delete();
+  // await jsonDataManager.addDiscountDb(supermarketDiscounts);
 
-  await flushNotionDatabaseBySupermarket(supermarketConfig.name);
+  // await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  await setupScheduler(supermarketConfig.name)
+  await setupScheduler(supermarketConfig.name);
 
   logger.info("Discount scraper process has stopped!");
 }

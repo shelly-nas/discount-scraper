@@ -69,8 +69,12 @@ export class JsonDataManager {
     logger.info(`Added '${discounts.length}' discounts to Discount Database.`);
   }
 
-  public async getSupermarketDiscountsVerbose(): Promise<IProductDiscountDetails[]> {
-    logger.debug("Combine databases to create a ProductDiscountDetails structure.");
+  public async getSupermarketDiscountsVerbose(
+    supermarket: string
+  ): Promise<IProductDiscountDetails[]> {
+    logger.debug(
+      "Combine databases to create a ProductDiscountDetails structure."
+    );
     let productDiscounts: IProductDiscountDetails[] = [];
     const products = await this.productController.getProducts();
     const discounts = await this.discountController.getDiscounts();
@@ -78,7 +82,9 @@ export class JsonDataManager {
     for (const discount of discounts) {
       try {
         let productIndex = products.findIndex(
-          (product) => product.id === discount.product
+          (product) =>
+            product.id === discount.product &&
+            product.supermarket === supermarket
         );
         const details: IProductDiscountDetails = {
           name: products[productIndex].name,
@@ -93,9 +99,32 @@ export class JsonDataManager {
       } catch (error) {
         logger.error("Error:", error);
       }
-      
     }
     return productDiscounts;
+  }
+
+  public async getSupermarketExpireDate(supermarket: string): Promise<string> {
+    logger.debug(
+      "Combine databases to filter and get expire date."
+    );
+    let productDiscounts: IProductDiscountDetails[] = [];
+    const products = await this.productController.getProducts();
+    const discounts = await this.discountController.getDiscounts();
+
+    for (const product of products) {
+      try {
+        let discountIndex = discounts.findIndex(
+          (discount) =>
+            discount.product === product.id &&
+            product.supermarket === supermarket
+        );
+        // Get the first item and return, all the expire dates are expected to be the same
+        return discounts[discountIndex].expireDate
+      } catch (error) {
+        logger.error("Error:", error);
+      }
+    }
+    return '';
   }
 }
 
