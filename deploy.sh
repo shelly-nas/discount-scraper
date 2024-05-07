@@ -27,16 +27,17 @@ sudo rm $SERVICE_PATH
 
 # Create the systemd service configuration
 echo "[Unit]
-Description=${REPO_NAME}
+Description=Discount Scraper ($CONFIG)
 Documentation=https://github.com/GRJX/DiscountScraper
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/npm run $CONFIG
+User=pi
+ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/node dist/src/index.js --config config/supermarkets/$CONFIG.json
 WorkingDirectory=$WORKSPACE
 Restart=always
-User=pi
+RestartSec=1w
 
 [Install]
 WantedBy=multi-user.target" | sudo tee $SERVICE_PATH
