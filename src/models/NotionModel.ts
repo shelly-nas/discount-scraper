@@ -39,6 +39,15 @@ export class Select extends Properties {
   }
 }
 
+export class Date extends Properties {
+  public date: { start: string };
+
+  constructor(start: string) {
+      super("date");
+      this.date = { start };
+  }
+}
+
 // Class models for Page Blocks
 class Block {
   public object: string = "block";

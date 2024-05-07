@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client";
 import { logger } from "../../utils/Logger";
 import { PageObjectResponse, PartialPageObjectResponse, PartialDatabaseObjectResponse, DatabaseObjectResponse} from "@notionhq/client/build/src/api-endpoints";
+import { IProductDiscountDatabase } from "../../interfaces/INotionDatabaseEntries";
 
 class NotionDatabaseClient {
   private notion: Client;
@@ -34,16 +35,32 @@ class NotionDatabaseClient {
 
   public async getDatabaseContents(filter: any = undefined): Promise<(PageObjectResponse | PartialPageObjectResponse | PartialDatabaseObjectResponse | DatabaseObjectResponse)[]> {
     try {
-      const response = await this.notion.databases.query({
-        database_id: this.databaseId,
-        filter: filter,
-      });
+      let allEntries = [];
+      let hasMore = true;
+      let startCursor: string | undefined | null = undefined;
 
-      logger.info(`Retrieved contents of database with ID '${this.databaseId}'.`);
-      return response.results;
+      while (hasMore) {
+        const response = await this.notion.databases.query({
+          database_id: this.databaseId,
+          filter: filter,
+          start_cursor: startCursor!
+        });
+
+        allEntries.push(...response.results); // Add new entries to the array
+
+        hasMore = response.has_more; // Update 'hasMore' depending on the response
+        startCursor = response.next_cursor; // Set the 'startCursor' for the next iteration
+
+        logger.debug(
+          `Found ${allEntries.length} Notion blocks, adding to batch.`
+        );
+      }
+
+      logger.info(`Retrieved ${allEntries.length} Notion blocks for page '${this.databaseId}'.`);
+      return allEntries;
     } catch (error) {
-      logger.error("Error retrieving database contents:", error);
-      throw error;
+      logger.error("Error listing Notion page blocks:", error);
+      process.exit(1);
     }
   }
 

@@ -1,40 +1,11 @@
-// interface IProperties {
-//   type: string;
-// }
+import { Select, Title, Number, Text, Date } from "../models/NotionModel";
 
-interface IRichText {
-  type: string;
-  text: IContent;
-}
-
-interface IContent {
-  content: string;
-}
-
-interface ITitle {
-  type: string,
-  title: IRichText[];
-}
-
-interface INumber {
-  type: string,
-  number: number;
-}
-
-interface IText {
-  rich_text: IRichText[];
-}
-
-interface ISelect {
-  type: string,
-  select: { name: string };
-}
-
-interface IProductDiscountDatabase {
-  ProductName: ITitle;
-  OriginalPrice: INumber;
-  DiscountPrice: INumber;
-  SpecialDiscount: IText;
-  ProductCategory: ISelect;
-  Supermarket: ISelect;
+export interface IProductDiscountDatabase {
+  ProductName: Title;
+  OriginalPrice: Number;
+  DiscountPrice: Number;
+  SpecialDiscount: Text;
+  ProductCategory: Select;
+  Supermarket: Select;
+  ExpireDate: Date;
 }

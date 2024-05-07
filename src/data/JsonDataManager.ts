@@ -62,7 +62,8 @@ export class JsonDataManager {
         productId,
         discount.originalPrice,
         discount.discountPrice,
-        discount.specialDiscount
+        discount.specialDiscount,
+        discount.expireDate
       );
     }
     logger.info(`Added '${discounts.length}' discounts to Discount Database.`);
@@ -86,6 +87,7 @@ export class JsonDataManager {
           specialDiscount: discount.specialDiscount,
           category: products[productIndex].category,
           supermarket: products[productIndex].supermarket,
+          expireDate: discount.expireDate,
         };
         productDiscounts.push(details);
       } catch (error) {

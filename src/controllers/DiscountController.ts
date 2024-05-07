@@ -28,7 +28,8 @@ class DiscountController {
     productId: number,
     originalPrice: number,
     discountPrice: number,
-    specialDiscount: string
+    specialDiscount: string,
+    expireDate: string
   ): Promise<void> {
     const discounts = await this.context.load();
     
@@ -36,7 +37,8 @@ class DiscountController {
       productId,
       originalPrice,
       discountPrice,
-      specialDiscount
+      specialDiscount,
+      expireDate
     );
     discounts.push(discount);
 

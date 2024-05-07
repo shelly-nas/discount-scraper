@@ -8,7 +8,9 @@ import {
   Text,
   Number,
   Select,
+  Date,
 } from "../models/NotionModel";
+import { IProductDiscountDatabase } from "../interfaces/INotionDatabaseEntries";
 
 export default class NotionManager {
   private blocks: IBlock[] = [];
@@ -86,6 +88,7 @@ export default class NotionManager {
       SpecialDiscount: this.addText(productDiscount.specialDiscount),
       ProductCategory: this.addSelect(productDiscount.category),
       Supermarket: this.addSelect(productDiscount.supermarket),
+      ExpireDate: this.addDate(productDiscount.expireDate)
     };
     logger.debug(
       `Created a product discount entry for '${productDiscount.name}'.`
@@ -93,19 +96,24 @@ export default class NotionManager {
     return productDiscountEntry;
   }
 
-  public addTitle(richText: string): ITitle {
+  public addTitle(richText: string): Title {
     return new Title([new RichText(richText)]);
   }
 
-  private addNumber(number: number): INumber {
+  private addNumber(number: number): Number {
     return new Number(number);
   }
 
-  private addText(richText: string): IText {
+  private addText(richText: string): Text {
     return new Text([new RichText(richText)]);
   }
 
-  private addSelect(select: string): ISelect {
+  private addSelect(select: string): Select {
     return new Select(select);
+  }
+
+  private addDate(date: string): Date {
+    
+    return new Date(date);
   }
 }
