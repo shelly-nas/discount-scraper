@@ -133,7 +133,7 @@ async function discountScraper(): Promise<void> {
 
   await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  // await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
+  await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
 
   logger.info("Discount scraper process has stopped!");
 }
