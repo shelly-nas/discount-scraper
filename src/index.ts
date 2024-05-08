@@ -105,16 +105,16 @@ async function setupScheduler(supermarket: string, shortName: string): Promise<v
   const dateTime = DateTimeHandler.fromISOToDateTimeString(scheduleDateTime, "YYYY-MM-DD HH:mm:ss");
 
   const { exec } = require('child_process');
-  exec(`bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`, (error: string, stdout: string, stderr: string) => {
-    if (error) {
-      logger.error(`exec error: ${error}`);
+  exec(`bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`, (err: string, stdout: string, stderr: string) => {
+    if (err) {
+      logger.error("[EXEC ERR]", err);
       return;
     }
     if (stderr) {
-      logger.error(`stderr: ${stderr}`);
+      logger.warn("[STDERR]", stderr);
       return;
     }
-    logger.info(`stdout: ${stdout}`);
+    logger.info("[STDOUT]", stdout);
   });
 }
 
@@ -124,20 +124,16 @@ async function discountScraper(): Promise<void> {
   logger.info("Get the configuration details.");
   const supermarketConfig: ISupermarketWebConfig = await getConfig();
 
-  // const supermarketDiscounts: IProductDiscountDetails[] =
-  //   await getSupermarketDiscounts(supermarketConfig);
+  const supermarketDiscounts: IProductDiscountDetails[] =
+    await getSupermarketDiscounts(supermarketConfig);
 
-  // await jsonDataManager.getProductController().delete();
-  // await jsonDataManager.addProductDb(
-  //   supermarketConfig.name,
-  //   supermarketDiscounts
-  // );
-  // await jsonDataManager.getDiscountController().delete();
-  // await jsonDataManager.addDiscountDb(supermarketDiscounts);
+  await jsonDataManager.deleteRecordsBySupermarket(supermarketConfig.name);
+  await jsonDataManager.addProductDb(supermarketConfig.name, supermarketDiscounts);
+  await jsonDataManager.addDiscountDb(supermarketDiscounts);
 
-  // await flushNotionDatabaseBySupermarket(supermarketConfig.name);
+  await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
+  // await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
 
   logger.info("Discount scraper process has stopped!");
 }
