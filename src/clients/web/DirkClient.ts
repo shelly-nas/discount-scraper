@@ -20,8 +20,8 @@ class DirkClient extends SupermarketClient {
         originalPriceSelector[0],
         (elements, selector) => {
           return elements
-            .map((element) => {
-              const span = element.querySelector(selector);
+            .map((el) => {
+              const span = el.querySelector(selector);
               return span ? span.textContent : null;
             })
             .find(textContent => textContent !== null); // Find the first non-null textContent
