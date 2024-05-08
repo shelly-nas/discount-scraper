@@ -1,4 +1,3 @@
-import NotionManager from "./data/NotionManager";
 import { logger } from "./utils/Logger";
 import { ElementHandle } from "playwright";
 import NotionDatabaseClient from "./clients/database/NotionDatabaseClient";
@@ -9,6 +8,7 @@ import {
   getSupermarketClient,
 } from "./utils/ConfigHelper";
 import DateTimeHandler from "./utils/DateTimeHandler";
+import NotionDatabaseService from "./service/NotionDatabaseService";
 
 require("dotenv").config();
 
@@ -72,17 +72,25 @@ async function flushNotionDatabaseBySupermarket(
   // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
   const integrationToken = getEnvVariable("NOTION_SECRET");
   const databaseId = getEnvVariable("NOTION_DATABASE_ID");
+  
+  // Initialize the Notion client and service
+  const databaseClient = new NotionDatabaseClient(integrationToken, databaseId);
+  const databaseService = new NotionDatabaseService(databaseClient);
+
   const notion = new NotionDatabaseClient(integrationToken, databaseId);
-  const supermarketFilter = new NotionManager().querySupermarket(supermarket);
+  const supermarketFilter = {
+    property: "Supermarket",
+    select: {
+      equals: supermarket,
+    },
+  };;
 
   // Construct a IProductDiscountDetails object from the JsonDataContext
   const productDiscounts: IProductDiscountDetails[] =
     await jsonDataManager.getSupermarketDiscountsVerbose(supermarket);
 
   // Convert product discounts to database entries
-  const productDiscountEntries = new NotionManager().toDatabaseEntries(
-    productDiscounts
-  );
+  const productDiscountEntries = databaseService.toDatabaseEntries(productDiscounts);
   logger.info(
     `Converted product discounts to ${productDiscountEntries.length} new database entries.`
   );
