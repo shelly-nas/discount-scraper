@@ -105,7 +105,7 @@ async function setupScheduler(supermarket: string, shortName: string): Promise<v
   const dateTime = DateTimeHandler.fromISOToDateTimeString(scheduleDateTime, "YYYY-MM-DD HH:mm:ss");
 
   const { exec } = require('child_process');
-  exec(`bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`, (err: string, stdout: string, stderr: string) => {
+  await exec(`bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`, (err: string, stdout: string, stderr: string) => {
     if (err) {
       logger.error("[EXEC ERR]", err);
       return;
