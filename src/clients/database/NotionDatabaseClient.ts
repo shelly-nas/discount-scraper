@@ -8,7 +8,7 @@ class NotionDatabaseClient {
   private databaseId: string;
 
   constructor(integrationToken: string, databaseId: string) {
-    this.notion = new Client({ auth: integrationToken });
+    this.notion = new Client({ auth: integrationToken, timeoutMs: 10000 });
     this.databaseId = databaseId;
   }
 
@@ -87,7 +87,7 @@ class NotionDatabaseClient {
         page_id: pageId,
         archived: true,
       });
-
+      
       logger.info(`Deleted entry with ID '${pageId}' from database.`);
       return response;
     } catch (error) {
