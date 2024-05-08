@@ -1,5 +1,6 @@
-import { promises as fs } from "fs";
+import * as fs from "fs/promises";
 import * as path from "path";
+import lockfile from "proper-lockfile";
 import { logger } from "../utils/Logger";
 
 class JsonDataContext<T> {
@@ -12,8 +13,13 @@ class JsonDataContext<T> {
   public async load(): Promise<T[]> {
     try {
       await this.exists();
-      const data = await fs.readFile(this.filename, "utf-8");
-      return JSON.parse(data);
+      const release = await lockfile.lock(this.filename);
+      try {
+        const data = await fs.readFile(this.filename, "utf-8");
+        return JSON.parse(data);
+      } finally {
+        await release();
+      }
     } catch (error) {
       logger.error(`Failed to read from ${this.filename}:`, error);
       process.exit(1);
@@ -23,8 +29,13 @@ class JsonDataContext<T> {
   public async save(data: T[]): Promise<void> {
     try {
       await this.exists();
-      const jsonData = JSON.stringify(data, null, 2);
-      await fs.writeFile(this.filename, jsonData, "utf-8");
+      const release = await lockfile.lock(this.filename);
+      try {
+        const jsonData = JSON.stringify(data, null, 2);
+        await fs.writeFile(this.filename, jsonData, "utf-8");
+      } finally {
+        await release();
+      }
     } catch (error) {
       logger.error(`Failed to write to ${this.filename}:`, error);
       process.exit(1);
@@ -41,11 +52,11 @@ class JsonDataContext<T> {
         await this.ensureDirectoryExists();
         // Then, create the file with an empty array JSON content
         await fs.writeFile(this.filename, JSON.stringify([]), "utf-8");
+        return false;
       } else {
-        logger.error
+        logger.error(`Failed to access ${this.filename}:`, error);
         process.exit(1);
       }
-      return false
     }
   }
 
@@ -55,16 +66,21 @@ class JsonDataContext<T> {
   }
 
   public async deleteFile(): Promise<void> {
-    if (await this.exists()) {
+    try {
+      const release = await lockfile.lock(this.filename);
       try {
-        await fs.unlink(this.filename);
-        logger.info(`Successfully deleted ${this.filename}`);
-      } catch (error) {
-        logger.error(`Failed to delete ${this.filename}:`, error);
+        if (await this.exists()) {
+          await fs.unlink(this.filename);
+          logger.info(`Successfully deleted ${this.filename}`);
+        } else {
+          logger.warn("No file found to delete.");
+        }
+      } finally {
+        await release();
       }
-    } else {
-      logger.warn("No file found to delete.");
-    }  
+    } catch (error) {
+      logger.error(`Failed to delete ${this.filename}:`, error);
+    }
   }
 }
 
