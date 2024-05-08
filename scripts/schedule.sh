@@ -4,7 +4,7 @@
 # Example: ./schedule.sh ah DiscountScraper 2024-05-07 13:33:15
 
 # Validate arguments
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <config> <schedule>
     configs=[ah, dirk or plus]
     schedule=YYYY-MM-DD HH:mm:ss"
