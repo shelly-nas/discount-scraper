@@ -25,9 +25,24 @@ class ProductController {
     return await this.context.load();
   }
 
+  async deleteProduct(productId: number): Promise<boolean> {
+    logger.debug(`Attempting to delete product with ID: ${productId}`);
+    const products = await this.context.load();
+    const filteredProducts = products.filter(p => p.id !== productId);
+    
+    if (products.length === filteredProducts.length) {
+      logger.warn(`Product with ID: ${productId} not found.`);
+      return false;
+    }
+
+    await this.context.save(filteredProducts);
+    logger.debug(`Product with ID: ${productId} has been deleted.`);
+    return true;
+  }
+
   async getProductId(name: string): Promise<number> {
     const products = await this.context.load();
-    const productIndex = products.findIndex((product) => product.name === name);
+    const productIndex = products.findIndex((p) => p.name === name);
 
     if (productIndex !== -1) {
       logger.debug(
@@ -42,7 +57,7 @@ class ProductController {
 
   async addProduct(name: string, category: string, supermarket: string): Promise<void> {
     const products = await this.context.load();
-    const alreadyExists = products.some((product) => product.name === name);
+    const alreadyExists = products.some((p) => p.name === name);
 
     if (alreadyExists) {
       logger.warn(`Product '${name}' already exists. No action taken.`);
@@ -71,7 +86,7 @@ class ProductController {
 
     for (const updateObj of updateObjects) {
       const productIndex = products.findIndex(
-        (product) => product.id === updateObj.id
+        (p) => p.id === updateObj.id
       );
       if (productIndex !== -1 && updateObj[key] !== undefined) {
         products[productIndex][key] = updateObj[key] as never;

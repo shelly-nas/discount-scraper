@@ -16,6 +16,7 @@ interface IWebIdentifiers {
 
 interface ISupermarketWebConfig {
   name: string;
+  nameShort: string;
   url: string;
   webIdentifiers: IWebIdentifiers;
 }

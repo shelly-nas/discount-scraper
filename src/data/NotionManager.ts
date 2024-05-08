@@ -27,9 +27,9 @@ export default class NotionManager {
   public toPageBlocks(productDiscountsDetails: IProductDiscountDetails[]): IBlock[] {
     try {
       this.addHeading3(productDiscountsDetails[0].supermarket);
-      productDiscountsDetails.forEach((discount) => {
+      productDiscountsDetails.forEach((d) => {
         this.addTodo(
-          `${discount.name}: ${discount.discountPrice} (${discount.specialDiscount})`
+          `${d.name}: ${d.discountPrice} (${d.specialDiscount})`
         );
       });
       this.addDivider();
@@ -65,8 +65,8 @@ export default class NotionManager {
     productDiscounts: IProductDiscountDetails[]
   ): IProductDiscountDatabase[] {
     try {
-      const discountEntries = productDiscounts.map((discount) =>
-        this.toDatabaseEntry(discount)
+      const discountEntries = productDiscounts.map((d) =>
+        this.toDatabaseEntry(d)
       );
       logger.info(
         `Converted supermarket discounts for '${productDiscounts[0].supermarket}' to Notion database entries.`

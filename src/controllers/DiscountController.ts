@@ -45,6 +45,21 @@ class DiscountController {
     await this.context.save(discounts);
     logger.debug(`New discount added for product ID '${productId}'.`);
   }
+
+  async deleteDiscount(productId: number): Promise<boolean> {
+    logger.debug(`Attempting to delete discount with product ID: ${productId}`);
+    const discounts = await this.context.load();
+    const filteredProducts = discounts.filter(d => d.product !== productId);
+    
+    if (discounts.length === filteredProducts.length) {
+      logger.warn(`Discount with product ID: ${productId} not found.`);
+      return false;
+    }
+    
+    await this.context.save(filteredProducts);
+    logger.info(`Discount with product ID: ${productId} has been deleted.`);
+    return true;
+  }
 }
 
 export default DiscountController;

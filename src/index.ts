@@ -95,7 +95,7 @@ async function flushNotionDatabaseBySupermarket(
   }
 }
 
-async function setupScheduler(supermarket: string): Promise<void> {
+async function setupScheduler(supermarket: string, shortName: string): Promise<void> {
   logger.info(`Setup scheduler for "${supermarket}".`);
 
   const expireDate = await jsonDataManager.getSupermarketExpireDate(supermarket);
@@ -104,13 +104,18 @@ async function setupScheduler(supermarket: string): Promise<void> {
   const scheduleDateTime = DateTimeHandler.addToISOString(scheduleDay, 4, "hours");
   const dateTime = DateTimeHandler.fromISOToDateTimeString(scheduleDateTime, "YYYY-MM-DD HH:mm:ss");
 
-  const { execSync } = require("child_process");
-  try {
-    const output = execSync(`bash ./scripts/schedule.sh ${supermarket} "${dateTime}"`);
-    logger.info(`Output: ${output}`);
-  } catch (error) {
-    logger.error(`Error: ${error}`);
-  }
+  const { exec } = require('child_process');
+  exec(`bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`, (err: string, stdout: string, stderr: string) => {
+    if (err) {
+      logger.error("[EXEC ERR]", err);
+      return;
+    }
+    if (stderr) {
+      logger.warn("[STDERR]", stderr);
+      return;
+    }
+    logger.info("[STDOUT]", stdout);
+  });
 }
 
 async function discountScraper(): Promise<void> {
@@ -122,17 +127,13 @@ async function discountScraper(): Promise<void> {
   const supermarketDiscounts: IProductDiscountDetails[] =
     await getSupermarketDiscounts(supermarketConfig);
 
-  await jsonDataManager.getProductController().delete();
-  await jsonDataManager.addProductDb(
-    supermarketConfig.name,
-    supermarketDiscounts
-  );
-  await jsonDataManager.getDiscountController().delete();
+  await jsonDataManager.deleteRecordsBySupermarket(supermarketConfig.name);
+  await jsonDataManager.addProductDb(supermarketConfig.name, supermarketDiscounts);
   await jsonDataManager.addDiscountDb(supermarketDiscounts);
 
   await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  await setupScheduler(supermarketConfig.name);
+  await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
 
   logger.info("Discount scraper process has stopped!");
 }

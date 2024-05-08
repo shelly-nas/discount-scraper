@@ -72,59 +72,92 @@ export class JsonDataManager {
   public async getSupermarketDiscountsVerbose(
     supermarket: string
   ): Promise<IProductDiscountDetails[]> {
-    logger.debug(
-      "Combine databases to create a ProductDiscountDetails structure."
-    );
-    let productDiscounts: IProductDiscountDetails[] = [];
-    const products = await this.productController.getProducts();
-    const discounts = await this.discountController.getDiscounts();
+    logger.debug("Combine databases to create a ProductDiscountDetails structure.");
 
-    for (const discount of discounts) {
-      try {
-        let productIndex = products.findIndex(
-          (product) =>
-            product.id === discount.product &&
-            product.supermarket === supermarket
-        );
-        const details: IProductDiscountDetails = {
-          name: products[productIndex].name,
-          originalPrice: discount.originalPrice,
-          discountPrice: discount.discountPrice,
-          specialDiscount: discount.specialDiscount,
-          category: products[productIndex].category,
-          supermarket: products[productIndex].supermarket,
-          expireDate: discount.expireDate,
-        };
-        productDiscounts.push(details);
-      } catch (error) {
-        logger.error("Error:", error);
-      }
+    try {
+      const products = await this.productController.getProducts();
+      const discounts = await this.discountController.getDiscounts();
+
+      // Create a map of products by ID for quick lookup
+      const productMap = new Map(products.map(p => [p.id, p]));
+
+      // Filter and map discounts to details if they match the supermarket
+      let productDiscounts = discounts.reduce((acc, discount) => {
+        const product = productMap.get(discount.product);
+        if (product && product.supermarket === supermarket) {
+          const details: IProductDiscountDetails = {
+            name: product.name,
+            originalPrice: discount.originalPrice,
+            discountPrice: discount.discountPrice,
+            specialDiscount: discount.specialDiscount,
+            category: product.category,
+            supermarket: product.supermarket,
+            expireDate: discount.expireDate,
+          };
+          acc.push(details);
+        }
+        return acc;
+      }, [] as IProductDiscountDetails[]);
+
+      logger.info(`Found ${productDiscounts.length} discounts for supermarket '${supermarket}'.`);
+      return productDiscounts;
+    } catch (error) {
+      logger.error("Error retrieving supermarket discounts:", error);
+      throw new Error("Failed to retrieve supermarket discounts.");
     }
-    return productDiscounts;
   }
 
   public async getSupermarketExpireDate(supermarket: string): Promise<string> {
-    logger.debug(
-      "Combine databases to filter and get expire date."
-    );
-    let productDiscounts: IProductDiscountDetails[] = [];
+    logger.debug("Fetching data to determine supermarket expire date.");
+
     const products = await this.productController.getProducts();
     const discounts = await this.discountController.getDiscounts();
 
-    for (const product of products) {
-      try {
-        let discountIndex = discounts.findIndex(
-          (discount) =>
-            discount.product === product.id &&
-            product.supermarket === supermarket
-        );
-        // Get the first item and return, all the expire dates are expected to be the same
-        return discounts[discountIndex].expireDate
-      } catch (error) {
-        logger.error("Error:", error);
-      }
+    const supermarketProducts = products.filter(p => p.supermarket === supermarket);
+    const productIds = new Set(supermarketProducts.map(p => p.id));
+    const matchingDiscount = discounts.find(d => productIds.has(d.product) && d.expireDate);
+
+    if (matchingDiscount) {
+      logger.info(`Expire date for supermarket '${supermarket}' is '${matchingDiscount.expireDate}'.`);
+      return matchingDiscount.expireDate;
+    } else {
+      logger.warn(`No matching discounts found for supermarket '${supermarket}'.`);
+      return '';
     }
-    return '';
+  }
+
+  public async deleteRecordsBySupermarket(supermarket: string): Promise<void> {
+    logger.debug(`Starting deletion of all records related to '${supermarket}'.`);
+
+    try {
+      const products = await this.productController.getProducts();
+      const productIds = products
+        .filter(p => p.supermarket === supermarket)
+        .map(p => p.id);
+
+      // Deleting products and corresponding discounts synchronously
+      let productsDeleted = 0;
+      let discountsDeleted = 0;
+
+      for (const id of productIds) {
+        // Delete product and increment counter if successful
+        const productDeletionResult = await this.productController.deleteProduct(id);
+        if (productDeletionResult === true) {  // Assuming deleteProduct returns true on success
+          productsDeleted++;
+        }
+
+        // Delete discount and increment counter if successful
+        const discountDeletionResult = await this.discountController.deleteDiscount(id);
+        if (discountDeletionResult === true) {  // Assuming deleteDiscount returns true on success
+          discountsDeleted++;
+        }
+      }
+
+      logger.info(`Deleted ${productsDeleted} product records and ${discountsDeleted} discount records related to '${supermarket}'.`);
+    } catch (error) {
+      logger.error("Error during deletion:", error);
+      throw new Error("Failed to delete database entries for supermarket.");
+    }
   }
 }
 
