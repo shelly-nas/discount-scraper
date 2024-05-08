@@ -1,5 +1,6 @@
 {
   "name": "PLUS",
+  "nameShort": "plus",
   "url": "https://www.plus.nl/aanbiedingen",
   "webIdentifiers": {
     "cookieDecline": "#b1-b36-b1-FooterRightButtom > button",

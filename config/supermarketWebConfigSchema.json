@@ -6,6 +6,9 @@
     "name": {
       "type": "string"
     },
+    "nameShort": {
+      "type": "string"
+    },
     "url": {
       "type": "string",
       "format": "uri"

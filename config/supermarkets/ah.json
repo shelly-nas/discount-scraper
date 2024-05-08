@@ -1,5 +1,6 @@
 {
   "name": "Albert Heijn",
+  "nameShort": "ah",
   "url": "https://www.ah.nl/bonus",
   "webIdentifiers": {
     "cookieDecline": "#decline-cookies",
