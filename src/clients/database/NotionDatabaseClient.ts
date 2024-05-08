@@ -1,18 +1,18 @@
 import { Client } from "@notionhq/client";
 import { logger } from "../../utils/Logger";
 import { PageObjectResponse, PartialPageObjectResponse, PartialDatabaseObjectResponse, DatabaseObjectResponse} from "@notionhq/client/build/src/api-endpoints";
-import { IProductDiscountDatabase } from "../../interfaces/INotionDatabaseEntries";
+import { INotionProductDiscountStructure } from "../../interfaces/INotionProductDiscountStructure";
 
 class NotionDatabaseClient {
   private notion: Client;
   private databaseId: string;
 
   constructor(integrationToken: string, databaseId: string) {
-    this.notion = new Client({ auth: integrationToken });
+    this.notion = new Client({ auth: integrationToken, timeoutMs: 10000 });
     this.databaseId = databaseId;
   }
 
-  public async flushDatabase(discountEntries: IProductDiscountDatabase[], filter: any = undefined): Promise<void> {
+  public async flushDatabase(discountEntries: INotionProductDiscountStructure[], filter: any = undefined): Promise<void> {
     logger.info('Starting to flush the database.');
 
     // Retrieve the current entries from the database
@@ -87,7 +87,7 @@ class NotionDatabaseClient {
         page_id: pageId,
         archived: true,
       });
-
+      
       logger.info(`Deleted entry with ID '${pageId}' from database.`);
       return response;
     } catch (error) {
