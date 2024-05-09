@@ -8,7 +8,7 @@ class NotionDatabaseClient {
   private databaseId: string;
 
   constructor(integrationToken: string, databaseId: string) {
-    this.notion = new Client({ auth: integrationToken, timeoutMs: 10000 });
+    this.notion = new Client({ auth: integrationToken, timeoutMs: 30000 });
     this.databaseId = databaseId;
   }
 
