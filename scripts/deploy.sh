@@ -23,7 +23,7 @@ SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
 # Disable and remove system service file
 sudo systemctl stop $SERVICE_NAME.service
 sudo systemctl disable $SERVICE_NAME.service
-sudo rm $SERVICE_PATH.service
+sudo rm $SERVICE_PATH
 
 # Create the systemd service configuration
 echo "[Unit]

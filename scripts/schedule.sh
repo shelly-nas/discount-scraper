@@ -23,7 +23,7 @@ TIMER_PATH="/etc/systemd/system/$SERVICE_NAME.timer"
 # Disable and remove system service file
 sudo systemctl stop $SERVICE_NAME.timer
 sudo systemctl disable $SERVICE_NAME.timer
-sudo rm $SERVICE_PATH.timer
+sudo rm $TIMER_PATH
 
 # Create the systemd service scheduler
 echo "[Unit]
