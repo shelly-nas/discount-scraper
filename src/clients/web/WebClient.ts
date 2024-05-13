@@ -25,12 +25,14 @@ class WebClient {
   public async navigate(url: string): Promise<void> {
     logger.info(`Navigating to URL: ${url}`);
     await this.page?.goto(url, { waitUntil: "commit" });
+    this.page?.once('load', () => logger.debug('Page loaded!'));
   }
 
   public async handleCookiePopup(selector: string): Promise<void> {
+    await this.page?.waitForLoadState("domcontentloaded", { timeout: 30000 });
+    // await this.page?.screenshot({ path: 'page.png', fullPage: true})
     if (selector) {
       try {
-        await this.page?.waitForLoadState("networkidle", { timeout: 30000 });
         logger.debug(`Found cookie popup with selector '${selector}'.`);
         await this.page?.click(selector);
         logger.info("Dismissed cookie popup");

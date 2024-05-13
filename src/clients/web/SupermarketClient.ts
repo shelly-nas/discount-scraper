@@ -13,7 +13,7 @@ abstract class SupermarketClient extends WebClient {
 
   public async getPromotionExpireDate(selector: string): Promise<void> {
     try {
-      await this.page?.waitForLoadState("networkidle", { timeout: 30000 });
+      await this.page?.waitForLoadState("domcontentloaded", { timeout: 30000 });
       const expireStringRaw = await this.page?.textContent(selector);
       if (!expireStringRaw) {
         logger.warn(`No promotion expire date found for '${selector}'.`);
@@ -34,6 +34,7 @@ abstract class SupermarketClient extends WebClient {
       logger.info(`Promotion Expire Date: ${this.expireDate}`);
     } catch (error) {
       logger.error("Failed to get promotion expire date:", error);
+      process.exit(1);
     }
   }
 
@@ -42,10 +43,10 @@ abstract class SupermarketClient extends WebClient {
     productSelector: string
   ): Promise<ElementHandle[] | undefined> {
     logger.debug(`Wait for product category with ID '${parentSelector}' to be visible.`);
+    await this.page?.waitForLoadState("domcontentloaded", { timeout: 30000 });
     let discountProducts;
 
     try {
-      await this.page?.waitForLoadState("networkidle", { timeout: 30000 });
       this.productCategory = await this.page?.$(parentSelector);
 
       if (!this.productCategory) {
