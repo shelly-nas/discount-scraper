@@ -42,7 +42,7 @@ async function getSupermarketDiscounts(
       logger.error(
         `No discount products for product category '${productCategory}'.`
       );
-      break;
+      continue;
     }
 
     // For each discount product found, get its details and append it to the supermarketDiscounts
@@ -62,8 +62,6 @@ async function getSupermarketDiscounts(
 
   // Use JsonWriter to write the ProductDiscount details to a JSON file
   return productDiscountDetails;
-
-  setupScheduler
 }
 
 async function flushNotionDatabaseBySupermarket(
