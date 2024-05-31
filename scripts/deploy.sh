@@ -33,7 +33,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/node dist/src/index.js --config config/supermarkets/$CONFIG.json
+ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/node dist/src/index.js --config config/supermarkets/$CONFIG.json
 WorkingDirectory=$WORKSPACE
 Restart=on-failure
 
