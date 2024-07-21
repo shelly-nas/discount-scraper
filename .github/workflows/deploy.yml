@@ -9,7 +9,6 @@ jobs:
   setup:
     runs-on: raspberry-pi
     steps:
-      # Add steps that stops the services running
       - name: Checkout code
         uses: actions/checkout@v2
 
