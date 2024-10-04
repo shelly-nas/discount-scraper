@@ -1,18 +1,27 @@
-import { chromium, Browser, Page } from "playwright";
+import { chromium, Browser, Page } from 'playwright';
 import { logger } from "../../utils/Logger";
 
 class WebClient {
   private browser: Browser | null = null;
   protected page: Page | null = null;
   private headless: boolean = true;
-  private userAgent: string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36";
+  private userAgent: string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
 
   public async init(): Promise<void> {
     try {
       logger.debug("Initializing browser...");
-      this.browser = await chromium.launch({ headless: this.headless, slowMo: 50 });
+      this.browser = await chromium.launch({ 
+        headless: this.headless, 
+        slowMo: 500
+      });
 
-      const context = await this.browser.newContext({ userAgent: this.userAgent, bypassCSP: true, viewport: { width: 1280, height: 720 } });
+      const context = await this.browser.newContext({ 
+        userAgent: this.userAgent,
+        bypassCSP: true, 
+        viewport: { width: 1280, height: 720 },
+        permissions: ['geolocation'],
+        geolocation: { latitude: 52.3676, longitude: 4.9041 },
+      });
       this.page = await context.newPage();
 
       logger.info("Browser initialized successfully.");
