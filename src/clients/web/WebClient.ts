@@ -1,4 +1,6 @@
-import { chromium, Browser, Page } from 'playwright';
+import { Browser, Page } from 'playwright';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { logger } from "../../utils/Logger";
 
 class WebClient {
@@ -10,9 +12,10 @@ class WebClient {
   public async init(): Promise<void> {
     try {
       logger.debug("Initializing browser...");
+      chromium.use(StealthPlugin());
       this.browser = await chromium.launch({ 
         headless: this.headless, 
-        slowMo: 500
+        slowMo: 50
       });
 
       const context = await this.browser.newContext({ 
