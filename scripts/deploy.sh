@@ -37,6 +37,9 @@ User=pi
 ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/node dist/src/index.js --config config/supermarkets/$CONFIG.json
 WorkingDirectory=$WORKSPACE
 Restart=on-failure
+RestartSec=10s
+StartLimitIntervalSec=1800
+StartLimitBurst=10
 
 [Install]
 WantedBy=multi-user.target" | sudo tee $SERVICE_PATH
