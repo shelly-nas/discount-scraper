@@ -38,7 +38,7 @@ ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/node dist/src/index.js --conf
 WorkingDirectory=$WORKSPACE
 Restart=on-failure
 RestartSec=10s
-StartLimitIntervalSec=1800
+StartLimitIntervalSec=600
 StartLimitBurst=10
 
 [Install]
