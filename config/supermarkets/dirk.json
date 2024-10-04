@@ -4,22 +4,22 @@
   "url": "https://www.dirk.nl/aanbiedingen",
   "webIdentifiers": {
     "cookieDecline": null,
-    "promotionExpireDate": "#__nuxt > main > div.offers-page > div.header.offers-header > button.calender-button.current > span.date",
+    "promotionExpireDate": "#__nuxt > main > div.offers-page-wrapper > div > div.header-container.offers-header > div.header.mobile-margin > button.animate.calender-button.current > span.date",
     "productCategories": [
-      "section:has(> h2 > span.desktop:has-text(\"Aardappelen, groente & fruit\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Vlees, vis & vega\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Zuivel & kaas\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Dranken, sap, koffie & thee\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Voorraadkast\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Maaltijden, salades & tapas\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Diepvries\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Kind & drogisterij\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Huishoud & huisdieren\"))",
-      "section:has(> h2 > span.desktop:has-text(\"Snacks & snoep\"))"
+      "section:has(> h2:has-text(\"Aardappelen, groente & fruit\"))",
+      "section:has(> h2:has-text(\"Vlees, vis & vega\"))",
+      "section:has(> h2:has-text(\"Zuivel & kaas\"))",
+      "section:has(> h2:has-text(\"Dranken, sap, koffie & thee\"))",
+      "section:has(> h2:has-text(\"Voorraadkast\"))",
+      "section:has(> h2:has-text(\"Maaltijden, salades & tapas\"))",
+      "section:has(> h2:has-text(\"Diepvries\"))",
+      "section:has(> h2:has-text(\"Kind & drogisterij\"))",
+      "section:has(> h2:has-text(\"Huishoud & huisdieren\"))",
+      "section:has(> h2:has-text(\"Snacks & snoep\"))"
     ],
     "products": "article",
     "promotionProducts": {
-      "productCategory": ["h2 span.desktop"],
+      "productCategory": ["h2"],
       "productName": [".title"],
       "originalPrice": ["div.label.price-label .regular-price", "span"],
       "discountPrice": [
