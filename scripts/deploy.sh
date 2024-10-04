@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: ./deploy.sh <config> <workspace>
-# Example: ./deploy.sh ah DiscountScraper /home/pi/repos 
+# Example: ./deploy.sh ah /home/pi/repos 
 
 # Validate arguments
 if [ "$#" -ne 2 ]; then

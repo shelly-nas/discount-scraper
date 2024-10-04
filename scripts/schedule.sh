@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Usage: ./schedule.sh <config> <schedule>
-# Example: ./schedule.sh ah DiscountScraper 2024-05-07 13:33:15
+# Example: ./schedule.sh ah 2024-05-07 13:33:15
 
 # Validate arguments
 if [ "$#" -ne 2 ]; then
