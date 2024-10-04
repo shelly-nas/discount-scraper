@@ -30,6 +30,8 @@ echo "[Unit]
 Description=Discount Scraper ($CONFIG)
 Documentation=https://github.com/GRJX/DiscountScraper
 After=network.target
+StartLimitInterval=300
+StartLimitBurst=10
 
 [Service]
 Type=simple
@@ -38,8 +40,6 @@ ExecStart=/home/pi/.nvm/versions/node/v20.11.1/bin/node dist/src/index.js --conf
 WorkingDirectory=$WORKSPACE
 Restart=on-failure
 RestartSec=10s
-StartLimitIntervalSec=600
-StartLimitBurst=10
 
 [Install]
 WantedBy=multi-user.target" | sudo tee $SERVICE_PATH
