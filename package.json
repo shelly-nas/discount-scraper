@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@playwright/test": "^1.43.0",
+    "@playwright/test": "^1.50.1",
     "@types/imap-simple": "^4.2.9",
     "@types/node": "^20.12.6",
     "@types/proper-lockfile": "^4.1.4",
