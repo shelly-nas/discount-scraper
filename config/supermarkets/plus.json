@@ -3,7 +3,7 @@
   "nameShort": "plus",
   "url": "https://www.plus.nl/aanbiedingen",
   "webIdentifiers": {
-    "cookieDecline": "#b1-b36-b1-FooterRightButtom > button",
+    "cookieDecline": "#b1-b37-b1-FooterRightButtom > button",
     "promotionExpireDate": "#b7-\\$b2 > span",
     "productCategories": [
       "div.ThemeGrid_Container.content-section-full.no-padding-top.no-padding-bottom[id^=\"b7-l1\"]:has(h2.promo-category-offer > span[data-expression]:has-text(\"Aardappelen, groente, fruit\"))",

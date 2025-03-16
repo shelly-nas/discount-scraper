@@ -4,7 +4,7 @@
   "url": "https://www.dirk.nl/aanbiedingen",
   "webIdentifiers": {
     "cookieDecline": null,
-    "promotionExpireDate": "#__nuxt > main > div.offers-page-wrapper > div > div.header-container.offers-header > div.header.mobile-margin > button.animate.calender-button.current > span.date",
+    "promotionExpireDate": "#__nuxt > main > div.base-page > div:nth-child(2) > div > div > div.header-container.offers-header > div.header.mobile-margin > button.animate.calender-button.current > span.date",
     "productCategories": [
       "section:has(> h2:has-text(\"Aardappelen, groente & fruit\"))",
       "section:has(> h2:has-text(\"Vlees, vis & vega\"))",
