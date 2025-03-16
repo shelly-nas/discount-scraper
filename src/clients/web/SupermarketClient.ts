@@ -30,7 +30,17 @@ abstract class SupermarketClient extends WebClient {
         expireDateRaw = expireStringRaw.substring(tmIndex + 3).trim(); // +3 to skip over "t/m"
       }
       
-      this.expireDate = DateTimeHandler.parseDateISOString(expireDateRaw);
+      const [day, month] = expireDateRaw.split(' ');
+      const monthMap: { [key: string]: number } = {
+        'jan': 0, 'januari': 0, 'feb': 1, 'februari': 1, 'mrt': 2, 'maart': 2, 'apr': 3, 'april': 3, 
+        'mei': 4, 'jun': 5, 'juni': 5, 'jul': 6, 'juli': 6, 'aug': 7, 'augustus': 7, 'sep': 8, 
+        'september': 8, 'okt': 9, 'oktober': 9, 'nov': 10, 'november': 10, 'dec': 11, 'december': 11
+      };
+      const expireDate = new Date();
+      expireDate.setMonth(monthMap[month.toLowerCase()]);
+      expireDate.setDate(parseInt(day));
+      this.expireDate = expireDate.toISOString();
+
       logger.info(`Promotion Expire Date: ${this.expireDate}`);
     } catch (error) {
       logger.error("Failed to get promotion expire date:", error);
