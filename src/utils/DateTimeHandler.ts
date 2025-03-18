@@ -34,10 +34,23 @@ class DateTimeHandler {
     const dateRegex = /(\d{1,2}\s+[a-zA-Z]+)/i;
     const match = dateStr.match(dateRegex);
     if (!match) {
-      throw `No match found for '${dateStr}'.`
+      logger.warn(`No match found for date string: '${dateStr}'. Using current date.`);
+      return moment().toISOString(true);
     }
 
-    const date = moment(match[0], "D MMMM", true);
+    // Try different Dutch date formats to handle both full and abbreviated month names
+    let date = moment(match[0], "D MMMM", true); // Full month name format like "12 maart"
+    
+    if (!date.isValid()) {
+      // Try abbreviated month format like "12 mrt"
+      date = moment(match[0], "D MMM", true);
+    }
+    
+    if (!date.isValid()) {
+      logger.warn(`Invalid date parsed from: '${match[0]}'. Using current date.`);
+      return moment().toISOString(true);
+    }
+    
     return date.toISOString(true);
   }
 
