@@ -22,7 +22,7 @@ jobs:
           LOG_LEVEL: "INFO"
           DB_PRODUCT: "./database/Product.json"
           DB_DISCOUNT: "./database/Discount.json"
-          SUPERMARKET_WEB_CONFIG_SCHEMA: "./config/supermarketWebConfigSchema.json"
+
           NOTION_SECRET: ${{ secrets.NOTION_SECRET }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
         run: bash ./scripts/init.sh

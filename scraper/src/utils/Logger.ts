@@ -1,6 +1,10 @@
 import DateTimeHandler from "./DateTimeHandler";
 import fs from "fs";
 import path from "path";
+import * as dotenv from "dotenv";
+
+// Load .env from project root (three levels up from this file)
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 enum LogLevel {
   ERROR = 1,
@@ -24,7 +28,9 @@ class Logger {
       (process.env.LOG_LEVEL as keyof typeof LogLevel) || "INFO";
     this.setLogLevel(LogLevel[levelName]);
 
-    const logFileName = `discountScraper_${DateTimeHandler.getDateTimeString("YYYYMMDD-HHmmss")}.log`;
+    const logFileName = `discountScraper_${DateTimeHandler.getDateTimeString(
+      "YYYYMMDD-HHmmss"
+    )}.log`;
     this.logFilePath = path.join(this.logDirectory, logFileName);
   }
 
@@ -43,13 +49,19 @@ class Logger {
     return level <= this.currentLogLevel;
   }
 
-  private writeToFile(level: string, message: string, ...optionalParams: any[]): void {
+  private writeToFile(
+    level: string,
+    message: string,
+    ...optionalParams: any[]
+  ): void {
     if (!this.shouldLog(LogLevel[level as keyof typeof LogLevel])) {
       return;
     }
 
     // Compose the initial part of the log message.
-    const logMessage = `[${DateTimeHandler.getDateTimeString("YYYY-MM-DD HH:mm:ss.SSS")}] [${level}] ${message}`;
+    const logMessage = `[${DateTimeHandler.getDateTimeString(
+      "YYYY-MM-DD HH:mm:ss.SSS"
+    )}] [${level}] ${message}`;
 
     try {
       // Append the initial message to the file.

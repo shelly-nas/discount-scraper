@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  postgres:
+    build:
+      context: database
+      dockerfile: Dockerfile
+    container_name: discount-scraper-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data
+      - postgres_data:/var/lib/postgresql/data
+      # Mount schema for easy updates during development
+      - ./database/src/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

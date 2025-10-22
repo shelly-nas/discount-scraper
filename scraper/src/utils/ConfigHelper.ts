@@ -5,6 +5,11 @@ import SupermarketClient from "../clients/web/SupermarketClient";
 import ArgumentHandler from "./ArgumentHandler";
 import JsonReader from "./JsonReader";
 import { logger } from "./Logger";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+// Load .env from project root (two levels up from this file)
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 export function getEnvVariable(name: string): string {
   const value = process.env[name];
@@ -16,16 +21,15 @@ export function getEnvVariable(name: string): string {
 }
 
 export async function getConfig(): Promise<ISupermarketWebConfig> {
-    const supermarketWebConfigSchemaFilePath = getEnvVariable("SUPERMARKET_WEB_CONFIG_SCHEMA");
-    const argHandler = new ArgumentHandler(process.argv);
-    const configPath = argHandler.getArgByFlag("--config");
-  
-    const jsonReader = new JsonReader(configPath, supermarketWebConfigSchemaFilePath);
-    const jsonData = (await jsonReader.read()) as ISupermarketWebConfig;
-  
-    logger.debug("JSON data read from file:", jsonData);
-    return jsonData;
-  }
+  const argHandler = new ArgumentHandler(process.argv);
+  const configPath = argHandler.getArgByFlag("--config");
+
+  const jsonReader = new JsonReader(configPath);
+  const jsonData = (await jsonReader.read()) as ISupermarketWebConfig;
+
+  logger.debug("JSON data read from file:", jsonData);
+  return jsonData;
+}
 
 export function getSupermarketClient(name: string): SupermarketClient {
   switch (name) {
@@ -36,7 +40,9 @@ export function getSupermarketClient(name: string): SupermarketClient {
     case "PLUS":
       return new PlusClient();
     default:
-      logger.error("Descendent of Supermarket Client could not be found or instantiated.");
+      logger.error(
+        "Descendent of Supermarket Client could not be found or instantiated."
+      );
       process.exit(1);
   }
 }
