@@ -3,10 +3,11 @@ import DirkClient from "../clients/web/DirkClient";
 import PlusClient from "../clients/web/PlusClient";
 import SupermarketClient from "../clients/web/SupermarketClient";
 import ArgumentHandler from "./ArgumentHandler";
-import JsonReader from "./JsonReader";
 import { logger } from "./Logger";
 import * as dotenv from "dotenv";
 import * as path from "path";
+import { Pool } from "pg";
+import { getDatabaseConfig } from "../config/Database";
 
 // Load .env from project root (two levels up from this file)
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
@@ -24,11 +25,67 @@ export async function getConfig(): Promise<ISupermarketWebConfig> {
   const argHandler = new ArgumentHandler(process.argv);
   const configPath = argHandler.getArgByFlag("--config");
 
-  const jsonReader = new JsonReader(configPath);
-  const jsonData = (await jsonReader.read()) as ISupermarketWebConfig;
+  // Extract supermarket name from the config path (e.g., "dirk" from "../config/supermarkets/dirk.json")
+  const fileName = path.basename(configPath, ".json");
 
-  logger.debug("JSON data read from file:", jsonData);
-  return jsonData;
+  // Map short names to full names
+  const nameMap: { [key: string]: string } = {
+    ah: "Albert Heijn",
+    dirk: "Dirk",
+    plus: "PLUS",
+  };
+
+  const supermarketName = nameMap[fileName.toLowerCase()];
+
+  if (!supermarketName) {
+    logger.error(`Unknown supermarket config: ${fileName}`);
+    process.exit(1);
+  }
+
+  logger.info(`Loading config for "${supermarketName}" from database...`);
+
+  // Fetch config from database
+  const dbConfig = getDatabaseConfig();
+  const pool = new Pool({
+    host: dbConfig.host,
+    port: dbConfig.port,
+    database: dbConfig.database,
+    user: dbConfig.user,
+    password: dbConfig.password,
+  });
+
+  try {
+    const query = `
+      SELECT name, name_short, url, web_identifiers
+      FROM supermarket_configs
+      WHERE name = $1
+    `;
+
+    const result = await pool.query(query, [supermarketName]);
+
+    if (result.rows.length === 0) {
+      logger.error(`No config found for supermarket: ${supermarketName}`);
+      process.exit(1);
+    }
+
+    const row = result.rows[0];
+    const jsonData: ISupermarketWebConfig = {
+      name: row.name,
+      nameShort: row.name_short,
+      url: row.url,
+      webIdentifiers: row.web_identifiers,
+    };
+
+    logger.info(`✓ Config loaded from database for "${supermarketName}"`);
+    logger.debug("Config data:", jsonData);
+
+    return jsonData;
+  } catch (error) {
+    logger.error(`Error loading config from database: ${error}`);
+    throw error;
+  } finally {
+    await pool.end();
+  }
 }
 
 export function getSupermarketClient(name: string): SupermarketClient {
