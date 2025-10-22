@@ -1,0 +1,542 @@
+[
+  {
+    "id": 1,
+    "name": "1 de Beste Andijvie grof",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 2,
+    "name": "Bio+ shiitake",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 3,
+    "name": "Paprika rood",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 4,
+    "name": "Kakifruit",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 5,
+    "name": "Zuurkool naturel",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 6,
+    "name": "Bietjes los",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 7,
+    "name": "1 de Beste Pitloze witte druiven",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 8,
+    "name": "1 de Beste Aardappelen",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 9,
+    "name": "Bospeen",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 10,
+    "name": "1 de Beste Frambozen",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 11,
+    "name": "Broccoli los",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 12,
+    "name": "Kanzi Appelen",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 13,
+    "name": "1 de Beste Mandarijnen verpakt",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 14,
+    "name": "1 de Beste Radijs",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 15,
+    "name": "Eat Me Avocado ready to eat",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 16,
+    "name": "Pijnboompitten",
+    "category": "Aardappelen groente fruit",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 17,
+    "name": "Vleeschmeesters Duitse biefstuk 2 stuks",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 18,
+    "name": "Firat Turkse pizza",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 19,
+    "name": "Hardanger lachs Gerookte zalm",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 20,
+    "name": "De Vegetarische Slager",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 21,
+    "name": "Actie gehaktschnitzel hongaars 4st",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 22,
+    "name": "Vleeschmeesters Actie varkenshaas kort 2 stuks",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 23,
+    "name": "Vleeschmeesters Actie ribkarbonade 5 stuks",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 24,
+    "name": "1 de Beste Kipfilet",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 25,
+    "name": "1 de Beste Fijne cervelaat gerookt",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 26,
+    "name": "Unox rookworst",
+    "category": "Vlees vis vega",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 27,
+    "name": "Old Amsterdam Borrelstuk 48+",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 28,
+    "name": "Becel, Blue Band of Croma",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 29,
+    "name": "Philadelphia Roomkaas zacht kruiden",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 30,
+    "name": "Uniekaas 48+ plakken",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 31,
+    "name": "Almhof Hoekje",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 32,
+    "name": "Arla Skyr",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 33,
+    "name": "Parrano rasp of snippers",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 34,
+    "name": "Danio kwark",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 35,
+    "name": "Müllermilk",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 36,
+    "name": "Oatly haverdrink",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 37,
+    "name": "Heks'nkaas Smeerdip origineel voordeelpak",
+    "category": "Zuivel kaas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 38,
+    "name": "Appassimento puglia igp",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 39,
+    "name": "1 de Beste Verse sap of smoothie",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 40,
+    "name": "Clipper thee",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 41,
+    "name": "Lavazza filterkoffie",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 42,
+    "name": "Aquarius of Powerade",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 43,
+    "name": "Dubbeldrank",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 44,
+    "name": "Fernandes",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 45,
+    "name": "Gulpener Gladiator of Grolsch Herfstbok",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 46,
+    "name": "Amstel, Grolsch of Warsteiner",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 47,
+    "name": "Heineken Pilsener krat",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 48,
+    "name": "Heineken Pilsener alcoholvrij krat",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 49,
+    "name": "Leffe speciaalbier",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 50,
+    "name": "Doornbosch",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 51,
+    "name": "Starbucks koffiecups",
+    "category": "Dranken sap koffie thee",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 52,
+    "name": "Calvé Mayonaise",
+    "category": "Voorraadkast",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 53,
+    "name": "Quaker Cruesli",
+    "category": "Voorraadkast",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 54,
+    "name": "Agronature rijst",
+    "category": "Voorraadkast",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 55,
+    "name": "Maggi saus",
+    "category": "Voorraadkast",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 56,
+    "name": "Silvo kruiden",
+    "category": "Voorraadkast",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 57,
+    "name": "Gesneden verspakket",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 58,
+    "name": "Soupy Pompoensoep vers",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 59,
+    "name": "Daily Chef Italiaanse maaltijd",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 60,
+    "name": "Danlers premium burgers",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 61,
+    "name": "Maza hoemoes of baba anoesch",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 62,
+    "name": "Santa Maria Tortilla original xl-pack 12 st.",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 63,
+    "name": "Unox soep in blik",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 64,
+    "name": "YumYum noodles",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 65,
+    "name": "Verspakket kip piri piri",
+    "category": "Maaltijden salades tapas",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 66,
+    "name": "Mövenpick ijs",
+    "category": "Diepvries",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 67,
+    "name": "Aviko Friet van 't huis",
+    "category": "Diepvries",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 68,
+    "name": "Duca kip snacks",
+    "category": "Diepvries",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 69,
+    "name": "Iglo maaltijd",
+    "category": "Diepvries",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 70,
+    "name": "Sanex douchegel",
+    "category": "Kind drogisterij",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 71,
+    "name": "Bambix drinkpap",
+    "category": "Kind drogisterij",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 72,
+    "name": "Colgate tandpasta",
+    "category": "Kind drogisterij",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 73,
+    "name": "Garnier Loving Blends shampoo of conditioner",
+    "category": "Kind drogisterij",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 74,
+    "name": "Nivea deodorant",
+    "category": "Kind drogisterij",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 75,
+    "name": "Robijn wasmiddel",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 76,
+    "name": "Robijn wasverzachter",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 77,
+    "name": "Airwick Pure & Freshmatic",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 78,
+    "name": "Ajax allesreiniger",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 79,
+    "name": "Dreft Vaatwastabletten platinum all-in-1 orig. 39 st.",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 80,
+    "name": "Gourmet Gold",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 81,
+    "name": "Page Toiletpapier kussenzacht",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 82,
+    "name": "Tempo tissues of zakdoekjes",
+    "category": "Huishoud huisdieren",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 83,
+    "name": "Chupa Chups Stranger Things",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 84,
+    "name": "Trolli Pop eye of Tarantula",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 85,
+    "name": "Côte d'Or chocolade",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 86,
+    "name": "Haribo of Maoam uitdeelzakken",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 87,
+    "name": "Venco drop",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 88,
+    "name": "Duyvis",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 89,
+    "name": "Pringles",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  },
+  {
+    "id": 90,
+    "name": "Lay's MAX",
+    "category": "Snacks snoep",
+    "supermarket": "Dirk"
+  }
+]

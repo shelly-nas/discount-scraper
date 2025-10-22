@@ -4,18 +4,18 @@
   "url": "https://www.dirk.nl/aanbiedingen",
   "webIdentifiers": {
     "cookieDecline": null,
-    "promotionExpireDate": "#__nuxt > main > div.base-page > div:nth-child(2) > div > div > div.header-container.offers-header > div.header.mobile-margin > button.animate.calender-button.current > span.date",
+    "promotionExpireDate": "#__nuxt > div > main > div.base-page > div:nth-child(2) > div > div > div.header-container.offers-header > div.header.mobile-margin > button.animate.calender-button.current > span.date",
     "productCategories": [
-      "section:has(> h2:has-text(\"Aardappelen, groente & fruit\"))",
-      "section:has(> h2:has-text(\"Vlees, vis & vega\"))",
-      "section:has(> h2:has-text(\"Zuivel & kaas\"))",
-      "section:has(> h2:has-text(\"Dranken, sap, koffie & thee\"))",
-      "section:has(> h2:has-text(\"Voorraadkast\"))",
-      "section:has(> h2:has-text(\"Maaltijden, salades & tapas\"))",
-      "section:has(> h2:has-text(\"Diepvries\"))",
-      "section:has(> h2:has-text(\"Kind & drogisterij\"))",
-      "section:has(> h2:has-text(\"Huishoud & huisdieren\"))",
-      "section:has(> h2:has-text(\"Snacks & snoep\"))"
+      "Aardappelen, groente & fruit",
+      "Vlees, vis & vega",
+      "Zuivel & kaas",
+      "Dranken, sap, koffie & thee",
+      "Voorraadkast",
+      "Maaltijden, salades & tapas",
+      "Diepvries",
+      "Kind & drogisterij",
+      "Huishoud & huisdieren",
+      "Snacks & snoep"
     ],
     "products": "article",
     "promotionProducts": {
