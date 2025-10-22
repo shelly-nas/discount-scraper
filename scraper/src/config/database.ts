@@ -23,12 +23,9 @@ export function getDatabaseConfig(): DatabaseConfig {
     database: process.env.DB_NAME || "discount",
     user: process.env.DB_USER || "discount_user",
     password: process.env.DB_PASSWORD || "",
-    max: parseInt(process.env.DB_POOL_MAX || "20", 10),
-    idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || "30000", 10),
-    connectionTimeoutMillis: parseInt(
-      process.env.DB_CONNECTION_TIMEOUT || "2000",
-      10
-    ),
+    max: parseInt("20"),
+    idleTimeoutMillis: parseInt("30000"),
+    connectionTimeoutMillis: parseInt("2000"),
   };
 
   if (!config.password) {

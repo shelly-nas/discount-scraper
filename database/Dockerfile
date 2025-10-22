@@ -1,10 +1,9 @@
 # Use official PostgreSQL image
 FROM postgres:15-alpine
 
-# Default environment variables (can be overridden by docker-compose)
-# These are just fallbacks - docker-compose.yml will provide the actual values
-ENV POSTGRES_DB=discount
-ENV POSTGRES_USER=discount_user
+# Note: Environment variables (POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD)
+# are provided by docker-compose.yml from the root .env file
+# No default values needed here as they are set via docker-compose
 
 # Copy initialization scripts
 # PostgreSQL will execute these in alphabetical order

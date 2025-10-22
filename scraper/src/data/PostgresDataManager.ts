@@ -2,7 +2,7 @@ import PostgresDiscountController from "../controllers/PostgresDiscountControlle
 import PostgresProductController from "../controllers/PostgresProductController";
 import { logger } from "../utils/Logger";
 import PostgresDataContext from "./PostgresDataContext";
-import { getDatabaseConfig } from "../config/database";
+import { getDatabaseConfig } from "../config/Database";
 
 export class PostgresDataManager {
   private productController: PostgresProductController;
