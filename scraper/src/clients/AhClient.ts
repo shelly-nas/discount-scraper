@@ -1,9 +1,9 @@
 import { ElementHandle } from "puppeteer";
 import SupermarketClient from "./SupermarketClient";
-import { logger } from "../../utils/Logger";
+import { logger } from "../utils/Logger";
 
-class PlusClient extends SupermarketClient {
-  public name: string = "PLUS";
+class AhClient extends SupermarketClient {
+  public name: string = "Albert Heijn";
 
   constructor() {
     super();
@@ -28,21 +28,29 @@ class PlusClient extends SupermarketClient {
         const nameElement = element.querySelector(config.productName[0]);
         const name = nameElement?.textContent?.trim() || "";
 
-        // Original price
+        // Original price (from data attribute)
         let originalPrice = 0;
         const originalPriceElement = element.querySelector(
           config.originalPrice[0]
         );
-        if (originalPriceElement && originalPriceElement.textContent) {
-          originalPrice = parseFloat(originalPriceElement.textContent.trim());
+        if (originalPriceElement) {
+          const priceStr = originalPriceElement.getAttribute(
+            config.originalPrice[1]
+          );
+          originalPrice = priceStr ? parseFloat(priceStr.trim()) : 0;
         }
 
-        // Discount price
-        const euros =
-          element.querySelector(config.discountPrice[0])?.textContent || "";
-        const cents =
-          element.querySelector(config.discountPrice[1])?.textContent || "";
-        const discountPrice = parseFloat(`${euros}${cents}`);
+        // Discount price (from data attribute)
+        let discountPrice = 0;
+        const discountPriceElement = element.querySelector(
+          config.discountPrice[0]
+        );
+        if (discountPriceElement) {
+          const priceStr = discountPriceElement.getAttribute(
+            config.discountPrice[1]
+          );
+          discountPrice = priceStr ? parseFloat(priceStr.trim()) : 0;
+        }
 
         // Special discount
         const specialDiscountElements = Array.from(
@@ -72,16 +80,22 @@ class PlusClient extends SupermarketClient {
     originalPriceSelector: string[]
   ): Promise<number> {
     try {
-      const price = await anchorHandle.$eval(
-        originalPriceSelector[0],
-        (span) => span.textContent
+      const priceElementHandle = await anchorHandle.$(originalPriceSelector[0]); // Find the child div with the original price
+      if (!priceElementHandle) {
+        logger.warn(
+          `Original price element with selector '${originalPriceSelector[0]}' not found.`
+        );
+        return 0;
+      }
+      const price = await priceElementHandle.evaluate(
+        (el, attr) => el.getAttribute(attr),
+        originalPriceSelector[1]
       );
-
       logger.debug(`Original price retrieved: '${price}'.`);
       return price !== null ? parseFloat(price.trim()) : 0;
     } catch (error) {
       logger.warn(
-        `Warn retrieving original price with selector '${originalPriceSelector[0]}':`,
+        `Warn retrieving original price with selector '${originalPriceSelector[1]}':`,
         error
       );
       return 0;
@@ -93,15 +107,17 @@ class PlusClient extends SupermarketClient {
     discountPriceSelector: string[]
   ): Promise<number> {
     try {
-      const price = await anchorHandle.evaluate(
-        (node: Element, selectors: string[]) => {
-          const euros = node.querySelector(selectors[0])?.textContent || "";
-          const cents = node.querySelector(selectors[1])?.textContent || "";
-          return `${euros}${cents}`;
-        },
-        discountPriceSelector
+      const priceElementHandle = await anchorHandle.$(discountPriceSelector[0]); // Find the child div with the discount price
+      if (!priceElementHandle) {
+        logger.warn(
+          `Discount price element with selector '${discountPriceSelector[0]}' not found.`
+        );
+        return 0;
+      }
+      const price = await priceElementHandle.evaluate(
+        (el, attr) => el.getAttribute(attr),
+        discountPriceSelector[1]
       );
-
       logger.debug(`Discount price retrieved: '${price}'.`);
       return price !== null ? parseFloat(price.trim()) : 0;
     } catch (error) {
@@ -114,4 +130,4 @@ class PlusClient extends SupermarketClient {
   }
 }
 
-export default PlusClient;
+export default AhClient;

@@ -1,18 +1,19 @@
 import { logger } from "./utils/Logger";
 import { ElementHandle } from "puppeteer";
-import NotionDatabaseClient from "./clients/database/NotionDatabaseClient";
-import JsonDataManager from "./data/JsonDataManager";
+import PostgresDataManager from "./data/PostgresDataManager";
 import {
   getConfig,
   getEnvVariable,
   getSupermarketClient,
 } from "./utils/ConfigHelper";
 import DateTimeHandler from "./utils/DateTimeHandler";
-import NotionDatabaseService from "./service/NotionDatabaseService";
+import * as dotenv from "dotenv";
+import * as path from "path";
 
-require("dotenv").config();
+// Load .env from project root (two levels up from this file)
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
-const jsonDataManager = new JsonDataManager();
+const dataManager = new PostgresDataManager();
 
 async function getSupermarketDiscounts(
   config: ISupermarketWebConfig
@@ -64,53 +65,13 @@ async function getSupermarketDiscounts(
   return productDiscountDetails;
 }
 
-async function flushNotionDatabaseBySupermarket(
-  supermarket: string
-): Promise<void> {
-  // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
-  const integrationToken = getEnvVariable("NOTION_SECRET");
-  const databaseId = getEnvVariable("NOTION_DATABASE_ID");
-
-  // Initialize the Notion client and service
-  const databaseClient = new NotionDatabaseClient(integrationToken, databaseId);
-  const databaseService = new NotionDatabaseService(databaseClient);
-
-  const notion = new NotionDatabaseClient(integrationToken, databaseId);
-  const supermarketFilter = {
-    property: "Supermarket",
-    select: {
-      equals: supermarket,
-    },
-  };
-
-  // Construct a IProductDiscountDetails object from the JsonDataContext
-  const productDiscounts: IProductDiscountDetails[] =
-    await jsonDataManager.getSupermarketDiscountsVerbose(supermarket);
-
-  // Convert product discounts to database entries
-  const productDiscountEntries =
-    databaseService.toDatabaseEntries(productDiscounts);
-  logger.info(
-    `Converted product discounts to ${productDiscountEntries.length} new database entries.`
-  );
-
-  if (productDiscountEntries.length > 0) {
-    await notion.flushDatabase(productDiscountEntries, supermarketFilter);
-    logger.info("Discounts are added to Notion database.");
-  } else {
-    logger.error("No discounts found to add to Notion.");
-  }
-}
-
 async function setupScheduler(
   supermarket: string,
   shortName: string
 ): Promise<void> {
   logger.info(`Setup scheduler for "${supermarket}".`);
 
-  const expireDate = await jsonDataManager.getSupermarketExpireDate(
-    supermarket
-  );
+  const expireDate = await dataManager.getSupermarketExpireDate(supermarket);
   // Set scheduler at 04:00 in the morning
   const scheduleDay = DateTimeHandler.addToISOString(expireDate, 1, "days");
   const scheduleDateTime = DateTimeHandler.addToISOString(
@@ -143,24 +104,38 @@ async function setupScheduler(
 async function discountScraper(): Promise<void> {
   logger.info("Discount scraper process has started!");
 
-  logger.info("Get the configuration details.");
-  const supermarketConfig: ISupermarketWebConfig = await getConfig();
+  try {
+    // Test database connection
+    const connected = await dataManager.testConnection();
+    if (!connected) {
+      logger.error("Failed to connect to database. Exiting...");
+      process.exit(1);
+    }
 
-  const supermarketDiscounts: IProductDiscountDetails[] =
-    await getSupermarketDiscounts(supermarketConfig);
+    logger.info("Get the configuration details.");
+    const supermarketConfig: ISupermarketWebConfig = await getConfig();
 
-  await jsonDataManager.deleteRecordsBySupermarket(supermarketConfig.name);
-  await jsonDataManager.addProductDb(
-    supermarketConfig.name,
-    supermarketDiscounts
-  );
-  await jsonDataManager.addDiscountDb(supermarketDiscounts);
+    const supermarketDiscounts: IProductDiscountDetails[] =
+      await getSupermarketDiscounts(supermarketConfig);
 
-  // await flushNotionDatabaseBySupermarket(supermarketConfig.name);
+    await dataManager.deleteRecordsBySupermarket(supermarketConfig.name);
+    await dataManager.addProductDb(
+      supermarketConfig.name,
+      supermarketDiscounts
+    );
+    await dataManager.addDiscountDb(supermarketDiscounts);
 
-  // await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
+    // await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  logger.info("Discount scraper process has stopped!");
+    // await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
+
+    logger.info("Discount scraper process has stopped!");
+  } catch (error) {
+    logger.error("Error during discount scraping:", error);
+    process.exit(1);
+  } finally {
+    await dataManager.close();
+  }
 }
 
 discountScraper();

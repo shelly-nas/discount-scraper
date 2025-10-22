@@ -1,6 +1,6 @@
 import { ElementHandle } from "puppeteer";
 import SupermarketClient from "./SupermarketClient";
-import { logger } from "../../utils/Logger";
+import { logger } from "../utils/Logger";
 
 class DirkClient extends SupermarketClient {
   public name: string = "Dirk";

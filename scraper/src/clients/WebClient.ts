@@ -1,12 +1,12 @@
 import puppeteer, { Browser, Page } from "puppeteer";
 import puppeteerExtra from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { logger } from "../../utils/Logger";
+import { logger } from "../utils/Logger";
 
 class WebClient {
   private browser: Browser | null = null;
   protected page: Page | null = null;
-  private headless: boolean = true;
+  private headless: boolean = false;
   private userAgent: string =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
 
@@ -16,7 +16,6 @@ class WebClient {
       puppeteerExtra.use(StealthPlugin());
       this.browser = await puppeteerExtra.launch({
         headless: this.headless,
-        slowMo: 50,
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
 
@@ -45,7 +44,6 @@ class WebClient {
 
   public async handleCookiePopup(selector: string): Promise<void> {
     await this.page?.waitForNetworkIdle({ timeout: 30000 });
-    // await this.page?.screenshot({ path: 'page.png', fullPage: true})
     if (selector) {
       try {
         logger.debug(`Found cookie popup with selector '${selector}'.`);

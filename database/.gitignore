@@ -1,0 +1,15 @@
+# Environment files
+.env
+
+# Database dumps
+*.sql.gz
+*.dump
+*backup*.sql
+postgres_backup.tar.gz
+
+# Docker secrets
+secrets/
+
+# Local data directories (if mounting locally)
+data/
+pgdata/
