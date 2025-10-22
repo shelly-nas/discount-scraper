@@ -1,7 +1,7 @@
-import { logger } from "../../utils/Logger";
+import { logger } from "../utils/Logger";
 import { ElementHandle } from "puppeteer";
 import WebClient from "./WebClient";
-import DateTimeHandler from "../../utils/DateTimeHandler";
+import DateTimeHandler from "../utils/DateTimeHandler";
 
 abstract class SupermarketClient extends WebClient {
   abstract name: string;

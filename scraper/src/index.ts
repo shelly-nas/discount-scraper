@@ -1,6 +1,5 @@
 import { logger } from "./utils/Logger";
 import { ElementHandle } from "puppeteer";
-import NotionDatabaseClient from "./clients/database/NotionDatabaseClient";
 import PostgresDataManager from "./data/PostgresDataManager";
 import {
   getConfig,
@@ -8,7 +7,6 @@ import {
   getSupermarketClient,
 } from "./utils/ConfigHelper";
 import DateTimeHandler from "./utils/DateTimeHandler";
-import NotionDatabaseService from "./service/NotionDatabaseService";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -65,44 +63,6 @@ async function getSupermarketDiscounts(
 
   // Use JsonWriter to write the ProductDiscount details to a JSON file
   return productDiscountDetails;
-}
-
-async function flushNotionDatabaseBySupermarket(
-  supermarket: string
-): Promise<void> {
-  // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
-  const integrationToken = getEnvVariable("NOTION_SECRET");
-  const databaseId = getEnvVariable("NOTION_DATABASE_ID");
-
-  // Initialize the Notion client and service
-  const databaseClient = new NotionDatabaseClient(integrationToken, databaseId);
-  const databaseService = new NotionDatabaseService(databaseClient);
-
-  const notion = new NotionDatabaseClient(integrationToken, databaseId);
-  const supermarketFilter = {
-    property: "Supermarket",
-    select: {
-      equals: supermarket,
-    },
-  };
-
-  // Construct a IProductDiscountDetails object from the PostgresDataContext
-  const productDiscounts: IProductDiscountDetails[] =
-    await dataManager.getSupermarketDiscountsVerbose(supermarket);
-
-  // Convert product discounts to database entries
-  const productDiscountEntries =
-    databaseService.toDatabaseEntries(productDiscounts);
-  logger.info(
-    `Converted product discounts to ${productDiscountEntries.length} new database entries.`
-  );
-
-  if (productDiscountEntries.length > 0) {
-    await notion.flushDatabase(productDiscountEntries, supermarketFilter);
-    logger.info("Discounts are added to Notion database.");
-  } else {
-    logger.error("No discounts found to add to Notion.");
-  }
 }
 
 async function setupScheduler(

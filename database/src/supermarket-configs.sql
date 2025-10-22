@@ -104,8 +104,8 @@ VALUES (
     'plus',
     'https://www.plus.nl/aanbiedingen',
     '{
-        "cookieDecline": "#b1-b37-b1-FooterRightButtom > button",
-        "promotionExpireDate": "#b7-\\\\$b2 > span",
+        "cookieDecline": "#b1-b36-b1-FooterRightButtom > button.btn.btn-primary.btn-cookies-accept.gtm-cookies-popup-accept-all-btn.ThemeGrid_MarginGutter",
+        "promotionExpireDate": "#b7-$b2 > span",
         "productCategories": [
             "Aardappelen, groente, fruit",
             "Verse kant-en-klaarmaaltijden",

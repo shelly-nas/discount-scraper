@@ -1,7 +1,7 @@
-import AhClient from "../clients/web/AhClient";
-import DirkClient from "../clients/web/DirkClient";
-import PlusClient from "../clients/web/PlusClient";
-import SupermarketClient from "../clients/web/SupermarketClient";
+import AhClient from "../clients/AhClient";
+import DirkClient from "../clients/DirkClient";
+import PlusClient from "../clients/PlusClient";
+import SupermarketClient from "../clients/SupermarketClient";
 import ArgumentHandler from "./ArgumentHandler";
 import { logger } from "./Logger";
 import * as dotenv from "dotenv";
