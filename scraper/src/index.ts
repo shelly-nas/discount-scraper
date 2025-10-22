@@ -1,5 +1,5 @@
 import { logger } from "./utils/Logger";
-import { ElementHandle } from "playwright";
+import { ElementHandle } from "puppeteer";
 import NotionDatabaseClient from "./clients/database/NotionDatabaseClient";
 import JsonDataManager from "./data/JsonDataManager";
 import {
@@ -70,7 +70,7 @@ async function flushNotionDatabaseBySupermarket(
   // Use the NotionDatabaseClient to set the ProductDiscount details to a Notion database
   const integrationToken = getEnvVariable("NOTION_SECRET");
   const databaseId = getEnvVariable("NOTION_DATABASE_ID");
-  
+
   // Initialize the Notion client and service
   const databaseClient = new NotionDatabaseClient(integrationToken, databaseId);
   const databaseService = new NotionDatabaseService(databaseClient);
@@ -81,14 +81,15 @@ async function flushNotionDatabaseBySupermarket(
     select: {
       equals: supermarket,
     },
-  };;
+  };
 
   // Construct a IProductDiscountDetails object from the JsonDataContext
   const productDiscounts: IProductDiscountDetails[] =
     await jsonDataManager.getSupermarketDiscountsVerbose(supermarket);
 
   // Convert product discounts to database entries
-  const productDiscountEntries = databaseService.toDatabaseEntries(productDiscounts);
+  const productDiscountEntries =
+    databaseService.toDatabaseEntries(productDiscounts);
   logger.info(
     `Converted product discounts to ${productDiscountEntries.length} new database entries.`
   );
@@ -101,27 +102,42 @@ async function flushNotionDatabaseBySupermarket(
   }
 }
 
-async function setupScheduler(supermarket: string, shortName: string): Promise<void> {
+async function setupScheduler(
+  supermarket: string,
+  shortName: string
+): Promise<void> {
   logger.info(`Setup scheduler for "${supermarket}".`);
 
-  const expireDate = await jsonDataManager.getSupermarketExpireDate(supermarket);
+  const expireDate = await jsonDataManager.getSupermarketExpireDate(
+    supermarket
+  );
   // Set scheduler at 04:00 in the morning
   const scheduleDay = DateTimeHandler.addToISOString(expireDate, 1, "days");
-  const scheduleDateTime = DateTimeHandler.addToISOString(scheduleDay, 4, "hours");
-  const dateTime = DateTimeHandler.fromISOToDateTimeString(scheduleDateTime, "YYYY-MM-DD HH:mm:ss");
+  const scheduleDateTime = DateTimeHandler.addToISOString(
+    scheduleDay,
+    4,
+    "hours"
+  );
+  const dateTime = DateTimeHandler.fromISOToDateTimeString(
+    scheduleDateTime,
+    "YYYY-MM-DD HH:mm:ss"
+  );
 
-  const { exec } = require('child_process');
-  await exec(`bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`, (err: string, stdout: string, stderr: string) => {
-    if (err) {
-      logger.error("[EXEC ERR]", err);
-      return;
+  const { exec } = require("child_process");
+  await exec(
+    `bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`,
+    (err: string, stdout: string, stderr: string) => {
+      if (err) {
+        logger.error("[EXEC ERR]", err);
+        return;
+      }
+      if (stderr) {
+        logger.warn("[STDERR]", stderr);
+        return;
+      }
+      logger.info("[STDOUT]", stdout);
     }
-    if (stderr) {
-      logger.warn("[STDERR]", stderr);
-      return;
-    }
-    logger.info("[STDOUT]", stdout);
-  });
+  );
 }
 
 async function discountScraper(): Promise<void> {
@@ -134,12 +150,15 @@ async function discountScraper(): Promise<void> {
     await getSupermarketDiscounts(supermarketConfig);
 
   await jsonDataManager.deleteRecordsBySupermarket(supermarketConfig.name);
-  await jsonDataManager.addProductDb(supermarketConfig.name, supermarketDiscounts);
+  await jsonDataManager.addProductDb(
+    supermarketConfig.name,
+    supermarketDiscounts
+  );
   await jsonDataManager.addDiscountDb(supermarketDiscounts);
 
-  await flushNotionDatabaseBySupermarket(supermarketConfig.name);
+  // await flushNotionDatabaseBySupermarket(supermarketConfig.name);
 
-  await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
+  // await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
 
   logger.info("Discount scraper process has stopped!");
 }

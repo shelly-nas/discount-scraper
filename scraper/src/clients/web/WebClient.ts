@@ -1,31 +1,34 @@
-import { Browser, Page } from 'playwright';
-import { chromium } from 'playwright-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import puppeteer, { Browser, Page } from "puppeteer";
+import puppeteerExtra from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { logger } from "../../utils/Logger";
 
 class WebClient {
   private browser: Browser | null = null;
   protected page: Page | null = null;
   private headless: boolean = true;
-  private userAgent: string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
+  private userAgent: string =
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36";
 
   public async init(): Promise<void> {
     try {
       logger.debug("Initializing browser...");
-      chromium.use(StealthPlugin());
-      this.browser = await chromium.launch({ 
-        headless: this.headless, 
-        slowMo: 50
+      puppeteerExtra.use(StealthPlugin());
+      this.browser = await puppeteerExtra.launch({
+        headless: this.headless,
+        slowMo: 50,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
 
-      const context = await this.browser.newContext({ 
-        userAgent: this.userAgent,
-        bypassCSP: true, 
-        viewport: { width: 1280, height: 720 },
-        permissions: ['geolocation'],
-        geolocation: { latitude: 52.3676, longitude: 4.9041 },
-      });
-      this.page = await context.newPage();
+      this.page = await this.browser.newPage();
+      await this.page.setUserAgent(this.userAgent);
+      await this.page.setBypassCSP(true);
+      await this.page.setViewport({ width: 1280, height: 720 });
+
+      // Set geolocation permissions
+      const context = this.browser.defaultBrowserContext();
+      await context.overridePermissions("https://www.ah.nl", ["geolocation"]);
+      await this.page.setGeolocation({ latitude: 52.3676, longitude: 4.9041 });
 
       logger.info("Browser initialized successfully.");
     } catch (error) {
@@ -36,12 +39,12 @@ class WebClient {
 
   public async navigate(url: string): Promise<void> {
     logger.info(`Navigating to URL: ${url}`);
-    await this.page?.goto(url, { waitUntil: "commit" });
-    this.page?.once('load', () => logger.debug('Page loaded!'));
+    await this.page?.goto(url, { waitUntil: "domcontentloaded" });
+    this.page?.once("load", () => logger.debug("Page loaded!"));
   }
 
   public async handleCookiePopup(selector: string): Promise<void> {
-    await this.page?.waitForLoadState("domcontentloaded", { timeout: 30000 });
+    await this.page?.waitForNetworkIdle({ timeout: 30000 });
     // await this.page?.screenshot({ path: 'page.png', fullPage: true})
     if (selector) {
       try {
