@@ -17,7 +17,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Mount schema for easy updates during development
       - ./database/src/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./database/src/seed-supermarket-configs.sql:/docker-entrypoint-initdb.d/02-seed-supermarket-configs.sql:ro
+      - ./database/src/supermarket-configs.sql:/docker-entrypoint-initdb.d/02-supermarket-configs.sql:ro
     restart: unless-stopped
 
 volumes:

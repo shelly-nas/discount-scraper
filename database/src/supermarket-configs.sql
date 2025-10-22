@@ -41,7 +41,7 @@ VALUES (
         "products": "a[id]",
         "promotionProducts": {
             "productCategory": ["h3"],
-            "productName": ["[data-testhook=\"card-title\"]"],
+            "productName": ["[data-testhook=\"promotion-card-title\"]"],
             "originalPrice": [".promotion-price_root__UAFIC", "data-testpricewas"],
             "discountPrice": [".promotion-price_root__UAFIC", "data-testpricenow"],
             "specialDiscount": ["[data-testhook=\"promotion-text\"]"]

@@ -8,7 +8,7 @@ FROM postgres:15-alpine
 # Copy initialization scripts
 # PostgreSQL will execute these in alphabetical order
 COPY src/schema.sql /docker-entrypoint-initdb.d/01-schema.sql
-COPY src/seed-supermarket-configs.sql /docker-entrypoint-initdb.d/02-seed-supermarket-configs.sql
+COPY src/supermarket-configs.sql /docker-entrypoint-initdb.d/02-supermarket-configs.sql
 
 # Expose PostgreSQL port
 EXPOSE 5432
