@@ -1,11 +1,7 @@
 import { logger } from "./utils/Logger";
 import { Locator } from "playwright";
 import PostgresDataManager from "./data/PostgresDataManager";
-import {
-  getConfig,
-  getEnvVariable,
-  getSupermarketClient,
-} from "./utils/ConfigHelper";
+import { getConfig, getSupermarketClient } from "./utils/ConfigHelper";
 import DateTimeHandler from "./utils/DateTimeHandler";
 import * as dotenv from "dotenv";
 import * as path from "path";

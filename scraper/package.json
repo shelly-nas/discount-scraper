@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rm -rf dist/*",
     "build": "npm run clean && tsc",
-    "migrate": "ts-node ../database/migrate-to-postgres.ts",
+    "scraper": "node dist/index.js --config ../config/supermarkets/ah.json && node dist/index.js --config ../config/supermarkets/dirk.json && node dist/index.js --config ../config/supermarkets/plus.json",
     "ah": "node dist/index.js --config ../config/supermarkets/ah.json",
     "ah:debug": "LOG_LEVEL=DEBUG node dist/index.js --config ../config/supermarkets/ah.json",
     "dirk": "node dist/index.js --config ../config/supermarkets/dirk.json",
