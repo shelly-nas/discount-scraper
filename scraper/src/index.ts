@@ -1,5 +1,5 @@
 import { logger } from "./utils/Logger";
-import { ElementHandle } from "puppeteer";
+import { Locator } from "playwright";
 import PostgresDataManager from "./data/PostgresDataManager";
 import {
   getConfig,
@@ -33,7 +33,7 @@ async function getSupermarketDiscounts(
   // Iterate over each product category defined in the supermarket's configuration
   for (const productCategory of config.webIdentifiers.productCategories) {
     // Get the products listed under the current category that are on discount
-    const discountProducts: ElementHandle[] | undefined =
+    const discountProducts: Locator[] | undefined =
       await supermarketClient.getDiscountProductsByProductCategory(
         productCategory,
         config.webIdentifiers.products

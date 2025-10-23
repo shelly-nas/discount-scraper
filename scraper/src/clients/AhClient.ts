@@ -1,4 +1,4 @@
-import { ElementHandle } from "puppeteer";
+import { Locator } from "playwright";
 import SupermarketClient from "./SupermarketClient";
 import { logger } from "../utils/Logger";
 
@@ -14,7 +14,7 @@ class AhClient extends SupermarketClient {
    * Optimized method to extract all product data in a single browser call
    */
   protected async extractProductData(
-    productElement: ElementHandle,
+    productElement: Locator,
     productConfig: IProductDetails
   ): Promise<{
     name: string;
@@ -23,7 +23,7 @@ class AhClient extends SupermarketClient {
     specialDiscount: string;
   }> {
     const productData = await productElement.evaluate(
-      (element: Element, config) => {
+      (element: Element, config: IProductDetails) => {
         // Product name
         const nameElement = element.querySelector(config.productName[0]);
         const name = nameElement?.textContent?.trim() || "";
@@ -76,19 +76,19 @@ class AhClient extends SupermarketClient {
   }
 
   public async getOriginalPrice(
-    anchorHandle: ElementHandle,
+    anchorHandle: Locator,
     originalPriceSelector: string[]
   ): Promise<number> {
     try {
-      const priceElementHandle = await anchorHandle.$(originalPriceSelector[0]); // Find the child div with the original price
-      if (!priceElementHandle) {
+      const priceElementHandle = anchorHandle.locator(originalPriceSelector[0]); // Find the child div with the original price
+      const exists = await priceElementHandle.count();
+      if (!exists) {
         logger.warn(
           `Original price element with selector '${originalPriceSelector[0]}' not found.`
         );
         return 0;
       }
-      const price = await priceElementHandle.evaluate(
-        (el, attr) => el.getAttribute(attr),
+      const price = await priceElementHandle.getAttribute(
         originalPriceSelector[1]
       );
       logger.debug(`Original price retrieved: '${price}'.`);
@@ -103,19 +103,19 @@ class AhClient extends SupermarketClient {
   }
 
   public async getDiscountPrice(
-    anchorHandle: ElementHandle,
+    anchorHandle: Locator,
     discountPriceSelector: string[]
   ): Promise<number> {
     try {
-      const priceElementHandle = await anchorHandle.$(discountPriceSelector[0]); // Find the child div with the discount price
-      if (!priceElementHandle) {
+      const priceElementHandle = anchorHandle.locator(discountPriceSelector[0]); // Find the child div with the discount price
+      const exists = await priceElementHandle.count();
+      if (!exists) {
         logger.warn(
           `Discount price element with selector '${discountPriceSelector[0]}' not found.`
         );
         return 0;
       }
-      const price = await priceElementHandle.evaluate(
-        (el, attr) => el.getAttribute(attr),
+      const price = await priceElementHandle.getAttribute(
         discountPriceSelector[1]
       );
       logger.debug(`Discount price retrieved: '${price}'.`);

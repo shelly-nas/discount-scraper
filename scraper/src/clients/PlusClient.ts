@@ -1,4 +1,4 @@
-import { ElementHandle } from "puppeteer";
+import { Locator } from "playwright";
 import SupermarketClient from "./SupermarketClient";
 import { logger } from "../utils/Logger";
 
@@ -14,7 +14,7 @@ class PlusClient extends SupermarketClient {
    * Optimized method to extract all product data in a single browser call
    */
   protected async extractProductData(
-    productElement: ElementHandle,
+    productElement: Locator,
     productConfig: IProductDetails
   ): Promise<{
     name: string;
@@ -23,7 +23,7 @@ class PlusClient extends SupermarketClient {
     specialDiscount: string;
   }> {
     const productData = await productElement.evaluate(
-      (element: Element, config) => {
+      (element: Element, config: IProductDetails) => {
         // Product name
         const nameElement = element.querySelector(config.productName[0]);
         const name = nameElement?.textContent?.trim() || "";
@@ -68,14 +68,13 @@ class PlusClient extends SupermarketClient {
   }
 
   public async getOriginalPrice(
-    anchorHandle: ElementHandle,
+    anchorHandle: Locator,
     originalPriceSelector: string[]
   ): Promise<number> {
     try {
-      const price = await anchorHandle.$eval(
-        originalPriceSelector[0],
-        (span) => span.textContent
-      );
+      const price = await anchorHandle
+        .locator(originalPriceSelector[0])
+        .textContent();
 
       logger.debug(`Original price retrieved: '${price}'.`);
       return price !== null ? parseFloat(price.trim()) : 0;
@@ -89,7 +88,7 @@ class PlusClient extends SupermarketClient {
   }
 
   public async getDiscountPrice(
-    anchorHandle: ElementHandle,
+    anchorHandle: Locator,
     discountPriceSelector: string[]
   ): Promise<number> {
     try {

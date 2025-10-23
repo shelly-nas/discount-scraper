@@ -1,4 +1,4 @@
-import { ElementHandle } from "puppeteer";
+import { Locator } from "playwright";
 import SupermarketClient from "./SupermarketClient";
 import { logger } from "../utils/Logger";
 
@@ -14,7 +14,7 @@ class DirkClient extends SupermarketClient {
    * Optimized method to extract all product data in a single browser call
    */
   protected async extractProductData(
-    productElement: ElementHandle,
+    productElement: Locator,
     productConfig: IProductDetails
   ): Promise<{
     name: string;
@@ -23,7 +23,7 @@ class DirkClient extends SupermarketClient {
     specialDiscount: string;
   }> {
     const productData = await productElement.evaluate(
-      (element: Element, config) => {
+      (element: Element, config: IProductDetails) => {
         // Product name
         const nameElement = element.querySelector(config.productName[0]);
         const name = nameElement?.textContent?.trim() || "";
@@ -74,23 +74,24 @@ class DirkClient extends SupermarketClient {
   }
 
   public async getOriginalPrice(
-    anchorHandle: ElementHandle,
+    anchorHandle: Locator,
     originalPriceSelector: string[]
   ): Promise<number> {
     try {
       // Directly retrieve the nested content if the structure and access pattern are consistent and predictable
-      const price: string | null | undefined = await anchorHandle.$$eval(
-        originalPriceSelector[0],
-        (elements, selector) => {
-          return elements
-            .map((el) => {
-              const span = el.querySelector(selector);
-              return span ? span.textContent : null;
-            })
-            .find((textContent) => textContent !== null); // Find the first non-null textContent
+      const price: string | null | undefined = await anchorHandle.evaluate(
+        (element: Element, selectors: string[]) => {
+          const elements = Array.from(element.querySelectorAll(selectors[0]));
+          for (const el of elements) {
+            const span = el.querySelector(selectors[1]);
+            if (span && span.textContent) {
+              return span.textContent;
+            }
+          }
+          return null;
         },
-        originalPriceSelector[1]
-      ); // Passing the second selector part as an argument to the evaluator function
+        originalPriceSelector
+      );
       logger.debug(`Original price retrieved: '${price}'.`);
       return price ? parseFloat(price.trim()) : 0; // Parse the price or return 0 if null
     } catch (error) {
@@ -105,19 +106,22 @@ class DirkClient extends SupermarketClient {
   }
 
   public async getDiscountPrice(
-    anchorHandle: ElementHandle,
+    anchorHandle: Locator,
     discountPriceSelector: string[]
   ): Promise<number> {
     try {
       // Concatenate the euro and cent values directly within a single evaluate to minimize calls to the browser context
-      const price = await anchorHandle.evaluate((node: Element, selectors) => {
-        const euros = node.querySelector(selectors[0])?.textContent || "0";
-        let cents =
-          node.querySelector(selectors[1])?.textContent ||
-          node.querySelector(selectors[2])?.textContent ||
-          "00";
-        return `${euros}.${cents}`;
-      }, discountPriceSelector);
+      const price = await anchorHandle.evaluate(
+        (node: Element, selectors: string[]) => {
+          const euros = node.querySelector(selectors[0])?.textContent || "0";
+          let cents =
+            node.querySelector(selectors[1])?.textContent ||
+            node.querySelector(selectors[2])?.textContent ||
+            "00";
+          return `${euros}.${cents}`;
+        },
+        discountPriceSelector
+      );
       logger.debug(`Discount price retrieved: '${price}'.`);
       return parseFloat(price.trim());
     } catch (error) {

@@ -7,7 +7,7 @@ import { logger } from "./Logger";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import { Pool } from "pg";
-import { getDatabaseConfig } from "../config/Database";
+import { getDatabaseConfig } from "../config/database";
 
 // Load .env from project root (two levels up from this file)
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
