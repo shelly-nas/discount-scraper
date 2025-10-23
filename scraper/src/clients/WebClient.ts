@@ -1,7 +1,7 @@
 import { Browser, Page, BrowserContext } from "playwright";
 import { chromium } from "playwright-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 
 // Add stealth plugin to playwright-extra
 chromium.use(StealthPlugin());
@@ -16,7 +16,7 @@ class WebClient {
 
   public async init(): Promise<void> {
     try {
-      logger.debug("Initializing browser with stealth mode...");
+      scraperLogger.debug("Initializing browser with stealth mode...");
       this.browser = await chromium.launch({
         timeout: 20000,
         headless: this.headless,
@@ -47,32 +47,34 @@ class WebClient {
 
       this.page = await this.context.newPage();
 
-      logger.info(
+      scraperLogger.info(
         "Browser initialized successfully with stealth mode and tracing enabled."
       );
-    } catch (error) {
-      logger.error("Browser initialized unsuccessfully.", error);
-      process.exit(1);
+    } catch (error: any) {
+      const errorMessage = error?.message || "Unknown error";
+      throw new Error(`Failed to initialize browser: ${errorMessage}`);
     }
   }
 
   public async navigate(url: string): Promise<void> {
-    logger.info(`Navigating to URL: ${url}`);
+    scraperLogger.info(`Navigating to URL: ${url}`);
     await this.page?.goto(url, { waitUntil: "domcontentloaded" });
-    logger.debug("Page loaded!");
+    scraperLogger.debug("Page loaded!");
   }
 
   public async handleCookiePopup(
     selector: string,
-    timeout: number = 10000
+    timeout: number = 20000
   ): Promise<void> {
     if (!selector) {
-      logger.info("No cookie popup selector provided to dismiss.");
+      scraperLogger.info("No cookie popup selector provided to dismiss.");
       return;
     }
 
     try {
-      logger.debug(`Waiting for cookie popup with selector '${selector}'...`);
+      scraperLogger.debug(
+        `Waiting for cookie popup with selector '${selector}'...`
+      );
 
       // Wait for the cookie popup to appear
       await this.page?.waitForSelector(selector, {
@@ -80,7 +82,7 @@ class WebClient {
         timeout: timeout,
       });
 
-      logger.debug(`Cookie popup found`);
+      scraperLogger.debug(`Cookie popup found`);
 
       // Click the accept/dismiss button
       await this.page?.click(selector);
@@ -89,25 +91,27 @@ class WebClient {
       await this.page
         ?.waitForSelector(selector, {
           state: "hidden",
-          timeout: 5000,
+          timeout: 10000,
         })
         .catch(() => {
-          logger.debug("Cookie popup might still be visible or already gone");
+          scraperLogger.debug(
+            "Cookie popup might still be visible or already gone"
+          );
         });
-      
-      logger.info("Cookie popup dismissed successfully");
+
+      scraperLogger.info("Cookie popup dismissed successfully");
     } catch (error) {
-      logger.warn(
+      scraperLogger.warn(
         `Cookie popup not found with selector: ${selector} within ${timeout}ms or already handled by context.`
       );
     }
   }
 
   async close(): Promise<void> {
-    logger.debug("Closing browser...");
+    scraperLogger.debug("Closing browser...");
 
     await this.browser?.close();
-    logger.info("Browser closed.");
+    scraperLogger.info("Browser closed.");
   }
 }
 

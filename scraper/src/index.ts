@@ -1,137 +1,83 @@
-import { logger } from "./utils/Logger";
-import { Locator } from "playwright";
+import express, { Request, Response, Application } from "express";
+import cors from "cors";
+import { serverLogger } from "./utils/Logger";
 import PostgresDataManager from "./data/PostgresDataManager";
-import { getConfig, getSupermarketClient } from "./utils/ConfigHelper";
-import DateTimeHandler from "./utils/DateTimeHandler";
-import * as dotenv from "dotenv";
-import * as path from "path";
+import routes from "./api/Routes";
 
-// Load .env from project root (two levels up from this file)
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+const app: Application = express();
+const PORT = process.env.API_PORT || 3000;
 
-const dataManager = new PostgresDataManager();
+// Middleware
+app.use(cors());
+app.use(express.json());
 
-async function getSupermarketDiscounts(
-  config: ISupermarketWebConfig
-): Promise<IProductDiscountDetails[]> {
-  const supermarketClient = getSupermarketClient(config.name);
-  let productDiscountDetails: IProductDiscountDetails[] = [];
+// Request logging middleware
+app.use((req: Request, res: Response, next) => {
+  serverLogger.info(`${req.method} ${req.path}`);
+  next();
+});
 
-  await supermarketClient.init();
-  await supermarketClient.navigate(config.url);
-  await supermarketClient.handleCookiePopup(
-    config.webIdentifiers.cookieDecline
-  );
-  await supermarketClient.getPromotionExpireDate(
-    config.webIdentifiers.promotionExpireDate
-  );
+// Response logging middleware
+app.use((req: Request, res: Response, next) => {
+  const originalSend = res.send;
+  res.send = function (data) {
+    serverLogger.info(`${req.method} ${req.path} - Status: ${res.statusCode}`);
+    return originalSend.call(this, data);
+  };
+  next();
+});
 
-  // Iterate over each product category defined in the supermarket's configuration
-  for (const productCategory of config.webIdentifiers.productCategories) {
-    // Get the products listed under the current category that are on discount
-    const discountProducts: Locator[] | undefined =
-      await supermarketClient.getDiscountProductsByProductCategory(
-        productCategory,
-        config.webIdentifiers.products
-      );
-
-    if (!discountProducts) {
-      logger.error(
-        `No discount products for product category '${productCategory}'.`
-      );
-      continue;
-    }
-
-    // For each discount product found, get its details and append it to the supermarketDiscounts
-    for (const discountProduct of discountProducts) {
-      const details: IProductDiscountDetails =
-        await supermarketClient.getDiscountProductDetails(
-          discountProduct,
-          config.webIdentifiers.promotionProducts
-        );
-      productDiscountDetails.push(details);
-    }
-    logger.info(`Discount details are scraped and stored.`);
-  }
-
-  // Close the supermarket client (e.g., close browser instance, clear resources)
-  await supermarketClient.close();
-
-  // Use JsonWriter to write the ProductDiscount details to a JSON file
-  return productDiscountDetails;
-}
-
-async function setupScheduler(
-  supermarket: string,
-  shortName: string
-): Promise<void> {
-  logger.info(`Setup scheduler for "${supermarket}".`);
-
-  const expireDate = await dataManager.getSupermarketExpireDate(supermarket);
-  // Set scheduler at 04:00 in the morning
-  const scheduleDay = DateTimeHandler.addToISOString(expireDate, 1, "days");
-  const scheduleDateTime = DateTimeHandler.addToISOString(
-    scheduleDay,
-    4,
-    "hours"
-  );
-  const dateTime = DateTimeHandler.fromISOToDateTimeString(
-    scheduleDateTime,
-    "YYYY-MM-DD HH:mm:ss"
-  );
-
-  const { exec } = require("child_process");
-  await exec(
-    `bash ./scripts/schedule.sh "${shortName}" "${dateTime}"`,
-    (err: string, stdout: string, stderr: string) => {
-      if (err) {
-        logger.error("[EXEC ERR]", err);
-        return;
-      }
-      if (stderr) {
-        logger.warn("[STDERR]", stderr);
-        return;
-      }
-      logger.info("[STDOUT]", stdout);
-    }
-  );
-}
-
-async function discountScraper(): Promise<void> {
-  logger.info("Discount scraper process has started!");
-
+// Initialize database connection
+async function initializeDatabase(): Promise<boolean> {
+  const dataManager = new PostgresDataManager();
   try {
-    // Test database connection
     const connected = await dataManager.testConnection();
-    if (!connected) {
-      logger.error("Failed to connect to database. Exiting...");
-      process.exit(1);
+    if (connected) {
+      serverLogger.info("Database connection established successfully");
+    } else {
+      serverLogger.error("Failed to establish database connection");
     }
-
-    logger.info("Get the configuration details.");
-    const supermarketConfig: ISupermarketWebConfig = await getConfig();
-
-    const supermarketDiscounts: IProductDiscountDetails[] =
-      await getSupermarketDiscounts(supermarketConfig);
-
-    await dataManager.deleteRecordsBySupermarket(supermarketConfig.name);
-    await dataManager.addProductDb(
-      supermarketConfig.name,
-      supermarketDiscounts
-    );
-    await dataManager.addDiscountDb(supermarketDiscounts);
-
-    // await flushNotionDatabaseBySupermarket(supermarketConfig.name);
-
-    // await setupScheduler(supermarketConfig.name, supermarketConfig.nameShort);
-
-    logger.info("Discount scraper process has stopped!");
+    return connected;
   } catch (error) {
-    logger.error("Error during discount scraping:", error);
-    process.exit(1);
-  } finally {
-    await dataManager.close();
+    serverLogger.error("Error during database initialization:", error);
+    return false;
   }
+  // Don't close the pool - it's a singleton that should stay open
 }
 
-discountScraper();
+// Register API routes
+app.use("/", routes);
+
+// 404 handler
+app.use((req: Request, res: Response) => {
+  serverLogger.warn(`404 Not Found: ${req.method} ${req.path}`);
+  res.status(404).json({
+    error: "Not Found",
+    message: `Route ${req.method} ${req.path} not found`,
+  });
+});
+
+// Start server
+async function startServer() {
+  // Test database connection on startup
+  const dbConnected = await initializeDatabase();
+
+  if (!dbConnected) {
+    serverLogger.error("Cannot start server - database connection failed");
+    process.exit(1);
+  }
+
+  app.listen(PORT, () => {
+    serverLogger.info(`API Server is running on port ${PORT}`);
+    serverLogger.info(`Health check: http://localhost:${PORT}/health`);
+    serverLogger.info(
+      `Run scraper: POST http://localhost:${PORT}/scraper/run/:supermarket`
+    );
+  });
+}
+
+// Start the application
+startServer().catch((error) => {
+  serverLogger.error("Failed to start server:", error);
+  process.exit(1);
+});

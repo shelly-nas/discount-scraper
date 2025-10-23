@@ -22,6 +22,29 @@ services:
       - ./database/src/supermarkets/plus.sql:/docker-entrypoint-initdb.d/04-plus.sql:ro
     restart: unless-stopped
 
+  scraper-api:
+    build:
+      context: scraper
+      dockerfile: Dockerfile
+    container_name: discount-scraper-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      API_PORT: 3000
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      # Mount logs directory for persistence
+      - ./scraper/logs:/app/logs
+
 volumes:
   postgres_data:
     driver: local

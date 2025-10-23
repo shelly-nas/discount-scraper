@@ -1,17 +1,17 @@
 import PostgresDataContext from "../data/PostgresDataContext";
 import ProductModel from "../models/ProductModel";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 
 class PostgresProductController {
   private db: PostgresDataContext;
 
   constructor(db: PostgresDataContext) {
     this.db = db;
-    logger.debug("PostgresProductController initialized.");
+    scraperLogger.debug("PostgresProductController initialized.");
   }
 
   async exists(): Promise<boolean> {
-    logger.debug("Checking if the products table exists.");
+    scraperLogger.debug("Checking if the products table exists.");
     try {
       const result = await this.db.query<{ exists: boolean }>(
         `SELECT EXISTS (
@@ -22,37 +22,37 @@ class PostgresProductController {
       );
       return result.rows[0].exists;
     } catch (error) {
-      logger.error("Error checking if products table exists", error);
+      scraperLogger.error("Error checking if products table exists", error);
       return false;
     }
   }
 
   async delete(): Promise<void> {
-    logger.debug("Deleting all products from database.");
+    scraperLogger.debug("Deleting all products from database.");
     try {
       await this.db.query("TRUNCATE TABLE products CASCADE");
-      logger.info("All products deleted successfully.");
+      scraperLogger.info("All products deleted successfully.");
     } catch (error) {
-      logger.error("Error deleting products", error);
+      scraperLogger.error("Error deleting products", error);
       throw error;
     }
   }
 
   async getProducts(): Promise<ProductModel[]> {
-    logger.info("Fetching all products.");
+    scraperLogger.info("Fetching all products.");
     try {
       const result = await this.db.query<ProductModel>(
         "SELECT id, name, category, supermarket FROM products ORDER BY id"
       );
       return result.rows;
     } catch (error) {
-      logger.error("Error fetching products", error);
+      scraperLogger.error("Error fetching products", error);
       throw error;
     }
   }
 
   async getProductById(id: number): Promise<ProductModel | null> {
-    logger.debug(`Fetching product with ID: ${id}`);
+    scraperLogger.debug(`Fetching product with ID: ${id}`);
     try {
       const result = await this.db.query<ProductModel>(
         "SELECT id, name, category, supermarket FROM products WHERE id = $1",
@@ -60,13 +60,13 @@ class PostgresProductController {
       );
       return result.rows[0] || null;
     } catch (error) {
-      logger.error(`Error fetching product with ID: ${id}`, error);
+      scraperLogger.error(`Error fetching product with ID: ${id}`, error);
       throw error;
     }
   }
 
   async getProductsByCategory(category: string): Promise<ProductModel[]> {
-    logger.debug(`Fetching products in category: ${category}`);
+    scraperLogger.debug(`Fetching products in category: ${category}`);
     try {
       const result = await this.db.query<ProductModel>(
         "SELECT id, name, category, supermarket FROM products WHERE category = $1 ORDER BY name",
@@ -74,13 +74,16 @@ class PostgresProductController {
       );
       return result.rows;
     } catch (error) {
-      logger.error(`Error fetching products by category: ${category}`, error);
+      scraperLogger.error(
+        `Error fetching products by category: ${category}`,
+        error
+      );
       throw error;
     }
   }
 
   async getProductsBySupermarket(supermarket: string): Promise<ProductModel[]> {
-    logger.debug(`Fetching products from supermarket: ${supermarket}`);
+    scraperLogger.debug(`Fetching products from supermarket: ${supermarket}`);
     try {
       const result = await this.db.query<ProductModel>(
         "SELECT id, name, category, supermarket FROM products WHERE supermarket = $1 ORDER BY category, name",
@@ -88,7 +91,7 @@ class PostgresProductController {
       );
       return result.rows;
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error fetching products by supermarket: ${supermarket}`,
         error
       );
@@ -97,7 +100,7 @@ class PostgresProductController {
   }
 
   async searchProducts(searchTerm: string): Promise<ProductModel[]> {
-    logger.debug(`Searching products with term: ${searchTerm}`);
+    scraperLogger.debug(`Searching products with term: ${searchTerm}`);
     try {
       // Use full-text search for better performance
       const result = await this.db.query<ProductModel>(
@@ -110,27 +113,30 @@ class PostgresProductController {
       );
       return result.rows;
     } catch (error) {
-      logger.error(`Error searching products with term: ${searchTerm}`, error);
+      scraperLogger.error(
+        `Error searching products with term: ${searchTerm}`,
+        error
+      );
       throw error;
     }
   }
 
   async deleteProduct(productId: number): Promise<boolean> {
-    logger.debug(`Attempting to delete product with ID: ${productId}`);
+    scraperLogger.debug(`Attempting to delete product with ID: ${productId}`);
     try {
       const result = await this.db.query("DELETE FROM products WHERE id = $1", [
         productId,
       ]);
 
       if (result.rowCount === 0) {
-        logger.warn(`Product with ID: ${productId} not found.`);
+        scraperLogger.warn(`Product with ID: ${productId} not found.`);
         return false;
       }
 
-      logger.debug(`Product with ID: ${productId} has been deleted.`);
+      scraperLogger.debug(`Product with ID: ${productId} has been deleted.`);
       return true;
     } catch (error) {
-      logger.error(`Error deleting product with ID: ${productId}`, error);
+      scraperLogger.error(`Error deleting product with ID: ${productId}`, error);
       throw error;
     }
   }
@@ -143,14 +149,16 @@ class PostgresProductController {
       );
 
       if (result.rows.length > 0) {
-        logger.debug(`Product '${name}' found with ID '${result.rows[0].id}'.`);
+        scraperLogger.debug(
+          `Product '${name}' found with ID '${result.rows[0].id}'.`
+        );
         return result.rows[0].id;
       } else {
-        logger.error(`Product '${name}' not found.`);
+        scraperLogger.error(`Product '${name}' not found.`);
         return -1;
       }
     } catch (error) {
-      logger.error(`Error getting product ID for name: ${name}`, error);
+      scraperLogger.error(`Error getting product ID for name: ${name}`, error);
       throw error;
     }
   }
@@ -168,7 +176,7 @@ class PostgresProductController {
       );
 
       if (existingProduct.rows.length > 0) {
-        logger.warn(
+        scraperLogger.warn(
           `Product '${name}' already exists in ${supermarket}. No action taken.`
         );
         return existingProduct.rows[0].id;
@@ -183,10 +191,10 @@ class PostgresProductController {
       );
 
       const newId = result.rows[0].id;
-      logger.debug(`New product '${name}' added with ID '${newId}'.`);
+      scraperLogger.debug(`New product '${name}' added with ID '${newId}'.`);
       return newId;
     } catch (error) {
-      logger.error(`Error adding product '${name}'`, error);
+      scraperLogger.error(`Error adding product '${name}'`, error);
       throw error;
     }
   }
@@ -214,7 +222,7 @@ class PostgresProductController {
       }
 
       if (updateFields.length === 0) {
-        logger.info("No fields to update.");
+        scraperLogger.info("No fields to update.");
         return false;
       }
 
@@ -226,14 +234,14 @@ class PostgresProductController {
       const result = await this.db.query(query, values);
 
       if (result.rowCount === 0) {
-        logger.warn(`Product with ID: ${id} not found for update.`);
+        scraperLogger.warn(`Product with ID: ${id} not found for update.`);
         return false;
       }
 
-      logger.debug(`Product ID '${id}' updated successfully.`);
+      scraperLogger.debug(`Product ID '${id}' updated successfully.`);
       return true;
     } catch (error) {
-      logger.error(`Error updating product with ID: ${id}`, error);
+      scraperLogger.error(`Error updating product with ID: ${id}`, error);
       throw error;
     }
   }
@@ -254,7 +262,7 @@ class PostgresProductController {
 
           if (result.rowCount && result.rowCount > 0) {
             changesMade++;
-            logger.debug(
+            scraperLogger.debug(
               `Product ID '${updateObj.id}' updated: '${key}' set to '${updateObj[key]}'.`
             );
           }
@@ -262,12 +270,12 @@ class PostgresProductController {
       }
 
       if (changesMade > 0) {
-        logger.info(`${changesMade} products updated successfully.`);
+        scraperLogger.info(`${changesMade} products updated successfully.`);
       } else {
-        logger.info("No updates were made to products.");
+        scraperLogger.info("No updates were made to products.");
       }
     } catch (error) {
-      logger.error("Error updating multiple products", error);
+      scraperLogger.error("Error updating multiple products", error);
       throw error;
     }
   }

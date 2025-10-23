@@ -3,7 +3,7 @@
 INSERT INTO supermarket_configs (name, name_short, url, web_identifiers)
 VALUES (
     'Albert Heijn',
-    'ah',
+    'albert-heijn',
     'https://www.ah.nl/bonus',
     '{
         "cookieDecline": "[data-testhook=\"accept-cookies\"]",

@@ -1,5 +1,5 @@
 import moment from "moment";
-import { logger } from "./Logger";
+import { scraperLogger } from "./Logger";
 moment.locale("nl");
 
 enum TimeUnit {
@@ -24,7 +24,7 @@ class DateTimeHandler {
     // Create a moment object from the ISO string
     const date = moment(isoDateStr);
     if (!date.isValid()) {
-      logger.error(`Invalid ISO date string: '${isoDateStr}'.`);
+      scraperLogger.error(`Invalid ISO date string: '${isoDateStr}'.`);
       throw new Error(`Invalid ISO date string: '${isoDateStr}'.`);
     }
     return date.format(pattern);
@@ -34,7 +34,7 @@ class DateTimeHandler {
     const dateRegex = /(\d{1,2}\s+[a-zA-Z]+)/i;
     const match = dateStr.match(dateRegex);
     if (!match) {
-      logger.warn(`No match found for date string: '${dateStr}'. Using current date.`);
+      scraperLogger.warn(`No match found for date string: '${dateStr}'. Using current date.`);
       return moment().toISOString(true);
     }
 
@@ -47,7 +47,7 @@ class DateTimeHandler {
     }
     
     if (!date.isValid()) {
-      logger.warn(`Invalid date parsed from: '${match[0]}'. Using current date.`);
+      scraperLogger.warn(`Invalid date parsed from: '${match[0]}'. Using current date.`);
       return moment().toISOString(true);
     }
     

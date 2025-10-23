@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 import * as path from "path";
 
 // Load .env from project root (two levels up from this file)
@@ -29,10 +29,10 @@ export function getDatabaseConfig(): DatabaseConfig {
   };
 
   if (!config.password) {
-    logger.warn("Database password not set in environment variables");
+    scraperLogger.warn("Database password not set in environment variables");
   }
 
-  logger.debug("Database configuration loaded", {
+  scraperLogger.debug("Database configuration loaded", {
     host: config.host,
     port: config.port,
     database: config.database,

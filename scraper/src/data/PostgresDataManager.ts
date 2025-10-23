@@ -1,13 +1,13 @@
 import PostgresDiscountController from "../controllers/PostgresDiscountController";
 import PostgresProductController from "../controllers/PostgresProductController";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 import PostgresDataContext from "./PostgresDataContext";
 import { getDatabaseConfig } from "../config/database";
 
 export class PostgresDataManager {
   private productController: PostgresProductController;
   private discountController: PostgresDiscountController;
-  private db: PostgresDataContext;
+  public db: PostgresDataContext;
 
   constructor() {
     const config = getDatabaseConfig();
@@ -16,7 +16,7 @@ export class PostgresDataManager {
     this.productController = new PostgresProductController(this.db);
     this.discountController = new PostgresDiscountController(this.db);
 
-    logger.info("PostgresDataManager initialized.");
+    scraperLogger.info("PostgresDataManager initialized.");
   }
 
   public getProductController(): PostgresProductController {
@@ -35,7 +35,7 @@ export class PostgresDataManager {
     supermarket: string,
     products: IProductDiscountDetails[]
   ): Promise<void> {
-    logger.debug("Add to Product database.");
+    scraperLogger.debug("Add to Product database.");
     for (const product of products) {
       await this.productController.addProduct(
         product.name,
@@ -43,20 +43,24 @@ export class PostgresDataManager {
         supermarket
       );
     }
-    logger.info(`Added '${products.length}' products to Product Database.`);
+    scraperLogger.info(
+      `Added '${products.length}' products to Product Database.`
+    );
   }
 
   public async addDiscountDb(
     discounts: IProductDiscountDetails[]
   ): Promise<void> {
-    logger.debug("Add to Discount database.");
+    scraperLogger.debug("Add to Discount database.");
     for (const discount of discounts) {
       const productId = await this.productController.getProductId(
         discount.name
       );
 
       if (productId === -1) {
-        logger.warn(`Product '${discount.name}' not found. Skipping discount.`);
+        scraperLogger.warn(
+          `Product '${discount.name}' not found. Skipping discount.`
+        );
         continue;
       }
 
@@ -68,13 +72,15 @@ export class PostgresDataManager {
         discount.expireDate
       );
     }
-    logger.info(`Added '${discounts.length}' discounts to Discount Database.`);
+    scraperLogger.info(
+      `Added '${discounts.length}' discounts to Discount Database.`
+    );
   }
 
   public async getSupermarketDiscountsVerbose(
     supermarket: string
   ): Promise<IProductDiscountDetails[]> {
-    logger.debug(
+    scraperLogger.debug(
       "Combine databases to create a ProductDiscountDetails structure."
     );
 
@@ -103,18 +109,18 @@ export class PostgresDataManager {
         }
       }
 
-      logger.info(
+      scraperLogger.info(
         `Found ${productDiscounts.length} discounts for supermarket '${supermarket}'.`
       );
       return productDiscounts;
     } catch (error) {
-      logger.error("Error retrieving supermarket discounts:", error);
+      scraperLogger.error("Error retrieving supermarket discounts:", error);
       throw new Error("Failed to retrieve supermarket discounts.");
     }
   }
 
   public async getSupermarketExpireDate(supermarket: string): Promise<string> {
-    logger.debug("Fetching data to determine supermarket expire date.");
+    scraperLogger.debug("Fetching data to determine supermarket expire date.");
 
     try {
       const products = await this.productController.getProductsBySupermarket(
@@ -122,7 +128,9 @@ export class PostgresDataManager {
       );
 
       if (products.length === 0) {
-        logger.warn(`No products found for supermarket '${supermarket}'.`);
+        scraperLogger.warn(
+          `No products found for supermarket '${supermarket}'.`
+        );
         return "";
       }
 
@@ -131,18 +139,18 @@ export class PostgresDataManager {
       );
 
       if (discounts.length > 0 && discounts[0].expireDate) {
-        logger.info(
+        scraperLogger.info(
           `Expire date for supermarket '${supermarket}' is '${discounts[0].expireDate}'.`
         );
         return discounts[0].expireDate;
       } else {
-        logger.warn(
+        scraperLogger.warn(
           `No matching discounts found for supermarket '${supermarket}'.`
         );
         return "";
       }
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error getting expire date for supermarket '${supermarket}':`,
         error
       );
@@ -151,7 +159,7 @@ export class PostgresDataManager {
   }
 
   public async deleteRecordsBySupermarket(supermarket: string): Promise<void> {
-    logger.debug(
+    scraperLogger.debug(
       `Starting deletion of all records related to '${supermarket}'.`
     );
 
@@ -182,11 +190,11 @@ export class PostgresDataManager {
         }
       }
 
-      logger.info(
+      scraperLogger.info(
         `Deleted ${productsDeleted} product records and ${discountsDeleted} discount records related to '${supermarket}'.`
       );
     } catch (error) {
-      logger.error("Error during deletion:", error);
+      scraperLogger.error("Error during deletion:", error);
       throw new Error("Failed to delete database entries for supermarket.");
     }
   }

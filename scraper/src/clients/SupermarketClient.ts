@@ -1,4 +1,4 @@
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 import { Locator } from "playwright";
 import WebClient from "./WebClient";
 import DateTimeHandler from "../utils/DateTimeHandler";
@@ -13,7 +13,7 @@ abstract class SupermarketClient extends WebClient {
     try {
       const expireStringRaw = await this.page?.locator(selector).textContent();
       if (!expireStringRaw) {
-        logger.warn(`No promotion expire date found for '${selector}'.`);
+        scraperLogger.warn(`No promotion expire date found for '${selector}'.`);
         return;
       }
 
@@ -21,7 +21,7 @@ abstract class SupermarketClient extends WebClient {
       const tmIndex = expireStringRaw.indexOf("t/m");
       let expireDateRaw = "";
       if (tmIndex === -1) {
-        logger.warn(
+        scraperLogger.warn(
           `No "t/m" found in promotion expire date: '${expireStringRaw}'`
         );
         expireDateRaw = expireStringRaw;
@@ -30,9 +30,9 @@ abstract class SupermarketClient extends WebClient {
       }
 
       this.expireDate = DateTimeHandler.parseDateISOString(expireDateRaw);
-      logger.info(`Promotion Expire Date: ${this.expireDate}`);
+      scraperLogger.info(`Promotion Expire Date: ${this.expireDate}`);
     } catch (error) {
-      logger.error("Failed to get promotion expire date:", error);
+      scraperLogger.error("Failed to get promotion expire date:", error);
       process.exit(1);
     }
   }
@@ -41,14 +41,16 @@ abstract class SupermarketClient extends WebClient {
     parentSelector: string,
     productSelector: string
   ): Promise<Locator[] | undefined> {
-    logger.debug(
+    scraperLogger.debug(
       `Wait for product category with selector '${parentSelector}' to be visible.`
     );
     try {
       this.productCategory = this.page?.locator(parentSelector);
 
       if (!this.productCategory) {
-        logger.error(`Section with selector '${parentSelector}' not found.`);
+        scraperLogger.error(
+          `Section with selector '${parentSelector}' not found.`
+        );
         return;
       }
 
@@ -69,13 +71,13 @@ abstract class SupermarketClient extends WebClient {
         discountProducts.push(allProducts.nth(i));
       }
 
-      logger.info(
+      scraperLogger.info(
         `Found ${discountProducts.length} elements for discount products under the parent selector '${parentSelector}'.`
       );
 
       return discountProducts;
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error finding elements for discount products with selector '${productSelector}':`,
         error
       );
@@ -105,7 +107,7 @@ abstract class SupermarketClient extends WebClient {
       expireDate: this.expireDate,
     };
 
-    logger.info(
+    scraperLogger.info(
       `Product details scraped for '${productDiscountDetails.name}'.`
     );
 
@@ -175,12 +177,12 @@ abstract class SupermarketClient extends WebClient {
         productCategoryName = text || "";
       }
 
-      logger.debug(
+      scraperLogger.debug(
         `Product category name retrieved: '${productCategoryName}'.`
       );
       return productCategoryName.trim().replace(/,/g, "").replace(/& /g, "");
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error retrieving product name with selector '${this.productCategory}':`,
         error
       );
@@ -198,10 +200,10 @@ abstract class SupermarketClient extends WebClient {
           .locator(productNameSelector[0])
           .textContent()
           .then((text) => text?.trim())) || "";
-      logger.debug(`Product name retrieved: '${productName}'.`);
+      scraperLogger.debug(`Product name retrieved: '${productName}'.`);
       return productName.trim();
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error retrieving product name with selector '${productNameSelector[0]}':`,
         error
       );
@@ -234,10 +236,12 @@ abstract class SupermarketClient extends WebClient {
         }
       }
       const specialDiscount = texts.join(" ");
-      logger.debug(`Special discount text retrieved: '${specialDiscount}'.`);
+      scraperLogger.debug(
+        `Special discount text retrieved: '${specialDiscount}'.`
+      );
       return specialDiscount.trim();
     } catch (error) {
-      logger.warn(
+      scraperLogger.warn(
         `Warn retrieving special discount text with selector '${specialDiscountSelector[0]}':`,
         error
       );
