@@ -290,18 +290,49 @@ class PostgresDiscountController {
   }
 
   /**
-   * Smart add discount with historic table logic:
-   * Flow 1: Add discount if no discount exists for this product
-   * Flow 2: Add discount if current batch run is after the previous batch's expire_date
-   * Flow 3: Skip if discount exists and current batch run is before the previous batch's expire_date
+   * Check if a product has an active discount that hasn't expired yet
+   */
+  async hasActiveNonExpiredDiscount(productId: number): Promise<boolean> {
+    scraperLogger.debug(
+      `Checking if product ID ${productId} has an active non-expired discount`
+    );
+    try {
+      const result = await this.db.query<{ count: string }>(
+        `SELECT COUNT(*) as count 
+         FROM discounts 
+         WHERE product_id = $1 
+         AND active = true 
+         AND expire_date > NOW()`,
+        [productId]
+      );
+      const hasActive = parseInt(result.rows[0].count, 10) > 0;
+      scraperLogger.debug(
+        `Product ID ${productId} has active non-expired discount: ${hasActive}`
+      );
+      return hasActive;
+    } catch (error) {
+      scraperLogger.error(
+        `Error checking active discount for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Smart add discount with new logic:
+   * - Add discount if product_id doesn't exist in discount table
+   * - Add discount if product_id exists but the discount is deactivated (active = false)
+   * - Skip if product_id exists and discount is active (active = true)
+   * - Note: Discounts are automatically deactivated when expire_date passes (handled by scheduler)
    *
    * @param productId The product ID
    * @param originalPrice Original price
    * @param discountPrice Discount price
    * @param specialDiscount Special discount text
    * @param expireDate Expire date for this discount
-   * @param previousBatchExpireDate The expire date from the previous successful batch run
-   * @param currentBatchRunDate The date of the current batch run (started_at)
+   * @param previousBatchExpireDate The expire date from the previous successful batch run (not used in new logic)
+   * @param currentBatchRunDate The date of the current batch run (not used in new logic)
    * @returns The discount ID if created, -1 if skipped
    */
   async addDiscountSmart(
@@ -313,63 +344,31 @@ class PostgresDiscountController {
     previousBatchExpireDate: Date | null,
     currentBatchRunDate: Date
   ): Promise<number> {
-    scraperLogger.debug(
-      `Smart add discount for product ID: ${productId}, previousBatchExpireDate: ${previousBatchExpireDate}, currentBatchRunDate: ${currentBatchRunDate}`
-    );
+    scraperLogger.debug(`Smart add discount for product ID: ${productId}`);
 
     try {
-      // Check if discount exists for this product
-      const existingDiscount = await this.getLatestDiscountByProductId(
-        productId
-      );
+      // Check if product has an active, non-expired discount
+      const hasActive = await this.hasActiveNonExpiredDiscount(productId);
 
-      // Flow 1: No discount exists - add it
-      if (!existingDiscount) {
+      if (hasActive) {
+        // Skip: Product already has an active discount
         scraperLogger.debug(
-          `Flow 1: No existing discount for product ID ${productId}. Adding new discount.`
+          `Product ID ${productId} already has an active discount. Skipping.`
         );
-        return await this.addDiscount(
-          productId,
-          originalPrice,
-          discountPrice,
-          specialDiscount,
-          expireDate
-        );
+        return -1;
       }
 
-      // If no previous batch expire date, we can't determine the flow - skip to be safe
-      if (!previousBatchExpireDate) {
-        scraperLogger.debug(
-          `No previous batch expire date available for product ID ${productId}. Adding discount.`
-        );
-        return await this.addDiscount(
-          productId,
-          originalPrice,
-          discountPrice,
-          specialDiscount,
-          expireDate
-        );
-      }
-
-      // Flow 2: Current batch run is after previous batch's expire date - add new discount
-      if (currentBatchRunDate >= previousBatchExpireDate) {
-        scraperLogger.debug(
-          `Flow 2: Current batch run (${currentBatchRunDate.toISOString()}) is after previous expire date (${previousBatchExpireDate.toISOString()}) for product ID ${productId}. Adding new discount.`
-        );
-        return await this.addDiscount(
-          productId,
-          originalPrice,
-          discountPrice,
-          specialDiscount,
-          expireDate
-        );
-      }
-
-      // Flow 3: Current batch run is before previous batch's expire date - skip
+      // Add discount: Either no discount exists or existing discount is deactivated/expired
       scraperLogger.debug(
-        `Flow 3: Current batch run (${currentBatchRunDate.toISOString()}) is before previous expire date (${previousBatchExpireDate.toISOString()}) for product ID ${productId}. Skipping discount.`
+        `Product ID ${productId} has no active discount. Adding new discount.`
       );
-      return -1;
+      return await this.addDiscount(
+        productId,
+        originalPrice,
+        discountPrice,
+        specialDiscount,
+        expireDate
+      );
     } catch (error) {
       scraperLogger.error(
         `Error in smart add discount for product ID: ${productId}`,
@@ -513,6 +512,37 @@ class PostgresDiscountController {
         `Error deactivating discounts for ${supermarket}`,
         error
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Deactivate all discounts that have passed their expire_date
+   * This ensures the active flag reflects the actual validity of the discount
+   */
+  async deactivateExpiredDiscounts(): Promise<number> {
+    scraperLogger.debug(
+      "Deactivating discounts that have passed their expire_date"
+    );
+    try {
+      const result = await this.db.query(
+        `UPDATE discounts 
+         SET active = false 
+         WHERE active = true 
+         AND expire_date <= NOW()`
+      );
+
+      const deactivatedCount = result.rowCount || 0;
+      if (deactivatedCount > 0) {
+        scraperLogger.info(
+          `Deactivated ${deactivatedCount} expired discounts.`
+        );
+      } else {
+        scraperLogger.debug("No expired discounts to deactivate.");
+      }
+      return deactivatedCount;
+    } catch (error) {
+      scraperLogger.error("Error deactivating expired discounts", error);
       throw error;
     }
   }
