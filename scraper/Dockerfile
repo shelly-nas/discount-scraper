@@ -1,5 +1,6 @@
-# Use Node.js LTS version
-FROM mcr.microsoft.com/playwright:v1.56.1-jammy
+# Use Node.js LTS version with arm64 support
+# Note: Playwright official images support arm64 architecture
+FROM --platform=linux/arm64 mcr.microsoft.com/playwright:v1.56.1-jammy
 
 # Create app directory
 WORKDIR /app

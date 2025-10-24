@@ -2,10 +2,11 @@ import express, { Request, Response, Application } from "express";
 import cors from "cors";
 import { serverLogger } from "./utils/Logger";
 import PostgresDataManager from "./data/PostgresDataManager";
+import SchedulerService from "./services/SchedulerService";
 import routes from "./api/Routes";
 
 const app: Application = express();
-const PORT = process.env.API_PORT || 3000;
+const PORT = process.env.API_PORT || 3001;
 
 // Middleware
 app.use(cors());
@@ -46,7 +47,7 @@ async function initializeDatabase(): Promise<boolean> {
 }
 
 // Register API routes
-app.use("/", routes);
+app.use("/api", routes);
 
 // 404 handler
 app.use((req: Request, res: Response) => {
@@ -73,6 +74,12 @@ async function startServer() {
     serverLogger.info(
       `Run scraper: POST http://localhost:${PORT}/scraper/run/:supermarket`
     );
+
+    // Start the scheduler service
+    const dataManager = new PostgresDataManager();
+    const scheduler = new SchedulerService(dataManager, PORT.toString());
+    scheduler.start();
+    serverLogger.info("Automated scheduler service initialized");
   });
 }
 

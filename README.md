@@ -5,12 +5,15 @@ A containerized web scraper with REST API that fetches discount information from
 ## Features
 
 - 🛒 Scrapes discounts from multiple supermarkets (AH, Dirk, Plus)
-- � REST API for triggering scraper runs
-- 🐳 Fully containerized with Docker
-- �💾 PostgreSQL database with optimized indexes
+- 🌐 Modern web interface with Notion-like design
+- 📡 REST API for triggering scraper runs
+- � Comprehensive run tracking with detailed metrics
+- �🐳 Fully containerized with Docker
+- 💾 PostgreSQL database with optimized indexes
 - 🔍 Full-text search on product names
-- 📊 Advanced filtering by price, category, and expiration date
+- � Advanced filtering by price, category, and expiration date
 - ⚡ 10-15x faster searches compared to JSON storage
+- 📝 Full audit trail of all scraper executions
 
 ## Quick Setup with Docker (Recommended)
 
@@ -28,7 +31,7 @@ LOG_LEVEL=INFO
 ### 2. Start All Services
 
 ```bash
-# Build and start database + API
+# Build and start all services (database, API, and web interface)
 docker compose up --build -d
 
 # View logs
@@ -41,26 +44,48 @@ docker compose down
 This automatically creates:
 
 - PostgreSQL database with schema and supermarket configurations
-- Scraper API service on port 3000
+- Scraper API service on port 3001
+- Web interface on port 3000
 
-### 3. Use the API
+### 3. Access the Application
+
+**Web Interface:** http://localhost:3000
+
+**API Endpoints:**
 
 ```bash
 # Health check
-curl http://localhost:3000/health
+curl http://localhost:3001/health
+
+# Get all discounts
+curl http://localhost:3001/api/discounts
 
 # Run scrapers
-curl -X POST http://localhost:3000/scraper/run/albert-heijn
-curl -X POST http://localhost:3000/scraper/run/dirk
-curl -X POST http://localhost:3000/scraper/run/plus
+curl -X POST http://localhost:3001/scraper/run/albert-heijn
+curl -X POST http://localhost:3001/scraper/run/dirk
+curl -X POST http://localhost:3001/scraper/run/plus
 ```
 
 ## Services
 
-The application consists of two Docker services:
+The application consists of three Docker services:
 
 - **postgres** (`discount-scraper-db`) - Port 5432
-- **scraper-api** (`discount-scraper-api`) - Port 3000
+- **scraper-api** (`discount-scraper-api`) - Port 3001
+- **web** (`discount-scraper-web`) - Port 3000
+
+## Web Interface
+
+The web interface provides a clean, Notion-inspired UI for viewing and filtering discounts:
+
+- **Database View**: Table display of all products and discounts
+- **Global Search**: Search across all columns simultaneously
+- **Column Filters**: Individual text filters for each column
+- **Quick Filters**: Expire Date, Category, and Product Name
+- **Default Sorting**: Automatically sorted by expiration date, category, and name
+- **Responsive Design**: Works on desktop and mobile
+
+Access at: **http://localhost:3000**
 
 ## Development Setup (Without Docker)
 
@@ -100,6 +125,14 @@ npm run build
 npm start
 ```
 
+For the web interface:
+
+```bash
+cd web
+npm install
+npm run dev  # Development server on port 3000
+```
+
 ## Database Setup (Alternative to Docker)
 
 If not using Docker, install PostgreSQL locally:
@@ -120,13 +153,39 @@ psql -U postgres -f database/src/init-db.sql
 **Health Check**
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:3001/health
+```
+
+**Get All Discounts**
+
+```bash
+curl http://localhost:3001/api/discounts
 ```
 
 **Run Scraper**
 
 ```bash
-curl -X POST http://localhost:3000/scraper/run/:supermarket
+curl -X POST http://localhost:3001/api/scraper/run/:supermarket
+```
+
+**Get Scraper Runs**
+
+```bash
+# Get all runs
+curl http://localhost:3001/api/scraper/runs
+
+# Get runs for specific supermarket
+curl http://localhost:3001/api/scraper/runs/albert-heijn
+
+# Get specific run by ID
+curl http://localhost:3001/api/scraper/run/1
+```
+
+**Dashboard Statistics**
+
+```bash
+curl http://localhost:3001/api/dashboard/stats
+# Returns: totalRuns, successRate, scrapedProducts, uniqueProducts
 ```
 
 Where `:supermarket` is one of: `albert-heijn`, `ah`, `dirk`, or `plus`
@@ -159,8 +218,27 @@ SELECT * FROM discounts WHERE expire_date > NOW() ORDER BY discount_price;
 ## Database Schema
 
 - **supermarket_configs** - Scraping configurations
-- **products** - Product information with 6 indexes
-- **discounts** - Discount data with 5 indexes for fast queries
+- **products** - Product information with 6 indexes (unique constraint on name + supermarket)
+- **discounts** - Discount data with 7 indexes for fast queries, includes `active` flag
+- **scraper_runs** - Complete audit trail of all scraper executions with metrics
+
+### UPSERT Logic
+
+Products are updated instead of deleted when re-scraping. The unique identifier is the combination of product name and supermarket. When new discounts are scraped, old discounts are marked as `active=false` rather than deleted, preserving historical data.
+
+### Run Tracking
+
+Every scraper execution is tracked with detailed metrics including:
+
+- Products scraped, created, and updated
+- Discounts deactivated and created
+- Run duration and status
+- Error messages for failed runs
+
+For detailed information:
+
+- [Database Migration Guide](./docs/DATABASE_MIGRATION.md)
+- [Scraper Run Tracking](./docs/SCRAPER_RUN_TRACKING.md)
 
 ## Docker Commands
 
@@ -211,6 +289,7 @@ docker compose restart scraper-api
 
 ## Documentation
 
+- [Web Interface Documentation](./web/README.md)
 - [API Documentation](./scraper/README.md)
 - [Database Schema](./database/src/schema.sql)
 - [Supermarket Configurations](./database/src/supermarkets/)

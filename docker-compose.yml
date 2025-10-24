@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   postgres:
+    platform: linux/arm64
     build:
       context: database
       dockerfile: Dockerfile
@@ -23,6 +24,7 @@ services:
     restart: unless-stopped
 
   scraper-api:
+    platform: linux/arm64
     build:
       context: scraper
       dockerfile: Dockerfile
@@ -33,10 +35,10 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      API_PORT: 3000
+      API_PORT: 3001
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,6 +46,18 @@ services:
     volumes:
       # Mount logs directory for persistence
       - ./scraper/logs:/app/logs
+
+  web:
+    platform: linux/arm64
+    build:
+      context: web
+      dockerfile: Dockerfile
+    container_name: discount-scraper-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - scraper-api
+    restart: unless-stopped
 
 volumes:
   postgres_data:

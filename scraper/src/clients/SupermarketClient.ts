@@ -37,6 +37,10 @@ abstract class SupermarketClient extends WebClient {
     }
   }
 
+  public getExpireDate(): string {
+    return this.expireDate;
+  }
+
   public async getDiscountProductsByProductCategory(
     parentSelector: string,
     productSelector: string

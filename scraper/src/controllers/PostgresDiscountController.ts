@@ -9,6 +9,7 @@ interface DiscountRow {
   discount_price: string;
   special_discount: string;
   expire_date: Date;
+  active: boolean;
 }
 
 class PostgresDiscountController {
@@ -51,7 +52,7 @@ class PostgresDiscountController {
     scraperLogger.info("Fetching all discounts.");
     try {
       const result = await this.db.query<DiscountRow>(
-        "SELECT product_id, original_price, discount_price, special_discount, expire_date FROM discounts ORDER BY expire_date DESC"
+        "SELECT product_id, original_price, discount_price, special_discount, expire_date, active FROM discounts ORDER BY expire_date DESC"
       );
 
       return result.rows.map(
@@ -61,7 +62,8 @@ class PostgresDiscountController {
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
             row.special_discount,
-            row.expire_date.toISOString()
+            row.expire_date.toISOString(),
+            row.active
           )
       );
     } catch (error) {
@@ -74,7 +76,7 @@ class PostgresDiscountController {
     scraperLogger.debug(`Fetching discounts for product ID: ${productId}`);
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date 
+        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
          FROM discounts 
          WHERE product_id = $1 
          ORDER BY expire_date DESC`,
@@ -88,7 +90,8 @@ class PostgresDiscountController {
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
             row.special_discount,
-            row.expire_date.toISOString()
+            row.expire_date.toISOString(),
+            row.active
           )
       );
     } catch (error) {
@@ -101,12 +104,14 @@ class PostgresDiscountController {
   }
 
   async getActiveDiscounts(): Promise<DiscountModel[]> {
-    scraperLogger.debug("Fetching active discounts (not expired).");
+    scraperLogger.debug(
+      "Fetching active discounts (active=true and not expired)."
+    );
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date 
+        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
          FROM discounts 
-         WHERE expire_date > NOW() 
+         WHERE active = true AND expire_date > NOW() 
          ORDER BY expire_date ASC`
       );
 
@@ -117,7 +122,8 @@ class PostgresDiscountController {
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
             row.special_discount,
-            row.expire_date.toISOString()
+            row.expire_date.toISOString(),
+            row.active
           )
       );
     } catch (error) {
@@ -130,7 +136,7 @@ class PostgresDiscountController {
     scraperLogger.debug("Fetching expired discounts.");
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date 
+        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
          FROM discounts 
          WHERE expire_date <= NOW() 
          ORDER BY expire_date DESC`
@@ -143,7 +149,8 @@ class PostgresDiscountController {
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
             row.special_discount,
-            row.expire_date.toISOString()
+            row.expire_date.toISOString(),
+            row.active
           )
       );
     } catch (error) {
@@ -161,9 +168,10 @@ class PostgresDiscountController {
     );
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date 
+        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
          FROM discounts 
          WHERE discount_price BETWEEN $1 AND $2 
+         AND active = true
          AND expire_date > NOW()
          ORDER BY discount_price ASC`,
         [minPrice, maxPrice]
@@ -176,7 +184,8 @@ class PostgresDiscountController {
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
             row.special_discount,
-            row.expire_date.toISOString()
+            row.expire_date.toISOString(),
+            row.active
           )
       );
     } catch (error) {
@@ -197,8 +206,8 @@ class PostgresDiscountController {
   ): Promise<number> {
     try {
       const result = await this.db.query<{ id: number }>(
-        `INSERT INTO discounts (product_id, original_price, discount_price, special_discount, expire_date) 
-         VALUES ($1, $2, $3, $4, $5) 
+        `INSERT INTO discounts (product_id, original_price, discount_price, special_discount, expire_date, active) 
+         VALUES ($1, $2, $3, $4, $5, true) 
          RETURNING id`,
         [productId, originalPrice, discountPrice, specialDiscount, expireDate]
       );
@@ -272,7 +281,7 @@ class PostgresDiscountController {
     try {
       const result = await this.db.query(
         `UPDATE discounts 
-         SET original_price = $2, discount_price = $3, special_discount = $4, expire_date = $5
+         SET original_price = $2, discount_price = $3, special_discount = $4, expire_date = $5, active = true
          WHERE product_id = $1`,
         [productId, originalPrice, discountPrice, specialDiscount, expireDate]
       );
@@ -291,6 +300,60 @@ class PostgresDiscountController {
     } catch (error) {
       scraperLogger.error(
         `Error updating discount for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  async deactivateDiscountsByProductIds(productIds: number[]): Promise<number> {
+    scraperLogger.debug(
+      `Deactivating discounts for ${productIds.length} products`
+    );
+    try {
+      if (productIds.length === 0) {
+        return 0;
+      }
+
+      const result = await this.db.query(
+        `UPDATE discounts 
+         SET active = false 
+         WHERE product_id = ANY($1) AND active = true`,
+        [productIds]
+      );
+
+      const deactivatedCount = result.rowCount || 0;
+      scraperLogger.info(`Deactivated ${deactivatedCount} discounts.`);
+      return deactivatedCount;
+    } catch (error) {
+      scraperLogger.error("Error deactivating discounts", error);
+      throw error;
+    }
+  }
+
+  async deactivateDiscountsBySupermarket(supermarket: string): Promise<number> {
+    scraperLogger.debug(
+      `Deactivating all active discounts for supermarket: ${supermarket}`
+    );
+    try {
+      const result = await this.db.query(
+        `UPDATE discounts 
+         SET active = false 
+         WHERE active = true 
+         AND product_id IN (
+           SELECT id FROM products WHERE supermarket = $1
+         )`,
+        [supermarket]
+      );
+
+      const deactivatedCount = result.rowCount || 0;
+      scraperLogger.info(
+        `Deactivated ${deactivatedCount} discounts for ${supermarket}.`
+      );
+      return deactivatedCount;
+    } catch (error) {
+      scraperLogger.error(
+        `Error deactivating discounts for ${supermarket}`,
         error
       );
       throw error;

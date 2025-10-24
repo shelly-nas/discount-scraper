@@ -1,5 +1,7 @@
 import PostgresDiscountController from "../controllers/PostgresDiscountController";
 import PostgresProductController from "../controllers/PostgresProductController";
+import PostgresScraperRunController from "../controllers/PostgresScraperRunController";
+import PostgresScheduledRunController from "../controllers/PostgresScheduledRunController";
 import { scraperLogger } from "../utils/Logger";
 import PostgresDataContext from "./PostgresDataContext";
 import { getDatabaseConfig } from "../config/database";
@@ -7,6 +9,8 @@ import { getDatabaseConfig } from "../config/database";
 export class PostgresDataManager {
   private productController: PostgresProductController;
   private discountController: PostgresDiscountController;
+  private scraperRunController: PostgresScraperRunController;
+  private scheduledRunController: PostgresScheduledRunController;
   public db: PostgresDataContext;
 
   constructor() {
@@ -15,6 +19,8 @@ export class PostgresDataManager {
 
     this.productController = new PostgresProductController(this.db);
     this.discountController = new PostgresDiscountController(this.db);
+    this.scraperRunController = new PostgresScraperRunController(this.db);
+    this.scheduledRunController = new PostgresScheduledRunController(this.db);
 
     scraperLogger.info("PostgresDataManager initialized.");
   }
@@ -27,6 +33,14 @@ export class PostgresDataManager {
     return this.discountController;
   }
 
+  public getScraperRunController(): PostgresScraperRunController {
+    return this.scraperRunController;
+  }
+
+  public getScheduledRunController(): PostgresScheduledRunController {
+    return this.scheduledRunController;
+  }
+
   public async testConnection(): Promise<boolean> {
     return await this.db.testConnection();
   }
@@ -34,25 +48,65 @@ export class PostgresDataManager {
   public async addProductDb(
     supermarket: string,
     products: IProductDiscountDetails[]
-  ): Promise<void> {
+  ): Promise<{ created: number; updated: number }> {
     scraperLogger.debug("Add to Product database.");
+
+    // Deduplicate products by name - keep first occurrence
+    const uniqueProducts = new Map<string, IProductDiscountDetails>();
     for (const product of products) {
-      await this.productController.addProduct(
+      if (!uniqueProducts.has(product.name)) {
+        uniqueProducts.set(product.name, product);
+      } else {
+        scraperLogger.debug(
+          `Duplicate product '${product.name}' found in scraped data. Using first occurrence.`
+        );
+      }
+    }
+
+    let created = 0;
+    let updated = 0;
+
+    const uniqueProductArray = Array.from(uniqueProducts.values());
+    for (const product of uniqueProductArray) {
+      const result = await this.productController.addProductWithTracking(
         product.name,
         product.category,
         supermarket
       );
+      if (result.wasCreated) {
+        created++;
+      } else {
+        updated++;
+      }
     }
     scraperLogger.info(
-      `Added '${products.length}' products to Product Database.`
+      `Processed '${uniqueProductArray.length}' unique products: ${created} created, ${updated} updated (from ${products.length} scraped items).`
     );
+
+    return { created, updated };
   }
 
   public async addDiscountDb(
     discounts: IProductDiscountDetails[]
-  ): Promise<void> {
+  ): Promise<number> {
     scraperLogger.debug("Add to Discount database.");
+
+    // Deduplicate discounts by product name - keep first occurrence
+    const uniqueDiscounts = new Map<string, IProductDiscountDetails>();
     for (const discount of discounts) {
+      if (!uniqueDiscounts.has(discount.name)) {
+        uniqueDiscounts.set(discount.name, discount);
+      } else {
+        scraperLogger.debug(
+          `Duplicate discount for '${discount.name}' found in scraped data. Using first occurrence.`
+        );
+      }
+    }
+
+    let discountsCreated = 0;
+
+    const uniqueDiscountArray = Array.from(uniqueDiscounts.values());
+    for (const discount of uniqueDiscountArray) {
       const productId = await this.productController.getProductId(
         discount.name
       );
@@ -71,10 +125,13 @@ export class PostgresDataManager {
         discount.specialDiscount,
         discount.expireDate
       );
+      discountsCreated++;
     }
     scraperLogger.info(
-      `Added '${discounts.length}' discounts to Discount Database.`
+      `Added '${discountsCreated}' unique discounts to Discount Database (from ${discounts.length} scraped items).`
     );
+
+    return discountsCreated;
   }
 
   public async getSupermarketDiscountsVerbose(
@@ -158,44 +215,28 @@ export class PostgresDataManager {
     }
   }
 
-  public async deleteRecordsBySupermarket(supermarket: string): Promise<void> {
+  public async deleteRecordsBySupermarket(
+    supermarket: string
+  ): Promise<number> {
     scraperLogger.debug(
-      `Starting deletion of all records related to '${supermarket}'.`
+      `Deactivating discounts for '${supermarket}' (products will be updated, not deleted).`
     );
 
     try {
-      const products = await this.productController.getProductsBySupermarket(
-        supermarket
-      );
-      const productIds = products.map((p) => p.id);
-
-      let productsDeleted = 0;
-      let discountsDeleted = 0;
-
-      // Delete discounts first (due to foreign key constraint)
-      for (const id of productIds) {
-        const discountDeleted = await this.discountController.deleteDiscount(
-          id
+      // Deactivate all active discounts for this supermarket
+      const deactivatedCount =
+        await this.discountController.deactivateDiscountsBySupermarket(
+          supermarket
         );
-        if (discountDeleted) {
-          discountsDeleted++;
-        }
-      }
-
-      // Then delete products
-      for (const id of productIds) {
-        const productDeleted = await this.productController.deleteProduct(id);
-        if (productDeleted) {
-          productsDeleted++;
-        }
-      }
 
       scraperLogger.info(
-        `Deleted ${productsDeleted} product records and ${discountsDeleted} discount records related to '${supermarket}'.`
+        `Deactivated ${deactivatedCount} discount records for '${supermarket}'. Products will be updated during the next scrape.`
       );
+
+      return deactivatedCount;
     } catch (error) {
-      scraperLogger.error("Error during deletion:", error);
-      throw new Error("Failed to delete database entries for supermarket.");
+      scraperLogger.error("Error during deactivation:", error);
+      throw new Error("Failed to deactivate discounts for supermarket.");
     }
   }
 
