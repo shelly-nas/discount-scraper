@@ -1,7 +1,7 @@
 import axios from "axios";
 import {
   ProductWithDiscount,
-  DashboardStats,
+  ConfigurationsStats,
   SupermarketStatus,
 } from "../types";
 
@@ -33,13 +33,13 @@ export const discountService = {
   },
 };
 
-export const dashboardService = {
-  async getStats(): Promise<DashboardStats> {
+export const configurationsService = {
+  async getStats(): Promise<ConfigurationsStats> {
     try {
       const response = await axios.get(`${API_BASE_URL}/dashboard/stats`);
       return response.data;
     } catch (error) {
-      console.error("Error fetching dashboard stats:", error);
+      console.error("Error fetching configurations stats:", error);
       throw error;
     }
   },

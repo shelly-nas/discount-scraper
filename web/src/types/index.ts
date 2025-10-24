@@ -27,8 +27,8 @@ export interface ColumnFilter {
   value: string;
 }
 
-// Dashboard types
-export interface DashboardStats {
+// Configurations types
+export interface ConfigurationsStats {
   totalRuns: number;
   successRate: number;
   scrapedProducts: number;

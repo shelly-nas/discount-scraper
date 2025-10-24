@@ -6,6 +6,9 @@ import { getSupermarketClient } from "../utils/ConfigHelper";
 
 const router = Router();
 
+// Create a single shared instance of PostgresDataManager
+const dataManager = new PostgresDataManager();
+
 // Helper function to get config from database
 async function getConfigFromDatabase(
   dataManager: PostgresDataManager,
@@ -107,8 +110,6 @@ router.get("/health", (req: Request, res: Response) => {
 
 // Get dashboard statistics
 router.get("/dashboard/stats", async (req: Request, res: Response) => {
-  const dataManager = new PostgresDataManager();
-
   try {
     serverLogger.info("Fetching dashboard statistics");
 
@@ -154,8 +155,6 @@ router.get("/dashboard/stats", async (req: Request, res: Response) => {
 
 // Get supermarket statuses
 router.get("/dashboard/statuses", async (req: Request, res: Response) => {
-  const dataManager = new PostgresDataManager();
-
   try {
     serverLogger.info("Fetching supermarket statuses");
 
@@ -223,8 +222,6 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
 
 // Get all discounts with product details
 router.get("/discounts", async (req: Request, res: Response) => {
-  const dataManager = new PostgresDataManager();
-
   try {
     serverLogger.info("Fetching all discounts with product details");
 
@@ -272,8 +269,6 @@ router.get("/discounts", async (req: Request, res: Response) => {
 router.post(
   "/scraper/run/:supermarket",
   async (req: Request, res: Response) => {
-    const dataManager = new PostgresDataManager();
-
     try {
       const supermarketParam = req.params.supermarket.toLowerCase();
 

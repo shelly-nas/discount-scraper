@@ -1,27 +1,39 @@
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './TabBar.css';
 
-export type TabType = 'dashboard' | 'discounts';
+export type TabType = 'configurations' | 'discounts';
 
-interface TabBarProps {
-  activeTab: TabType;
-  onTabChange: (tab: TabType) => void;
-}
+const TabBar: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
 
-const TabBar: React.FC<TabBarProps> = ({ activeTab, onTabChange }) => {
+  const getActiveTab = (): TabType => {
+    if (location.pathname.startsWith('/configurations')) {
+      return 'configurations';
+    }
+    return 'discounts';
+  };
+
+  const activeTab = getActiveTab();
+
+  const handleTabChange = (tab: TabType) => {
+    navigate(`/${tab}`);
+  };
+
   return (
     <div className="tab-bar">
       <button
-        className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-        onClick={() => onTabChange('dashboard')}
-      >
-        Dashboard
-      </button>
-      <button
         className={`tab-button ${activeTab === 'discounts' ? 'active' : ''}`}
-        onClick={() => onTabChange('discounts')}
+        onClick={() => handleTabChange('discounts')}
       >
         Discounts
+      </button>
+      <button
+        className={`tab-button ${activeTab === 'configurations' ? 'active' : ''}`}
+        onClick={() => handleTabChange('configurations')}
+      >
+        Configuraties
       </button>
     </div>
   );

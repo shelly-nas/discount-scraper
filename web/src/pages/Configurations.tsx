@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { dashboardService } from '../services/api';
-import { DashboardStats, SupermarketStatus } from '../types';
+import { configurationsService } from '../services/api';
+import { ConfigurationsStats, SupermarketStatus } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
-import './Dashboard.css';
+import './Configurations.css';
 
-const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+const Configurations: React.FC = () => {
+  const [stats, setStats] = useState<ConfigurationsStats | null>(null);
   const [statuses, setStatuses] = useState<SupermarketStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,24 +21,24 @@ const Dashboard: React.FC = () => {
   const [runningScrapers, setRunningScrapers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadDashboardData();
+    loadConfigurationsData();
     // Refresh data every 30 seconds
-    const interval = setInterval(loadDashboardData, 30000);
+    const interval = setInterval(loadConfigurationsData, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadConfigurationsData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [dashboardStats, supermarketStatuses] = await Promise.all([
-        dashboardService.getStats(),
-        dashboardService.getStatuses(),
+      const [configurationsStats, supermarketStatuses] = await Promise.all([
+        configurationsService.getStats(),
+        configurationsService.getStatuses(),
       ]);
-      setStats(dashboardStats);
+      setStats(configurationsStats);
       setStatuses(supermarketStatuses);
     } catch (err) {
-      setError('Failed to load dashboard data. Please try again.');
+      setError('Failed to load configurations data. Please try again.');
       console.error(err);
     } finally {
       setLoading(false);
@@ -61,9 +61,9 @@ const Dashboard: React.FC = () => {
     setRunningScrapers(prev => new Set(prev).add(supermarketKey));
     
     try {
-      await dashboardService.runScraper(supermarketKey);
+      await configurationsService.runScraper(supermarketKey);
       // Reload data after scraper completes
-      await loadDashboardData();
+      await loadConfigurationsData();
     } catch (err) {
       console.error('Failed to run scraper:', err);
       alert('Failed to run scraper. Please check the logs.');
@@ -109,10 +109,10 @@ const Dashboard: React.FC = () => {
 
   if (loading && !stats) {
     return (
-      <div className="dashboard">
-        <div className="dashboard-loading">
+      <div className="configurations">
+        <div className="configurations-loading">
           <div className="loading-spinner"></div>
-          <p>Loading dashboard...</p>
+          <p>Loading configurations...</p>
         </div>
       </div>
     );
@@ -120,10 +120,10 @@ const Dashboard: React.FC = () => {
 
   if (error && !stats) {
     return (
-      <div className="dashboard">
-        <div className="dashboard-error">
+      <div className="configurations">
+        <div className="configurations-error">
           <p>{error}</p>
-          <button onClick={loadDashboardData} className="retry-button">
+          <button onClick={loadConfigurationsData} className="retry-button">
             Retry
           </button>
         </div>
@@ -132,10 +132,10 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1 className="dashboard-title">Dashboard</h1>
-        <p className="dashboard-subtitle">Monitor your scraper performance</p>
+    <div className="configurations">
+      <div className="configurations-header">
+        <h1 className="configurations-title">Configuraties</h1>
+        <p className="configurations-subtitle">Monitor your scraper performance</p>
       </div>
 
       {/* KPI Cards */}
@@ -228,4 +228,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default Configurations;

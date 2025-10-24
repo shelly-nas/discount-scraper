@@ -36,7 +36,21 @@ export class PostgresDataManager {
     products: IProductDiscountDetails[]
   ): Promise<void> {
     scraperLogger.debug("Add to Product database.");
+
+    // Deduplicate products by name - keep first occurrence
+    const uniqueProducts = new Map<string, IProductDiscountDetails>();
     for (const product of products) {
+      if (!uniqueProducts.has(product.name)) {
+        uniqueProducts.set(product.name, product);
+      } else {
+        scraperLogger.debug(
+          `Duplicate product '${product.name}' found in scraped data. Using first occurrence.`
+        );
+      }
+    }
+
+    const uniqueProductArray = Array.from(uniqueProducts.values());
+    for (const product of uniqueProductArray) {
       await this.productController.addProduct(
         product.name,
         product.category,
@@ -44,7 +58,7 @@ export class PostgresDataManager {
       );
     }
     scraperLogger.info(
-      `Added '${products.length}' products to Product Database.`
+      `Added '${uniqueProductArray.length}' unique products to Product Database (from ${products.length} scraped items).`
     );
   }
 
@@ -52,7 +66,21 @@ export class PostgresDataManager {
     discounts: IProductDiscountDetails[]
   ): Promise<void> {
     scraperLogger.debug("Add to Discount database.");
+
+    // Deduplicate discounts by product name - keep first occurrence
+    const uniqueDiscounts = new Map<string, IProductDiscountDetails>();
     for (const discount of discounts) {
+      if (!uniqueDiscounts.has(discount.name)) {
+        uniqueDiscounts.set(discount.name, discount);
+      } else {
+        scraperLogger.debug(
+          `Duplicate discount for '${discount.name}' found in scraped data. Using first occurrence.`
+        );
+      }
+    }
+
+    const uniqueDiscountArray = Array.from(uniqueDiscounts.values());
+    for (const discount of uniqueDiscountArray) {
       const productId = await this.productController.getProductId(
         discount.name
       );
@@ -73,7 +101,7 @@ export class PostgresDataManager {
       );
     }
     scraperLogger.info(
-      `Added '${discounts.length}' discounts to Discount Database.`
+      `Added '${uniqueDiscountArray.length}' unique discounts to Discount Database (from ${discounts.length} scraped items).`
     );
   }
 
