@@ -15,6 +15,7 @@ interface ScraperRunRow {
   started_at: Date;
   completed_at: Date | null;
   duration_seconds: number | null;
+  promotion_expire_date: Date | null;
 }
 
 class PostgresScraperRunController {
@@ -72,6 +73,7 @@ class PostgresScraperRunController {
       productsCreated: number;
       discountsDeactivated: number;
       discountsCreated: number;
+      promotionExpireDate?: Date;
     }
   ): Promise<void> {
     scraperLogger.debug(`Updating scraper run ${runId} to success`);
@@ -84,6 +86,7 @@ class PostgresScraperRunController {
              products_created = $4,
              discounts_deactivated = $5,
              discounts_created = $6,
+             promotion_expire_date = $7,
              completed_at = NOW(),
              duration_seconds = EXTRACT(EPOCH FROM (NOW() - started_at))::INTEGER
          WHERE id = $1`,
@@ -94,6 +97,7 @@ class PostgresScraperRunController {
           metrics.productsCreated,
           metrics.discountsDeactivated,
           metrics.discountsCreated,
+          metrics.promotionExpireDate || null,
         ]
       );
       scraperLogger.info(`Scraper run ${runId} marked as success`);
@@ -134,7 +138,7 @@ class PostgresScraperRunController {
       const result = await this.db.query<ScraperRunRow>(
         `SELECT id, supermarket, status, products_scraped, products_updated, 
                 products_created, discounts_deactivated, discounts_created,
-                error_message, started_at, completed_at, duration_seconds
+                error_message, started_at, completed_at, duration_seconds, promotion_expire_date
          FROM scraper_runs 
          WHERE id = $1`,
         [runId]
@@ -157,7 +161,8 @@ class PostgresScraperRunController {
         row.error_message || undefined,
         row.started_at,
         row.completed_at || undefined,
-        row.duration_seconds || undefined
+        row.duration_seconds || undefined,
+        row.promotion_expire_date || undefined
       );
     } catch (error) {
       scraperLogger.error(`Error fetching scraper run ${runId}`, error);
@@ -171,7 +176,7 @@ class PostgresScraperRunController {
       const result = await this.db.query<ScraperRunRow>(
         `SELECT id, supermarket, status, products_scraped, products_updated, 
                 products_created, discounts_deactivated, discounts_created,
-                error_message, started_at, completed_at, duration_seconds
+                error_message, started_at, completed_at, duration_seconds, promotion_expire_date
          FROM scraper_runs 
          ORDER BY started_at DESC
          LIMIT $1`,
@@ -192,7 +197,8 @@ class PostgresScraperRunController {
             row.error_message || undefined,
             row.started_at,
             row.completed_at || undefined,
-            row.duration_seconds || undefined
+            row.duration_seconds || undefined,
+            row.promotion_expire_date || undefined
           )
       );
     } catch (error) {
@@ -212,7 +218,7 @@ class PostgresScraperRunController {
       const result = await this.db.query<ScraperRunRow>(
         `SELECT id, supermarket, status, products_scraped, products_updated, 
                 products_created, discounts_deactivated, discounts_created,
-                error_message, started_at, completed_at, duration_seconds
+                error_message, started_at, completed_at, duration_seconds, promotion_expire_date
          FROM scraper_runs 
          WHERE supermarket = $1
          ORDER BY started_at DESC
@@ -234,7 +240,8 @@ class PostgresScraperRunController {
             row.error_message || undefined,
             row.started_at,
             row.completed_at || undefined,
-            row.duration_seconds || undefined
+            row.duration_seconds || undefined,
+            row.promotion_expire_date || undefined
           )
       );
     } catch (error) {
@@ -254,7 +261,7 @@ class PostgresScraperRunController {
       const result = await this.db.query<ScraperRunRow>(
         `SELECT id, supermarket, status, products_scraped, products_updated, 
                 products_created, discounts_deactivated, discounts_created,
-                error_message, started_at, completed_at, duration_seconds
+                error_message, started_at, completed_at, duration_seconds, promotion_expire_date
          FROM scraper_runs 
          WHERE supermarket = $1
          ORDER BY started_at DESC
@@ -279,7 +286,8 @@ class PostgresScraperRunController {
         row.error_message || undefined,
         row.started_at,
         row.completed_at || undefined,
-        row.duration_seconds || undefined
+        row.duration_seconds || undefined,
+        row.promotion_expire_date || undefined
       );
     } catch (error) {
       scraperLogger.error(

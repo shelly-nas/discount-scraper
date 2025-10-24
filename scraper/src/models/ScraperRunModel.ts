@@ -11,6 +11,7 @@ export class ScraperRunModel {
   startedAt: Date;
   completedAt?: Date;
   durationSeconds?: number;
+  promotionExpireDate?: Date;
 
   constructor(
     id: number,
@@ -24,7 +25,8 @@ export class ScraperRunModel {
     errorMessage: string | undefined = undefined,
     startedAt: Date = new Date(),
     completedAt: Date | undefined = undefined,
-    durationSeconds: number | undefined = undefined
+    durationSeconds: number | undefined = undefined,
+    promotionExpireDate: Date | undefined = undefined
   ) {
     this.id = id;
     this.supermarket = supermarket;
@@ -38,6 +40,7 @@ export class ScraperRunModel {
     this.startedAt = startedAt;
     this.completedAt = completedAt;
     this.durationSeconds = durationSeconds;
+    this.promotionExpireDate = promotionExpireDate;
   }
 }
 

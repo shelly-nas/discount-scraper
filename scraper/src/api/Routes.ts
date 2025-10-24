@@ -38,9 +38,12 @@ async function getConfigFromDatabase(
 
 // Helper function to scrape supermarket discounts
 async function getSupermarketDiscounts(
-  config: ISupermarketWebConfig
-): Promise<IProductDiscountDetails[]> {
-  const supermarketClient = getSupermarketClient(config.name);
+  config: ISupermarketWebConfig,
+  supermarketClient: any
+): Promise<{
+  discounts: IProductDiscountDetails[];
+  expireDate: string;
+}> {
   let productDiscountDetails: IProductDiscountDetails[] = [];
 
   scraperLogger.info(`Initializing scraper for ${config.name}`);
@@ -58,6 +61,8 @@ async function getSupermarketDiscounts(
   await supermarketClient.getPromotionExpireDate(
     config.webIdentifiers.promotionExpireDate
   );
+
+  const expireDate = supermarketClient.getExpireDate();
 
   for (const productCategory of config.webIdentifiers.productCategories) {
     scraperLogger.info(`Processing product category: ${productCategory}`);
@@ -97,7 +102,7 @@ async function getSupermarketDiscounts(
     `Total products scraped: ${productDiscountDetails.length}`
   );
   await supermarketClient.close();
-  return productDiscountDetails;
+  return { discounts: productDiscountDetails, expireDate };
 }
 
 // Health check endpoint
@@ -136,12 +141,28 @@ router.get("/dashboard/stats", async (req: Request, res: Response) => {
     const scraperRunController = dataManager.getScraperRunController();
     const runStats = await scraperRunController.getRunStats();
 
+    // Get next scheduled run
+    const scheduledRunController = dataManager.getScheduledRunController();
+    const scheduledRuns =
+      await scheduledRunController.getEnabledScheduledRuns();
+    let nextScheduledRun = "Not scheduled";
+
+    if (scheduledRuns.length > 0) {
+      // Find the earliest scheduled run
+      const earliestRun = scheduledRuns.reduce((earliest, current) =>
+        current.nextRunAt < earliest.nextRunAt ? current : earliest
+      );
+      nextScheduledRun = `${
+        earliestRun.supermarket
+      } at ${earliestRun.nextRunAt.toLocaleString()}`;
+    }
+
     const stats = {
       totalRuns: runStats.totalRuns,
       successRate: runStats.successRate,
       scrapedProducts,
       uniqueProducts,
-      nextScheduledRun: "Not scheduled", // This would come from your scheduler
+      nextScheduledRun,
     };
 
     serverLogger.info("Dashboard statistics retrieved successfully");
@@ -346,9 +367,12 @@ router.post(
       scraperLogger.info("Configuration loaded successfully");
 
       // Scrape discounts
-      const supermarketDiscounts = await getSupermarketDiscounts(
-        supermarketConfig
-      );
+      const supermarketClient = getSupermarketClient(supermarketName);
+      const { discounts: supermarketDiscounts, expireDate } =
+        await getSupermarketDiscounts(supermarketConfig, supermarketClient);
+
+      // Parse the expiration date
+      const promotionExpireDate = expireDate ? new Date(expireDate) : undefined;
 
       // Update database
       scraperLogger.info("Updating database with scraped data");
@@ -375,7 +399,21 @@ router.post(
         productsCreated: productMetrics.created,
         discountsDeactivated,
         discountsCreated,
+        promotionExpireDate,
       });
+
+      // Create/update scheduled run for next scrape
+      if (promotionExpireDate) {
+        const scheduledRunController = dataManager.getScheduledRunController();
+        await scheduledRunController.upsertScheduledRun(
+          supermarketName,
+          promotionExpireDate,
+          true
+        );
+        scraperLogger.info(
+          `Scheduled next run for ${supermarketName} based on promotion expiry: ${promotionExpireDate}`
+        );
+      }
 
       scraperLogger.info(`=== Scraper session completed successfully ===`);
       serverLogger.info(
@@ -534,6 +572,170 @@ router.get("/scraper/run/:id", async (req: Request, res: Response) => {
   } catch (error: any) {
     const errorMessage = error.message || "Unknown error";
     serverLogger.error(`Error fetching scraper run: ${errorMessage}`);
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+// Get all scheduled runs
+router.get("/scheduler/runs", async (req: Request, res: Response) => {
+  try {
+    serverLogger.info("Fetching all scheduled runs");
+
+    const scheduledRunController = dataManager.getScheduledRunController();
+    const scheduledRuns = await scheduledRunController.getAllScheduledRuns();
+
+    serverLogger.info(`Retrieved ${scheduledRuns.length} scheduled runs`);
+    res.status(200).json(scheduledRuns);
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error fetching scheduled runs: ${errorMessage}`);
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+// Get scheduled run for specific supermarket
+router.get(
+  "/scheduler/run/:supermarket",
+  async (req: Request, res: Response) => {
+    try {
+      const supermarketParam = req.params.supermarket.toLowerCase();
+
+      // Map URL params to full supermarket names
+      const nameMap: { [key: string]: string } = {
+        "albert-heijn": "Albert Heijn",
+        dirk: "Dirk",
+        plus: "PLUS",
+      };
+
+      const supermarketName = nameMap[supermarketParam];
+
+      if (!supermarketName) {
+        serverLogger.warn(
+          `Invalid supermarket parameter: ${req.params.supermarket}`
+        );
+        return res.status(400).json({
+          success: false,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+        });
+      }
+
+      serverLogger.info(`Fetching scheduled run for "${supermarketName}"`);
+
+      const scheduledRunController = dataManager.getScheduledRunController();
+      const scheduledRun = await scheduledRunController.getScheduledRun(
+        supermarketName
+      );
+
+      if (!scheduledRun) {
+        return res.status(404).json({
+          success: false,
+          error: `No scheduled run found for ${supermarketName}`,
+        });
+      }
+
+      serverLogger.info(`Retrieved scheduled run for ${supermarketName}`);
+      res.status(200).json(scheduledRun);
+    } catch (error: any) {
+      const errorMessage = error.message || "Unknown error";
+      serverLogger.error(`Error fetching scheduled run: ${errorMessage}`);
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+      });
+    }
+  }
+);
+
+// Toggle scheduled run for a supermarket
+router.put(
+  "/scheduler/toggle/:supermarket",
+  async (req: Request, res: Response) => {
+    try {
+      const supermarketParam = req.params.supermarket.toLowerCase();
+      const { enabled } = req.body;
+
+      if (typeof enabled !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          error: "enabled field must be a boolean",
+        });
+      }
+
+      // Map URL params to full supermarket names
+      const nameMap: { [key: string]: string } = {
+        "albert-heijn": "Albert Heijn",
+        dirk: "Dirk",
+        plus: "PLUS",
+      };
+
+      const supermarketName = nameMap[supermarketParam];
+
+      if (!supermarketName) {
+        serverLogger.warn(
+          `Invalid supermarket parameter: ${req.params.supermarket}`
+        );
+        return res.status(400).json({
+          success: false,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+        });
+      }
+
+      serverLogger.info(
+        `Toggling scheduled run for "${supermarketName}" to ${enabled}`
+      );
+
+      const scheduledRunController = dataManager.getScheduledRunController();
+      const success = await scheduledRunController.toggleScheduledRun(
+        supermarketName,
+        enabled
+      );
+
+      if (!success) {
+        return res.status(404).json({
+          success: false,
+          error: `No scheduled run found for ${supermarketName}`,
+        });
+      }
+
+      serverLogger.info(
+        `Scheduled run for ${supermarketName} toggled to ${enabled}`
+      );
+      res.status(200).json({
+        success: true,
+        message: `Scheduled run for ${supermarketName} ${
+          enabled ? "enabled" : "disabled"
+        }`,
+      });
+    } catch (error: any) {
+      const errorMessage = error.message || "Unknown error";
+      serverLogger.error(`Error toggling scheduled run: ${errorMessage}`);
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+      });
+    }
+  }
+);
+
+// Get due scheduled runs (for internal scheduler use)
+router.get("/scheduler/due", async (req: Request, res: Response) => {
+  try {
+    serverLogger.info("Fetching due scheduled runs");
+
+    const scheduledRunController = dataManager.getScheduledRunController();
+    const dueRuns = await scheduledRunController.getDueScheduledRuns();
+
+    serverLogger.info(`Retrieved ${dueRuns.length} due scheduled runs`);
+    res.status(200).json(dueRuns);
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error fetching due scheduled runs: ${errorMessage}`);
     res.status(500).json({
       success: false,
       error: errorMessage,

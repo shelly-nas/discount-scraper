@@ -1,6 +1,7 @@
 import PostgresDiscountController from "../controllers/PostgresDiscountController";
 import PostgresProductController from "../controllers/PostgresProductController";
 import PostgresScraperRunController from "../controllers/PostgresScraperRunController";
+import PostgresScheduledRunController from "../controllers/PostgresScheduledRunController";
 import { scraperLogger } from "../utils/Logger";
 import PostgresDataContext from "./PostgresDataContext";
 import { getDatabaseConfig } from "../config/database";
@@ -9,6 +10,7 @@ export class PostgresDataManager {
   private productController: PostgresProductController;
   private discountController: PostgresDiscountController;
   private scraperRunController: PostgresScraperRunController;
+  private scheduledRunController: PostgresScheduledRunController;
   public db: PostgresDataContext;
 
   constructor() {
@@ -18,6 +20,7 @@ export class PostgresDataManager {
     this.productController = new PostgresProductController(this.db);
     this.discountController = new PostgresDiscountController(this.db);
     this.scraperRunController = new PostgresScraperRunController(this.db);
+    this.scheduledRunController = new PostgresScheduledRunController(this.db);
 
     scraperLogger.info("PostgresDataManager initialized.");
   }
@@ -32,6 +35,10 @@ export class PostgresDataManager {
 
   public getScraperRunController(): PostgresScraperRunController {
     return this.scraperRunController;
+  }
+
+  public getScheduledRunController(): PostgresScheduledRunController {
+    return this.scheduledRunController;
   }
 
   public async testConnection(): Promise<boolean> {

@@ -2,6 +2,7 @@ import express, { Request, Response, Application } from "express";
 import cors from "cors";
 import { serverLogger } from "./utils/Logger";
 import PostgresDataManager from "./data/PostgresDataManager";
+import SchedulerService from "./services/SchedulerService";
 import routes from "./api/Routes";
 
 const app: Application = express();
@@ -73,6 +74,12 @@ async function startServer() {
     serverLogger.info(
       `Run scraper: POST http://localhost:${PORT}/scraper/run/:supermarket`
     );
+
+    // Start the scheduler service
+    const dataManager = new PostgresDataManager();
+    const scheduler = new SchedulerService(dataManager, PORT.toString());
+    scheduler.start();
+    serverLogger.info("Automated scheduler service initialized");
   });
 }
 
