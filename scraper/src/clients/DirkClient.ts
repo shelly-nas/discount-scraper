@@ -1,13 +1,13 @@
 import { Locator } from "playwright";
 import SupermarketClient from "./SupermarketClient";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 
 class DirkClient extends SupermarketClient {
   public name: string = "Dirk";
 
   constructor() {
     super();
-    logger.debug(`Created a '${this.name}' Supermarket Client instance.`);
+    scraperLogger.debug(`Created a '${this.name}' Supermarket Client instance.`);
   }
 
   /**
@@ -92,10 +92,10 @@ class DirkClient extends SupermarketClient {
         },
         originalPriceSelector
       );
-      logger.debug(`Original price retrieved: '${price}'.`);
+      scraperLogger.debug(`Original price retrieved: '${price}'.`);
       return price ? parseFloat(price.trim()) : 0; // Parse the price or return 0 if null
     } catch (error) {
-      logger.warn(
+      scraperLogger.warn(
         `Warning retrieving original price with selector '${originalPriceSelector.join(
           " > "
         )}':`,
@@ -122,10 +122,10 @@ class DirkClient extends SupermarketClient {
         },
         discountPriceSelector
       );
-      logger.debug(`Discount price retrieved: '${price}'.`);
+      scraperLogger.debug(`Discount price retrieved: '${price}'.`);
       return parseFloat(price.trim());
     } catch (error) {
-      logger.warn(
+      scraperLogger.warn(
         `Warn retrieving discount price with selector '${discountPriceSelector.join(
           ", "
         )}':`,

@@ -1,6 +1,6 @@
 import PostgresDataContext from "../data/PostgresDataContext";
 import { DiscountModel } from "../models/DiscountModel";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 
 interface DiscountRow {
   id: number;
@@ -16,11 +16,11 @@ class PostgresDiscountController {
 
   constructor(db: PostgresDataContext) {
     this.db = db;
-    logger.debug("PostgresDiscountController initialized.");
+    scraperLogger.debug("PostgresDiscountController initialized.");
   }
 
   async exists(): Promise<boolean> {
-    logger.debug("Checking if the discounts table exists.");
+    scraperLogger.debug("Checking if the discounts table exists.");
     try {
       const result = await this.db.query<{ exists: boolean }>(
         `SELECT EXISTS (
@@ -31,24 +31,24 @@ class PostgresDiscountController {
       );
       return result.rows[0].exists;
     } catch (error) {
-      logger.error("Error checking if discounts table exists", error);
+      scraperLogger.error("Error checking if discounts table exists", error);
       return false;
     }
   }
 
   async delete(): Promise<void> {
-    logger.debug("Deleting all discounts from database.");
+    scraperLogger.debug("Deleting all discounts from database.");
     try {
       await this.db.query("TRUNCATE TABLE discounts CASCADE");
-      logger.info("All discounts deleted successfully.");
+      scraperLogger.info("All discounts deleted successfully.");
     } catch (error) {
-      logger.error("Error deleting discounts", error);
+      scraperLogger.error("Error deleting discounts", error);
       throw error;
     }
   }
 
   async getDiscounts(): Promise<DiscountModel[]> {
-    logger.info("Fetching all discounts.");
+    scraperLogger.info("Fetching all discounts.");
     try {
       const result = await this.db.query<DiscountRow>(
         "SELECT product_id, original_price, discount_price, special_discount, expire_date FROM discounts ORDER BY expire_date DESC"
@@ -65,13 +65,13 @@ class PostgresDiscountController {
           )
       );
     } catch (error) {
-      logger.error("Error fetching discounts", error);
+      scraperLogger.error("Error fetching discounts", error);
       throw error;
     }
   }
 
   async getDiscountsByProductId(productId: number): Promise<DiscountModel[]> {
-    logger.debug(`Fetching discounts for product ID: ${productId}`);
+    scraperLogger.debug(`Fetching discounts for product ID: ${productId}`);
     try {
       const result = await this.db.query<DiscountRow>(
         `SELECT product_id, original_price, discount_price, special_discount, expire_date 
@@ -92,7 +92,7 @@ class PostgresDiscountController {
           )
       );
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error fetching discounts for product ID: ${productId}`,
         error
       );
@@ -101,7 +101,7 @@ class PostgresDiscountController {
   }
 
   async getActiveDiscounts(): Promise<DiscountModel[]> {
-    logger.debug("Fetching active discounts (not expired).");
+    scraperLogger.debug("Fetching active discounts (not expired).");
     try {
       const result = await this.db.query<DiscountRow>(
         `SELECT product_id, original_price, discount_price, special_discount, expire_date 
@@ -121,13 +121,13 @@ class PostgresDiscountController {
           )
       );
     } catch (error) {
-      logger.error("Error fetching active discounts", error);
+      scraperLogger.error("Error fetching active discounts", error);
       throw error;
     }
   }
 
   async getExpiredDiscounts(): Promise<DiscountModel[]> {
-    logger.debug("Fetching expired discounts.");
+    scraperLogger.debug("Fetching expired discounts.");
     try {
       const result = await this.db.query<DiscountRow>(
         `SELECT product_id, original_price, discount_price, special_discount, expire_date 
@@ -147,7 +147,7 @@ class PostgresDiscountController {
           )
       );
     } catch (error) {
-      logger.error("Error fetching expired discounts", error);
+      scraperLogger.error("Error fetching expired discounts", error);
       throw error;
     }
   }
@@ -156,7 +156,7 @@ class PostgresDiscountController {
     minPrice: number,
     maxPrice: number
   ): Promise<DiscountModel[]> {
-    logger.debug(
+    scraperLogger.debug(
       `Fetching discounts in price range: ${minPrice} - ${maxPrice}`
     );
     try {
@@ -180,7 +180,7 @@ class PostgresDiscountController {
           )
       );
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error fetching discounts by price range: ${minPrice} - ${maxPrice}`,
         error
       );
@@ -204,18 +204,23 @@ class PostgresDiscountController {
       );
 
       const newId = result.rows[0].id;
-      logger.debug(
+      scraperLogger.debug(
         `New discount added for product ID '${productId}' with discount ID '${newId}'.`
       );
       return newId;
     } catch (error) {
-      logger.error(`Error adding discount for product ID: ${productId}`, error);
+      scraperLogger.error(
+        `Error adding discount for product ID: ${productId}`,
+        error
+      );
       throw error;
     }
   }
 
   async deleteDiscount(productId: number): Promise<boolean> {
-    logger.debug(`Attempting to delete discounts for product ID: ${productId}`);
+    scraperLogger.debug(
+      `Attempting to delete discounts for product ID: ${productId}`
+    );
     try {
       const result = await this.db.query(
         "DELETE FROM discounts WHERE product_id = $1",
@@ -223,16 +228,16 @@ class PostgresDiscountController {
       );
 
       if (result.rowCount === 0) {
-        logger.warn(`No discounts found for product ID: ${productId}.`);
+        scraperLogger.warn(`No discounts found for product ID: ${productId}.`);
         return false;
       }
 
-      logger.info(
+      scraperLogger.info(
         `Discounts for product ID: ${productId} have been deleted (${result.rowCount} records).`
       );
       return true;
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error deleting discounts for product ID: ${productId}`,
         error
       );
@@ -241,17 +246,17 @@ class PostgresDiscountController {
   }
 
   async deleteExpiredDiscounts(): Promise<number> {
-    logger.debug("Deleting expired discounts.");
+    scraperLogger.debug("Deleting expired discounts.");
     try {
       const result = await this.db.query(
         "DELETE FROM discounts WHERE expire_date <= NOW()"
       );
 
       const deletedCount = result.rowCount || 0;
-      logger.info(`Deleted ${deletedCount} expired discounts.`);
+      scraperLogger.info(`Deleted ${deletedCount} expired discounts.`);
       return deletedCount;
     } catch (error) {
-      logger.error("Error deleting expired discounts", error);
+      scraperLogger.error("Error deleting expired discounts", error);
       throw error;
     }
   }
@@ -263,7 +268,7 @@ class PostgresDiscountController {
     specialDiscount: string,
     expireDate: string
   ): Promise<boolean> {
-    logger.debug(`Updating discount for product ID: ${productId}`);
+    scraperLogger.debug(`Updating discount for product ID: ${productId}`);
     try {
       const result = await this.db.query(
         `UPDATE discounts 
@@ -273,18 +278,18 @@ class PostgresDiscountController {
       );
 
       if (result.rowCount === 0) {
-        logger.warn(
+        scraperLogger.warn(
           `No discount found for product ID: ${productId} to update.`
         );
         return false;
       }
 
-      logger.debug(
+      scraperLogger.debug(
         `Discount for product ID: ${productId} updated successfully.`
       );
       return true;
     } catch (error) {
-      logger.error(
+      scraperLogger.error(
         `Error updating discount for product ID: ${productId}`,
         error
       );

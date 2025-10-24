@@ -13,32 +13,22 @@ enum LogLevel {
   DEBUG = 4,
 }
 
-class Logger {
-  private static instance: Logger;
-  private readonly logFilePath: string;
-  private readonly logDirectory: string = "./logs";
-  private currentLogLevel: LogLevel = LogLevel.INFO; // Default to INFO
+// Server Logger - logs to console only
+class ServerLogger {
+  private static instance: ServerLogger;
+  private currentLogLevel: LogLevel = LogLevel.INFO;
 
   private constructor() {
-    if (!fs.existsSync(this.logDirectory)) {
-      fs.mkdirSync(this.logDirectory, { recursive: true });
-    }
-
     const levelName =
       (process.env.LOG_LEVEL as keyof typeof LogLevel) || "INFO";
     this.setLogLevel(LogLevel[levelName]);
-
-    const logFileName = `discountScraper_${DateTimeHandler.getDateTimeString(
-      "YYYYMMDD-HHmmss"
-    )}.log`;
-    this.logFilePath = path.join(this.logDirectory, logFileName);
   }
 
-  public static getInstance(): Logger {
-    if (!Logger.instance) {
-      Logger.instance = new Logger();
+  public static getInstance(): ServerLogger {
+    if (!ServerLogger.instance) {
+      ServerLogger.instance = new ServerLogger();
     }
-    return Logger.instance;
+    return ServerLogger.instance;
   }
 
   private setLogLevel(level: LogLevel) {
@@ -49,37 +39,129 @@ class Logger {
     return level <= this.currentLogLevel;
   }
 
+  private formatMessage(
+    level: string,
+    message: string,
+    ...optionalParams: any[]
+  ): string {
+    const timestamp = DateTimeHandler.getDateTimeString(
+      "YYYY-MM-DD HH:mm:ss.SSS"
+    );
+    let fullMessage = `[${timestamp}] [${level}] ${message}`;
+
+    if (optionalParams.length > 0) {
+      optionalParams.forEach((param) => {
+        if (typeof param === "object") {
+          fullMessage += " " + JSON.stringify(param, null, 2);
+        } else {
+          fullMessage += " " + String(param);
+        }
+      });
+    }
+
+    return fullMessage;
+  }
+
+  public debug(message: string, ...optionalParams: any[]) {
+    if (this.shouldLog(LogLevel.DEBUG)) {
+      console.debug(this.formatMessage("DEBUG", message, ...optionalParams));
+    }
+  }
+
+  public info(message: string, ...optionalParams: any[]) {
+    if (this.shouldLog(LogLevel.INFO)) {
+      console.info(this.formatMessage("INFO", message, ...optionalParams));
+    }
+  }
+
+  public warn(message: string, ...optionalParams: any[]) {
+    if (this.shouldLog(LogLevel.WARN)) {
+      console.warn(this.formatMessage("WARN", message, ...optionalParams));
+    }
+  }
+
+  public error(message: string, ...optionalParams: any[]) {
+    if (this.shouldLog(LogLevel.ERROR)) {
+      console.error(this.formatMessage("ERROR", message, ...optionalParams));
+    }
+  }
+}
+
+// Scraper Logger - logs to file with supermarket name
+class ScraperLogger {
+  private static instance: ScraperLogger;
+  private readonly logDirectory: string = "./logs";
+  private currentLogLevel: LogLevel = LogLevel.INFO;
+  private logFilePath: string | null = null;
+  private supermarketName: string | null = null;
+
+  constructor() {
+    if (!fs.existsSync(this.logDirectory)) {
+      fs.mkdirSync(this.logDirectory, { recursive: true });
+    }
+
+    const levelName =
+      (process.env.LOG_LEVEL as keyof typeof LogLevel) || "INFO";
+    this.setLogLevel(LogLevel[levelName]);
+  }
+
+  public static getInstance(): ScraperLogger {
+    if (!ScraperLogger.instance) {
+      ScraperLogger.instance = new ScraperLogger();
+    }
+    return ScraperLogger.instance;
+  }
+
+  private setLogLevel(level: LogLevel) {
+    this.currentLogLevel = level;
+  }
+
+  private shouldLog(level: LogLevel): boolean {
+    return level <= this.currentLogLevel;
+  }
+
+  public setSupermarket(supermarketName: string) {
+    this.supermarketName = supermarketName;
+    const sanitizedName = supermarketName.replace(/\s+/g, "-").toLowerCase();
+    const logFileName = `${sanitizedName}_${DateTimeHandler.getDateTimeString(
+      "YYYYMMDD-HHmmss"
+    )}.log`;
+    this.logFilePath = path.join(this.logDirectory, logFileName);
+  }
+
   private writeToFile(
     level: string,
     message: string,
     ...optionalParams: any[]
   ): void {
+    if (!this.logFilePath) {
+      // Silently skip logging if supermarket is not set yet
+      // This is expected during initialization before setSupermarket() is called
+      return;
+    }
+
     if (!this.shouldLog(LogLevel[level as keyof typeof LogLevel])) {
       return;
     }
 
-    // Compose the initial part of the log message.
     const logMessage = `[${DateTimeHandler.getDateTimeString(
       "YYYY-MM-DD HH:mm:ss.SSS"
     )}] [${level}] ${message}`;
 
     try {
-      // Append the initial message to the file.
-      fs.appendFileSync(this.logFilePath, logMessage);
+      fs.appendFileSync(this.logFilePath!, logMessage);
 
-      // Append each optional parameter as addition to the initial entry in the log file.
       optionalParams.forEach((param) => {
         let paramAsString;
         if (typeof param === "object") {
-          paramAsString = JSON.stringify(param, null, 2); // Prettify objects.
+          paramAsString = JSON.stringify(param, null, 2);
         } else {
-          paramAsString = String(param); // Convert others to string.
+          paramAsString = String(param);
         }
-        fs.appendFileSync(this.logFilePath, " " + paramAsString);
+        fs.appendFileSync(this.logFilePath!, " " + paramAsString);
       });
 
-      // Add a newline at the end of the log entry.
-      fs.appendFileSync(this.logFilePath, "\n");
+      fs.appendFileSync(this.logFilePath!, "\n");
     } catch (error) {
       console.error("Error writing to log file:", error);
     }
@@ -102,4 +184,8 @@ class Logger {
   }
 }
 
-export const logger = Logger.getInstance();
+// Export server logger as default logger for server operations
+export const serverLogger = ServerLogger.getInstance();
+
+// Export scraper logger factory function
+export const scraperLogger = ScraperLogger.getInstance();

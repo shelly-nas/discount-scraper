@@ -1,13 +1,13 @@
 import { Locator } from "playwright";
 import SupermarketClient from "./SupermarketClient";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 
 class AhClient extends SupermarketClient {
   public name: string = "Albert Heijn";
 
   constructor() {
     super();
-    logger.debug(`Created a '${this.name}' Supermarket Client instance.`);
+    scraperLogger.debug(`Created a '${this.name}' Supermarket Client instance.`);
   }
 
   /**
@@ -83,7 +83,7 @@ class AhClient extends SupermarketClient {
       const priceElementHandle = anchorHandle.locator(originalPriceSelector[0]); // Find the child div with the original price
       const exists = await priceElementHandle.count();
       if (!exists) {
-        logger.warn(
+        scraperLogger.warn(
           `Original price element with selector '${originalPriceSelector[0]}' not found.`
         );
         return 0;
@@ -91,10 +91,10 @@ class AhClient extends SupermarketClient {
       const price = await priceElementHandle.getAttribute(
         originalPriceSelector[1]
       );
-      logger.debug(`Original price retrieved: '${price}'.`);
+      scraperLogger.debug(`Original price retrieved: '${price}'.`);
       return price !== null ? parseFloat(price.trim()) : 0;
     } catch (error) {
-      logger.warn(
+      scraperLogger.warn(
         `Warn retrieving original price with selector '${originalPriceSelector[1]}':`,
         error
       );
@@ -110,7 +110,7 @@ class AhClient extends SupermarketClient {
       const priceElementHandle = anchorHandle.locator(discountPriceSelector[0]); // Find the child div with the discount price
       const exists = await priceElementHandle.count();
       if (!exists) {
-        logger.warn(
+        scraperLogger.warn(
           `Discount price element with selector '${discountPriceSelector[0]}' not found.`
         );
         return 0;
@@ -118,10 +118,10 @@ class AhClient extends SupermarketClient {
       const price = await priceElementHandle.getAttribute(
         discountPriceSelector[1]
       );
-      logger.debug(`Discount price retrieved: '${price}'.`);
+      scraperLogger.debug(`Discount price retrieved: '${price}'.`);
       return price !== null ? parseFloat(price.trim()) : 0;
     } catch (error) {
-      logger.warn(
+      scraperLogger.warn(
         `Warn retrieving discount price with selector '${discountPriceSelector[1]}':`,
         error
       );

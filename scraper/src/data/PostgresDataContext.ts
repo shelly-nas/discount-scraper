@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from "pg";
-import { logger } from "../utils/Logger";
+import { scraperLogger } from "../utils/Logger";
 
 interface DatabaseConfig {
   host: string;
@@ -29,10 +29,10 @@ class PostgresDataContext {
     });
 
     this.pool.on("error", (err: Error) => {
-      logger.error("Unexpected error on idle PostgreSQL client", err);
+      scraperLogger.error("Unexpected error on idle PostgreSQL client", err);
     });
 
-    logger.info("PostgreSQL connection pool initialized");
+    scraperLogger.info("PostgreSQL connection pool initialized");
   }
 
   public static getInstance(config?: DatabaseConfig): PostgresDataContext {
@@ -55,10 +55,10 @@ class PostgresDataContext {
     try {
       const result = await this.pool.query<T>(text, params);
       const duration = Date.now() - start;
-      logger.debug(`Executed query in ${duration}ms: ${text}`);
+      scraperLogger.debug(`Executed query in ${duration}ms: ${text}`);
       return result;
     } catch (error) {
-      logger.error(`Database query error: ${text}`, error);
+      scraperLogger.error(`Database query error: ${text}`, error);
       throw error;
     }
   }
@@ -68,7 +68,7 @@ class PostgresDataContext {
       const client = await this.pool.connect();
       return client;
     } catch (error) {
-      logger.error("Failed to get database client from pool", error);
+      scraperLogger.error("Failed to get database client from pool", error);
       throw error;
     }
   }
@@ -84,7 +84,7 @@ class PostgresDataContext {
       return result;
     } catch (error) {
       await client.query("ROLLBACK");
-      logger.error("Transaction failed, rolled back", error);
+      scraperLogger.error("Transaction failed, rolled back", error);
       throw error;
     } finally {
       client.release();
@@ -94,20 +94,25 @@ class PostgresDataContext {
   public async testConnection(): Promise<boolean> {
     try {
       const result = await this.query("SELECT NOW()");
-      logger.info("Database connection test successful");
+      scraperLogger.info("Database connection test successful");
       return true;
     } catch (error) {
-      logger.error("Database connection test failed", error);
+      scraperLogger.error("Database connection test failed", error);
       return false;
     }
   }
 
   public async close(): Promise<void> {
     try {
+      if (this.pool.ended) {
+        scraperLogger.warn("PostgreSQL connection pool already closed");
+        return;
+      }
       await this.pool.end();
-      logger.info("PostgreSQL connection pool closed");
+      PostgresDataContext.instance = null as any;
+      scraperLogger.info("PostgreSQL connection pool closed");
     } catch (error) {
-      logger.error("Error closing PostgreSQL connection pool", error);
+      scraperLogger.error("Error closing PostgreSQL connection pool", error);
       throw error;
     }
   }
