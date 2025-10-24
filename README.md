@@ -5,9 +5,10 @@ A containerized web scraper with REST API that fetches discount information from
 ## Features
 
 - 🛒 Scrapes discounts from multiple supermarkets (AH, Dirk, Plus)
-- � REST API for triggering scraper runs
+- 🌐 Modern web interface with Notion-like design
+- 📡 REST API for triggering scraper runs
 - 🐳 Fully containerized with Docker
-- �💾 PostgreSQL database with optimized indexes
+- 💾 PostgreSQL database with optimized indexes
 - 🔍 Full-text search on product names
 - 📊 Advanced filtering by price, category, and expiration date
 - ⚡ 10-15x faster searches compared to JSON storage
@@ -28,7 +29,7 @@ LOG_LEVEL=INFO
 ### 2. Start All Services
 
 ```bash
-# Build and start database + API
+# Build and start all services (database, API, and web interface)
 docker compose up --build -d
 
 # View logs
@@ -41,26 +42,48 @@ docker compose down
 This automatically creates:
 
 - PostgreSQL database with schema and supermarket configurations
-- Scraper API service on port 3000
+- Scraper API service on port 3001
+- Web interface on port 3000
 
-### 3. Use the API
+### 3. Access the Application
+
+**Web Interface:** http://localhost:3000
+
+**API Endpoints:**
 
 ```bash
 # Health check
-curl http://localhost:3000/health
+curl http://localhost:3001/health
+
+# Get all discounts
+curl http://localhost:3001/api/discounts
 
 # Run scrapers
-curl -X POST http://localhost:3000/scraper/run/albert-heijn
-curl -X POST http://localhost:3000/scraper/run/dirk
-curl -X POST http://localhost:3000/scraper/run/plus
+curl -X POST http://localhost:3001/scraper/run/albert-heijn
+curl -X POST http://localhost:3001/scraper/run/dirk
+curl -X POST http://localhost:3001/scraper/run/plus
 ```
 
 ## Services
 
-The application consists of two Docker services:
+The application consists of three Docker services:
 
 - **postgres** (`discount-scraper-db`) - Port 5432
-- **scraper-api** (`discount-scraper-api`) - Port 3000
+- **scraper-api** (`discount-scraper-api`) - Port 3001
+- **web** (`discount-scraper-web`) - Port 3000
+
+## Web Interface
+
+The web interface provides a clean, Notion-inspired UI for viewing and filtering discounts:
+
+- **Database View**: Table display of all products and discounts
+- **Global Search**: Search across all columns simultaneously
+- **Column Filters**: Individual text filters for each column
+- **Quick Filters**: Expire Date, Category, and Product Name
+- **Default Sorting**: Automatically sorted by expiration date, category, and name
+- **Responsive Design**: Works on desktop and mobile
+
+Access at: **http://localhost:3000**
 
 ## Development Setup (Without Docker)
 
@@ -100,6 +123,14 @@ npm run build
 npm start
 ```
 
+For the web interface:
+
+```bash
+cd web
+npm install
+npm run dev  # Development server on port 3000
+```
+
 ## Database Setup (Alternative to Docker)
 
 If not using Docker, install PostgreSQL locally:
@@ -120,13 +151,19 @@ psql -U postgres -f database/src/init-db.sql
 **Health Check**
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:3001/health
+```
+
+**Get All Discounts**
+
+```bash
+curl http://localhost:3001/api/discounts
 ```
 
 **Run Scraper**
 
 ```bash
-curl -X POST http://localhost:3000/scraper/run/:supermarket
+curl -X POST http://localhost:3001/scraper/run/:supermarket
 ```
 
 Where `:supermarket` is one of: `albert-heijn`, `ah`, `dirk`, or `plus`
@@ -211,6 +248,7 @@ docker compose restart scraper-api
 
 ## Documentation
 
+- [Web Interface Documentation](./web/README.md)
 - [API Documentation](./scraper/README.md)
 - [Database Schema](./database/src/schema.sql)
 - [Supermarket Configurations](./database/src/supermarkets/)

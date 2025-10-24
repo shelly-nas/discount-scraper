@@ -105,6 +105,169 @@ router.get("/health", (req: Request, res: Response) => {
   });
 });
 
+// Get dashboard statistics
+router.get("/dashboard/stats", async (req: Request, res: Response) => {
+  const dataManager = new PostgresDataManager();
+
+  try {
+    serverLogger.info("Fetching dashboard statistics");
+
+    const dbContext = (dataManager as any).db;
+
+    // Get total unique products
+    const uniqueProductsQuery = `
+      SELECT COUNT(DISTINCT id) as count
+      FROM products
+    `;
+    const uniqueProductsResult = await dbContext.query(uniqueProductsQuery);
+    const uniqueProducts = parseInt(uniqueProductsResult.rows[0].count, 10);
+
+    // Get total scraped products (with discounts)
+    const scrapedProductsQuery = `
+      SELECT COUNT(*) as count
+      FROM discounts
+    `;
+    const scrapedProductsResult = await dbContext.query(scrapedProductsQuery);
+    const scrapedProducts = parseInt(scrapedProductsResult.rows[0].count, 10);
+
+    // For now, we'll use placeholder values for totalRuns and successRate
+    // In a real scenario, you'd track these in a separate runs/logs table
+    const stats = {
+      totalRuns: 0,
+      successRate: 0,
+      scrapedProducts,
+      uniqueProducts,
+      nextScheduledRun: "Not scheduled", // This would come from your scheduler
+    };
+
+    serverLogger.info("Dashboard statistics retrieved successfully");
+    res.status(200).json(stats);
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error fetching dashboard stats: ${errorMessage}`);
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+// Get supermarket statuses
+router.get("/dashboard/statuses", async (req: Request, res: Response) => {
+  const dataManager = new PostgresDataManager();
+
+  try {
+    serverLogger.info("Fetching supermarket statuses");
+
+    const dbContext = (dataManager as any).db;
+
+    // Get last update and product count for each supermarket
+    const query = `
+      SELECT 
+        p.supermarket,
+        MAX(p.updated_at) as last_run,
+        COUNT(DISTINCT p.id) as products_scraped
+      FROM products p
+      INNER JOIN discounts d ON p.id = d.product_id
+      GROUP BY p.supermarket
+      ORDER BY p.supermarket
+    `;
+
+    const result = await dbContext.query(query);
+
+    // Map supermarket names to keys
+    const nameToKeyMap: { [key: string]: string } = {
+      "Albert Heijn": "albert-heijn",
+      Dirk: "dirk",
+      PLUS: "plus",
+    };
+
+    // Define all supermarkets
+    const allSupermarkets = [
+      { key: "albert-heijn", name: "Albert Heijn" },
+      { key: "dirk", name: "Dirk" },
+      { key: "plus", name: "PLUS" },
+    ];
+
+    const statuses = allSupermarkets.map((sm) => {
+      const dbRow = result.rows.find((row: any) => row.supermarket === sm.name);
+
+      if (dbRow) {
+        return {
+          key: sm.key,
+          name: sm.name,
+          status: "success" as const,
+          lastRun: dbRow.last_run,
+          productsScraped: parseInt(dbRow.products_scraped, 10),
+        };
+      } else {
+        return {
+          key: sm.key,
+          name: sm.name,
+          status: "pending" as const,
+        };
+      }
+    });
+
+    serverLogger.info("Supermarket statuses retrieved successfully");
+    res.status(200).json(statuses);
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error fetching supermarket statuses: ${errorMessage}`);
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+// Get all discounts with product details
+router.get("/discounts", async (req: Request, res: Response) => {
+  const dataManager = new PostgresDataManager();
+
+  try {
+    serverLogger.info("Fetching all discounts with product details");
+
+    const query = `
+      SELECT 
+        p.id,
+        p.name,
+        p.category,
+        p.supermarket,
+        p.created_at,
+        p.updated_at,
+        json_build_object(
+          'id', d.id,
+          'product_id', d.product_id,
+          'original_price', d.original_price,
+          'discount_price', d.discount_price,
+          'special_discount', d.special_discount,
+          'expire_date', d.expire_date,
+          'created_at', d.created_at,
+          'updated_at', d.updated_at
+        ) as discount
+      FROM products p
+      INNER JOIN discounts d ON p.id = d.product_id
+      ORDER BY d.expire_date ASC, p.category ASC, p.name ASC
+    `;
+
+    const dbContext = (dataManager as any).db;
+    const result = await dbContext.query(query);
+
+    serverLogger.info(`Retrieved ${result.rows.length} discounts`);
+
+    res.status(200).json(result.rows);
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error fetching discounts: ${errorMessage}`);
+
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
 // Run scraper endpoint
 router.post(
   "/scraper/run/:supermarket",

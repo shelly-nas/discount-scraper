@@ -1,5 +1,5 @@
 # Use official PostgreSQL image
-FROM postgres:15-alpine
+FROM --platform=linux/arm64 postgres:15-alpine
 
 # Note: Environment variables (POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD)
 # are provided by docker-compose.yml from the root .env file

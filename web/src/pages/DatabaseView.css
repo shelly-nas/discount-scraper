@@ -1,0 +1,88 @@
+.database-view {
+  min-height: 100vh;
+  background: var(--notion-bg);
+}
+
+.database-header {
+  margin-bottom: 32px;
+}
+
+.database-title {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--notion-text);
+  margin-bottom: 4px;
+}
+
+.database-subtitle {
+  font-size: 14px;
+  color: var(--notion-text-secondary);
+  font-weight: 400;
+}
+
+.database-toolbar {
+  margin-bottom: 12px;
+}
+
+.database-content {
+  background: var(--notion-surface);
+  border-radius: 4px;
+  border: 1px solid var(--notion-border);
+  box-shadow: 0 1px 3px var(--notion-shadow);
+  overflow: hidden;
+}
+
+.database-loading,
+.database-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+  color: var(--notion-text-secondary);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--notion-border);
+  border-top-color: var(--notion-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.database-error p {
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.retry-button {
+  padding: 8px 16px;
+  background: var(--notion-accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-button:hover {
+  background: var(--notion-accent-hover);
+}
+
+@media (max-width: 768px) {
+  .database-title {
+    font-size: 32px;
+  }
+}
