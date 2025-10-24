@@ -3,6 +3,7 @@ import {
   ProductWithDiscount,
   ConfigurationsStats,
   SupermarketStatus,
+  ScraperRun,
 } from "../types";
 
 const API_BASE_URL = "/api";
@@ -59,6 +60,18 @@ export const configurationsService = {
       await axios.post(`${API_BASE_URL}/scraper/run/${supermarket}`);
     } catch (error) {
       console.error(`Error running scraper for ${supermarket}:`, error);
+      throw error;
+    }
+  },
+
+  async getScraperRuns(limit: number = 10): Promise<ScraperRun[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/scraper/runs`, {
+        params: { limit },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching scraper runs:", error);
       throw error;
     }
   },

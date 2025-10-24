@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { configurationsService } from '../services/api';
-import { ConfigurationsStats, SupermarketStatus } from '../types';
+import { ConfigurationsStats, SupermarketStatus, ScraperRun } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
 import './Configurations.css';
 
@@ -19,11 +19,22 @@ const Configurations: React.FC = () => {
     supermarketKey: '',
   });
   const [runningScrapers, setRunningScrapers] = useState<Set<string>>(new Set());
+  
+  // Logs state
+  const [runs, setRuns] = useState<ScraperRun[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const RUNS_PER_PAGE = 10;
 
   useEffect(() => {
     loadConfigurationsData();
+    loadLogs();
     // Refresh data every 30 seconds
-    const interval = setInterval(loadConfigurationsData, 30000);
+    const interval = setInterval(() => {
+      loadConfigurationsData();
+      loadLogs();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -42,6 +53,21 @@ const Configurations: React.FC = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLogs = async () => {
+    try {
+      setLogsLoading(true);
+      setLogsError(null);
+      // Load more runs than we need for pagination (e.g., 50 runs)
+      const scraperRuns = await configurationsService.getScraperRuns(50);
+      setRuns(scraperRuns);
+    } catch (err) {
+      setLogsError('Failed to load scraper logs.');
+      console.error(err);
+    } finally {
+      setLogsLoading(false);
     }
   };
 
@@ -64,6 +90,7 @@ const Configurations: React.FC = () => {
       await configurationsService.runScraper(supermarketKey);
       // Reload data after scraper completes
       await loadConfigurationsData();
+      await loadLogs(); // Also reload logs to show the new run
     } catch (err) {
       console.error('Failed to run scraper:', err);
       alert('Failed to run scraper. Please check the logs.');
@@ -105,6 +132,30 @@ const Configurations: React.FC = () => {
       default:
         return 'Pending';
     }
+  };
+
+  // Pagination helpers
+  const totalPages = Math.ceil(runs.length / RUNS_PER_PAGE);
+  const startIndex = (currentPage - 1) * RUNS_PER_PAGE;
+  const endIndex = startIndex + RUNS_PER_PAGE;
+  const currentRuns = runs.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
+
+  const formatDuration = (durationSeconds: number | null | undefined): string => {
+    if (!durationSeconds) return 'N/A';
+    const minutes = Math.floor(durationSeconds / 60);
+    const remainingSeconds = durationSeconds % 60;
+    if (minutes > 0) {
+      return `${minutes}m ${remainingSeconds}s`;
+    }
+    return `${durationSeconds}s`;
   };
 
   if (loading && !stats) {
@@ -213,6 +264,102 @@ const Configurations: React.FC = () => {
             );
           })}
         </div>
+      </div>
+
+      {/* Scraper Run Logs */}
+      <div className="logs-section">
+        <h2 className="section-title">Scraper Run Logs</h2>
+        
+        {logsLoading && (
+          <div className="logs-loading">
+            <div className="loading-spinner"></div>
+            <p>Loading logs...</p>
+          </div>
+        )}
+
+        {logsError && (
+          <div className="logs-error">
+            <p>{logsError}</p>
+            <button onClick={loadLogs} className="retry-button">
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!logsLoading && !logsError && runs.length === 0 && (
+          <div className="logs-empty">
+            <p>No scraper runs yet. Start a scraper to see logs here.</p>
+          </div>
+        )}
+
+        {!logsLoading && !logsError && runs.length > 0 && (
+          <>
+            <div className="logs-table">
+              <div className="logs-table-header">
+                <div className="log-col log-col-time">Time</div>
+                <div className="log-col log-col-supermarket">Supermarket</div>
+                <div className="log-col log-col-status">Status</div>
+                <div className="log-col log-col-duration">Duration</div>
+                <div className="log-col log-col-products">Products</div>
+                <div className="log-col log-col-discounts">Discounts</div>
+              </div>
+              <div className="logs-table-body">
+                {currentRuns.map((run) => (
+                  <div key={run.id} className="log-row">
+                    <div className="log-col log-col-time">
+                      {new Date(run.startedAt).toLocaleString('nl-NL', {
+                        dateStyle: 'short',
+                        timeStyle: 'medium',
+                      })}
+                    </div>
+                    <div className="log-col log-col-supermarket">
+                      {run.supermarket.charAt(0).toUpperCase() + run.supermarket.slice(1)}
+                    </div>
+                    <div className="log-col log-col-status">
+                      <span className={`status-badge ${getStatusClass(run.status)}`}>
+                        {getStatusText(run.status)}
+                      </span>
+                    </div>
+                    <div className="log-col log-col-duration">
+                      {formatDuration(run.durationSeconds)}
+                    </div>
+                    <div className="log-col log-col-products">
+                      {run.productsScraped || 0} / {run.productsCreated || 0} / {run.productsUpdated || 0}
+                      <span className="log-col-subtitle">scraped / added / updated</span>
+                    </div>
+                    <div className="log-col log-col-discounts">
+                      {run.discountsCreated || 0} / {run.discountsDeactivated || 0}
+                      <span className="log-col-subtitle">created / deactivated</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="pagination-button"
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  ← Previous
+                </button>
+                <span className="pagination-info">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  className="pagination-button"
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <ConfirmDialog

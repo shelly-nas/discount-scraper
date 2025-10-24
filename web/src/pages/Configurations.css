@@ -270,3 +270,161 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Logs Section */
+.logs-section {
+  margin-bottom: 32px;
+}
+
+.logs-loading,
+.logs-error,
+.logs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--notion-text-secondary);
+  background: var(--notion-surface);
+  border: 1px solid var(--notion-border);
+  border-radius: 8px;
+}
+
+.logs-table {
+  background: var(--notion-surface);
+  border: 1px solid var(--notion-border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px var(--notion-shadow);
+}
+
+.logs-table-header {
+  display: grid;
+  grid-template-columns: 180px 120px 100px 100px 200px 150px;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--notion-bg);
+  border-bottom: 1px solid var(--notion-border);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--notion-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logs-table-body {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 180px 120px 100px 100px 200px 150px;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--notion-border);
+  transition: background 0.15s;
+  align-items: center;
+}
+
+.log-row:last-child {
+  border-bottom: none;
+}
+
+.log-row:hover {
+  background: var(--notion-bg);
+}
+
+.log-col {
+  font-size: 14px;
+  color: var(--notion-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-col-time {
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-size: 13px;
+}
+
+.log-col-supermarket {
+  font-weight: 500;
+}
+
+.log-col-subtitle {
+  display: block;
+  font-size: 11px;
+  color: var(--notion-text-secondary);
+  margin-top: 2px;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 16px;
+}
+
+.pagination-button {
+  padding: 8px 16px;
+  background: var(--notion-surface);
+  color: var(--notion-text);
+  border: 1px solid var(--notion-border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: var(--notion-bg);
+  border-color: var(--notion-accent);
+  color: var(--notion-accent);
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: var(--notion-text-secondary);
+  font-weight: 500;
+}
+
+/* Responsive Logs Table */
+@media (max-width: 1200px) {
+  .logs-table-header,
+  .log-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .log-col {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .log-col::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--notion-text-secondary);
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  .logs-table-header {
+    display: none;
+  }
+
+  .log-row {
+    padding: 20px;
+  }
+}

@@ -43,3 +43,18 @@ export interface SupermarketStatus {
   lastRun?: string;
   productsScraped?: number;
 }
+
+export interface ScraperRun {
+  id: number;
+  supermarket: string;
+  status: "running" | "success" | "failed" | "pending";
+  productsScraped: number;
+  productsCreated: number;
+  productsUpdated: number;
+  discountsCreated: number;
+  discountsDeactivated: number;
+  errorMessage?: string;
+  startedAt: string;
+  completedAt?: string;
+  durationSeconds?: number;
+}
