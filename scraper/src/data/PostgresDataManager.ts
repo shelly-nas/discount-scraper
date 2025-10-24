@@ -87,9 +87,11 @@ export class PostgresDataManager {
   }
 
   public async addDiscountDb(
-    discounts: IProductDiscountDetails[]
-  ): Promise<number> {
-    scraperLogger.debug("Add to Discount database.");
+    discounts: IProductDiscountDetails[],
+    supermarket: string,
+    currentBatchRunDate: Date
+  ): Promise<{ created: number; skipped: number }> {
+    scraperLogger.debug("Add to Discount database with smart logic.");
 
     // Deduplicate discounts by product name - keep first occurrence
     const uniqueDiscounts = new Map<string, IProductDiscountDetails>();
@@ -103,7 +105,22 @@ export class PostgresDataManager {
       }
     }
 
+    // Get the previous successful batch run's promotion expire date
+    const lastSuccessfulRun =
+      await this.scraperRunController.getLastSuccessfulRunBySupermarket(
+        supermarket
+      );
+    const previousBatchExpireDate =
+      lastSuccessfulRun?.promotionExpireDate || null;
+
+    scraperLogger.info(
+      `Previous batch expire date for ${supermarket}: ${
+        previousBatchExpireDate ? previousBatchExpireDate.toISOString() : "none"
+      }`
+    );
+
     let discountsCreated = 0;
+    let discountsSkipped = 0;
 
     const uniqueDiscountArray = Array.from(uniqueDiscounts.values());
     for (const discount of uniqueDiscountArray) {
@@ -115,23 +132,32 @@ export class PostgresDataManager {
         scraperLogger.warn(
           `Product '${discount.name}' not found. Skipping discount.`
         );
+        discountsSkipped++;
         continue;
       }
 
-      await this.discountController.addDiscount(
+      const discountId = await this.discountController.addDiscountSmart(
         productId,
         discount.originalPrice,
         discount.discountPrice,
         discount.specialDiscount,
-        discount.expireDate
+        discount.expireDate,
+        previousBatchExpireDate,
+        currentBatchRunDate
       );
-      discountsCreated++;
+
+      if (discountId === -1) {
+        discountsSkipped++;
+      } else {
+        discountsCreated++;
+      }
     }
+
     scraperLogger.info(
-      `Added '${discountsCreated}' unique discounts to Discount Database (from ${discounts.length} scraped items).`
+      `Processed '${uniqueDiscountArray.length}' unique discounts: ${discountsCreated} created, ${discountsSkipped} skipped (from ${discounts.length} scraped items).`
     );
 
-    return discountsCreated;
+    return { created: discountsCreated, skipped: discountsSkipped };
   }
 
   public async getSupermarketDiscountsVerbose(

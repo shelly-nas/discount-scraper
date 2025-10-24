@@ -356,7 +356,11 @@ router.post(
       // Create scraper run record
       const scraperRunController = dataManager.getScraperRunController();
       runId = await scraperRunController.createRun(supermarketName);
-      scraperLogger.info(`Scraper run tracked with ID: ${runId}`);
+      const scraperRun = await scraperRunController.getRunById(runId);
+      const currentBatchRunDate = scraperRun?.startedAt || new Date();
+      scraperLogger.info(
+        `Scraper run tracked with ID: ${runId}, started at: ${currentBatchRunDate.toISOString()}`
+      );
 
       // Get configuration from database
       scraperLogger.info("Fetching supermarket configuration from database");
@@ -387,10 +391,14 @@ router.post(
       );
       scraperLogger.info("Products upserted to database");
 
-      const discountsCreated = await dataManager.addDiscountDb(
-        supermarketDiscounts
+      const discountMetrics = await dataManager.addDiscountDb(
+        supermarketDiscounts,
+        supermarketConfig.name,
+        currentBatchRunDate
       );
-      scraperLogger.info("New discounts added to database");
+      scraperLogger.info(
+        `New discounts processed: ${discountMetrics.created} created, ${discountMetrics.skipped} skipped`
+      );
 
       // Update scraper run to success
       await scraperRunController.updateRunSuccess(runId, {
@@ -398,7 +406,7 @@ router.post(
         productsUpdated: productMetrics.updated,
         productsCreated: productMetrics.created,
         discountsDeactivated,
-        discountsCreated,
+        discountsCreated: discountMetrics.created,
         promotionExpireDate,
       });
 
@@ -430,7 +438,8 @@ router.post(
           productsCreated: productMetrics.created,
           productsUpdated: productMetrics.updated,
           discountsDeactivated,
-          discountsCreated,
+          discountsCreated: discountMetrics.created,
+          discountsSkipped: discountMetrics.skipped,
           timestamp: new Date().toISOString(),
         },
       });

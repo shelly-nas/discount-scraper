@@ -226,6 +226,159 @@ class PostgresDiscountController {
     }
   }
 
+  /**
+   * Check if a discount exists for a product (regardless of expire date)
+   */
+  async hasDiscount(productId: number): Promise<boolean> {
+    scraperLogger.debug(
+      `Checking if discount exists for product ID: ${productId}`
+    );
+    try {
+      const result = await this.db.query<{ count: string }>(
+        `SELECT COUNT(*) as count FROM discounts WHERE product_id = $1`,
+        [productId]
+      );
+      return parseInt(result.rows[0].count, 10) > 0;
+    } catch (error) {
+      scraperLogger.error(
+        `Error checking discount existence for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get the most recent discount for a product
+   */
+  async getLatestDiscountByProductId(
+    productId: number
+  ): Promise<DiscountModel | null> {
+    scraperLogger.debug(
+      `Fetching latest discount for product ID: ${productId}`
+    );
+    try {
+      const result = await this.db.query<DiscountRow>(
+        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
+         FROM discounts 
+         WHERE product_id = $1 
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [productId]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return new DiscountModel(
+        row.product_id,
+        parseFloat(row.original_price),
+        parseFloat(row.discount_price),
+        row.special_discount,
+        row.expire_date.toISOString(),
+        row.active
+      );
+    } catch (error) {
+      scraperLogger.error(
+        `Error fetching latest discount for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Smart add discount with historic table logic:
+   * Flow 1: Add discount if no discount exists for this product
+   * Flow 2: Add discount if current batch run is after the previous batch's expire_date
+   * Flow 3: Skip if discount exists and current batch run is before the previous batch's expire_date
+   *
+   * @param productId The product ID
+   * @param originalPrice Original price
+   * @param discountPrice Discount price
+   * @param specialDiscount Special discount text
+   * @param expireDate Expire date for this discount
+   * @param previousBatchExpireDate The expire date from the previous successful batch run
+   * @param currentBatchRunDate The date of the current batch run (started_at)
+   * @returns The discount ID if created, -1 if skipped
+   */
+  async addDiscountSmart(
+    productId: number,
+    originalPrice: number,
+    discountPrice: number,
+    specialDiscount: string,
+    expireDate: string,
+    previousBatchExpireDate: Date | null,
+    currentBatchRunDate: Date
+  ): Promise<number> {
+    scraperLogger.debug(
+      `Smart add discount for product ID: ${productId}, previousBatchExpireDate: ${previousBatchExpireDate}, currentBatchRunDate: ${currentBatchRunDate}`
+    );
+
+    try {
+      // Check if discount exists for this product
+      const existingDiscount = await this.getLatestDiscountByProductId(
+        productId
+      );
+
+      // Flow 1: No discount exists - add it
+      if (!existingDiscount) {
+        scraperLogger.debug(
+          `Flow 1: No existing discount for product ID ${productId}. Adding new discount.`
+        );
+        return await this.addDiscount(
+          productId,
+          originalPrice,
+          discountPrice,
+          specialDiscount,
+          expireDate
+        );
+      }
+
+      // If no previous batch expire date, we can't determine the flow - skip to be safe
+      if (!previousBatchExpireDate) {
+        scraperLogger.debug(
+          `No previous batch expire date available for product ID ${productId}. Adding discount.`
+        );
+        return await this.addDiscount(
+          productId,
+          originalPrice,
+          discountPrice,
+          specialDiscount,
+          expireDate
+        );
+      }
+
+      // Flow 2: Current batch run is after previous batch's expire date - add new discount
+      if (currentBatchRunDate >= previousBatchExpireDate) {
+        scraperLogger.debug(
+          `Flow 2: Current batch run (${currentBatchRunDate.toISOString()}) is after previous expire date (${previousBatchExpireDate.toISOString()}) for product ID ${productId}. Adding new discount.`
+        );
+        return await this.addDiscount(
+          productId,
+          originalPrice,
+          discountPrice,
+          specialDiscount,
+          expireDate
+        );
+      }
+
+      // Flow 3: Current batch run is before previous batch's expire date - skip
+      scraperLogger.debug(
+        `Flow 3: Current batch run (${currentBatchRunDate.toISOString()}) is before previous expire date (${previousBatchExpireDate.toISOString()}) for product ID ${productId}. Skipping discount.`
+      );
+      return -1;
+    } catch (error) {
+      scraperLogger.error(
+        `Error in smart add discount for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
   async deleteDiscount(productId: number): Promise<boolean> {
     scraperLogger.debug(
       `Attempting to delete discounts for product ID: ${productId}`
@@ -270,6 +423,10 @@ class PostgresDiscountController {
     }
   }
 
+  /**
+   * @deprecated This method updates existing discounts, which is not aligned with the historic table approach.
+   * Use addDiscountSmart() instead to add new discount records over time.
+   */
   async updateDiscount(
     productId: number,
     originalPrice: number,

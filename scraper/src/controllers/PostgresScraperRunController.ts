@@ -298,6 +298,53 @@ class PostgresScraperRunController {
     }
   }
 
+  async getLastSuccessfulRunBySupermarket(
+    supermarket: string
+  ): Promise<ScraperRunModel | null> {
+    scraperLogger.debug(
+      `Fetching last successful scraper run for ${supermarket}`
+    );
+    try {
+      const result = await this.db.query<ScraperRunRow>(
+        `SELECT id, supermarket, status, products_scraped, products_updated, 
+                products_created, discounts_deactivated, discounts_created,
+                error_message, started_at, completed_at, duration_seconds, promotion_expire_date
+         FROM scraper_runs 
+         WHERE supermarket = $1 AND status = 'success'
+         ORDER BY started_at DESC
+         LIMIT 1`,
+        [supermarket]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return new ScraperRunModel(
+        row.id,
+        row.supermarket,
+        row.status,
+        row.products_scraped,
+        row.products_updated,
+        row.products_created,
+        row.discounts_deactivated,
+        row.discounts_created,
+        row.error_message || undefined,
+        row.started_at,
+        row.completed_at || undefined,
+        row.duration_seconds || undefined,
+        row.promotion_expire_date || undefined
+      );
+    } catch (error) {
+      scraperLogger.error(
+        `Error fetching last successful scraper run for ${supermarket}`,
+        error
+      );
+      throw error;
+    }
+  }
+
   async getRunStats(): Promise<{
     totalRuns: number;
     successfulRuns: number;
