@@ -188,42 +188,22 @@ export class PostgresDataManager {
 
   public async deleteRecordsBySupermarket(supermarket: string): Promise<void> {
     scraperLogger.debug(
-      `Starting deletion of all records related to '${supermarket}'.`
+      `Deactivating discounts for '${supermarket}' (products will be updated, not deleted).`
     );
 
     try {
-      const products = await this.productController.getProductsBySupermarket(
-        supermarket
-      );
-      const productIds = products.map((p) => p.id);
-
-      let productsDeleted = 0;
-      let discountsDeleted = 0;
-
-      // Delete discounts first (due to foreign key constraint)
-      for (const id of productIds) {
-        const discountDeleted = await this.discountController.deleteDiscount(
-          id
+      // Deactivate all active discounts for this supermarket
+      const deactivatedCount =
+        await this.discountController.deactivateDiscountsBySupermarket(
+          supermarket
         );
-        if (discountDeleted) {
-          discountsDeleted++;
-        }
-      }
-
-      // Then delete products
-      for (const id of productIds) {
-        const productDeleted = await this.productController.deleteProduct(id);
-        if (productDeleted) {
-          productsDeleted++;
-        }
-      }
 
       scraperLogger.info(
-        `Deleted ${productsDeleted} product records and ${discountsDeleted} discount records related to '${supermarket}'.`
+        `Deactivated ${deactivatedCount} discount records for '${supermarket}'. Products will be updated during the next scrape.`
       );
     } catch (error) {
-      scraperLogger.error("Error during deletion:", error);
-      throw new Error("Failed to delete database entries for supermarket.");
+      scraperLogger.error("Error during deactivation:", error);
+      throw new Error("Failed to deactivate discounts for supermarket.");
     }
   }
 

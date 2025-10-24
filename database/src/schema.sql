@@ -27,7 +27,8 @@ CREATE TABLE products (
     category VARCHAR(255) NOT NULL,
     supermarket VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name, supermarket)
 );
 
 -- Create indexes for optimized searching
@@ -48,6 +49,7 @@ CREATE TABLE discounts (
     discount_price DECIMAL(10, 2) NOT NULL,
     special_discount VARCHAR(255),
     expire_date TIMESTAMP NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -56,11 +58,13 @@ CREATE TABLE discounts (
 CREATE INDEX idx_discount_product_id ON discounts(product_id);
 CREATE INDEX idx_discount_expire_date ON discounts(expire_date);
 CREATE INDEX idx_discount_price_range ON discounts(discount_price);
+CREATE INDEX idx_discount_active ON discounts(active);
 -- Note: Partial index with NOW() removed as CURRENT_TIMESTAMP is not immutable
 -- Use this query pattern instead: WHERE expire_date > NOW() (will use idx_discount_expire_date)
 
 -- Composite index for common queries
 CREATE INDEX idx_discount_product_expire ON discounts(product_id, expire_date);
+CREATE INDEX idx_discount_product_active ON discounts(product_id, active);
 
 -- Function to update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -89,3 +93,4 @@ COMMENT ON TABLE discounts IS 'Stores discount information linked to products';
 COMMENT ON COLUMN supermarket_configs.web_identifiers IS 'JSON object containing web scraping identifiers';
 COMMENT ON COLUMN discounts.special_discount IS 'Additional discount information like quantity or special conditions';
 COMMENT ON COLUMN discounts.expire_date IS 'Date when the discount expires';
+COMMENT ON COLUMN discounts.active IS 'Whether the discount is currently active (true) or has been deactivated (false)';

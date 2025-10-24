@@ -196,8 +196,14 @@ SELECT * FROM discounts WHERE expire_date > NOW() ORDER BY discount_price;
 ## Database Schema
 
 - **supermarket_configs** - Scraping configurations
-- **products** - Product information with 6 indexes
-- **discounts** - Discount data with 5 indexes for fast queries
+- **products** - Product information with 6 indexes (unique constraint on name + supermarket)
+- **discounts** - Discount data with 7 indexes for fast queries, includes `active` flag
+
+### UPSERT Logic
+
+Products are updated instead of deleted when re-scraping. The unique identifier is the combination of product name and supermarket. When new discounts are scraped, old discounts are marked as `active=false` rather than deleted, preserving historical data.
+
+For detailed migration information, see [Database Migration Guide](./docs/DATABASE_MIGRATION.md).
 
 ## Docker Commands
 

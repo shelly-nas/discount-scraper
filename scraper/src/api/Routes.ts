@@ -123,10 +123,11 @@ router.get("/dashboard/stats", async (req: Request, res: Response) => {
     const uniqueProductsResult = await dbContext.query(uniqueProductsQuery);
     const uniqueProducts = parseInt(uniqueProductsResult.rows[0].count, 10);
 
-    // Get total scraped products (with discounts)
+    // Get total scraped products (with active discounts)
     const scrapedProductsQuery = `
       SELECT COUNT(*) as count
       FROM discounts
+      WHERE active = true
     `;
     const scrapedProductsResult = await dbContext.query(scrapedProductsQuery);
     const scrapedProducts = parseInt(scrapedProductsResult.rows[0].count, 10);
@@ -168,6 +169,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
         COUNT(DISTINCT p.id) as products_scraped
       FROM products p
       INNER JOIN discounts d ON p.id = d.product_id
+      WHERE d.active = true
       GROUP BY p.supermarket
       ORDER BY p.supermarket
     `;
@@ -223,7 +225,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
 // Get all discounts with product details
 router.get("/discounts", async (req: Request, res: Response) => {
   try {
-    serverLogger.info("Fetching all discounts with product details");
+    serverLogger.info("Fetching all active discounts with product details");
 
     const query = `
       SELECT 
@@ -240,18 +242,20 @@ router.get("/discounts", async (req: Request, res: Response) => {
           'discount_price', d.discount_price,
           'special_discount', d.special_discount,
           'expire_date', d.expire_date,
+          'active', d.active,
           'created_at', d.created_at,
           'updated_at', d.updated_at
         ) as discount
       FROM products p
       INNER JOIN discounts d ON p.id = d.product_id
+      WHERE d.active = true
       ORDER BY d.expire_date ASC, p.category ASC, p.name ASC
     `;
 
     const dbContext = (dataManager as any).db;
     const result = await dbContext.query(query);
 
-    serverLogger.info(`Retrieved ${result.rows.length} discounts`);
+    serverLogger.info(`Retrieved ${result.rows.length} active discounts`);
 
     res.status(200).json(result.rows);
   } catch (error: any) {
@@ -322,16 +326,16 @@ router.post(
       // Update database
       scraperLogger.info("Updating database with scraped data");
       await dataManager.deleteRecordsBySupermarket(supermarketConfig.name);
-      scraperLogger.info("Old records deleted");
+      scraperLogger.info("Old discounts deactivated");
 
       await dataManager.addProductDb(
         supermarketConfig.name,
         supermarketDiscounts
       );
-      scraperLogger.info("Products added to database");
+      scraperLogger.info("Products upserted to database");
 
       await dataManager.addDiscountDb(supermarketDiscounts);
-      scraperLogger.info("Discounts added to database");
+      scraperLogger.info("New discounts added to database");
 
       scraperLogger.info(`=== Scraper session completed successfully ===`);
       serverLogger.info(

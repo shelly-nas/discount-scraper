@@ -136,7 +136,10 @@ class PostgresProductController {
       scraperLogger.debug(`Product with ID: ${productId} has been deleted.`);
       return true;
     } catch (error) {
-      scraperLogger.error(`Error deleting product with ID: ${productId}`, error);
+      scraperLogger.error(
+        `Error deleting product with ID: ${productId}`,
+        error
+      );
       throw error;
     }
   }
@@ -169,32 +172,24 @@ class PostgresProductController {
     supermarket: string
   ): Promise<number> {
     try {
-      // Check if product already exists
-      const existingProduct = await this.db.query<{ id: number }>(
-        "SELECT id FROM products WHERE name = $1 AND supermarket = $2",
-        [name, supermarket]
-      );
-
-      if (existingProduct.rows.length > 0) {
-        scraperLogger.warn(
-          `Product '${name}' already exists in ${supermarket}. No action taken.`
-        );
-        return existingProduct.rows[0].id;
-      }
-
-      // Insert new product
+      // Use UPSERT to insert or update product
+      // If product exists (name + supermarket), update the category
       const result = await this.db.query<{ id: number }>(
         `INSERT INTO products (name, category, supermarket) 
          VALUES ($1, $2, $3) 
+         ON CONFLICT (name, supermarket) 
+         DO UPDATE SET 
+           category = EXCLUDED.category,
+           updated_at = CURRENT_TIMESTAMP
          RETURNING id`,
         [name, category, supermarket]
       );
 
-      const newId = result.rows[0].id;
-      scraperLogger.debug(`New product '${name}' added with ID '${newId}'.`);
-      return newId;
+      const id = result.rows[0].id;
+      scraperLogger.debug(`Product '${name}' upserted with ID '${id}'.`);
+      return id;
     } catch (error) {
-      scraperLogger.error(`Error adding product '${name}'`, error);
+      scraperLogger.error(`Error upserting product '${name}'`, error);
       throw error;
     }
   }
