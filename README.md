@@ -7,11 +7,13 @@ A containerized web scraper with REST API that fetches discount information from
 - 🛒 Scrapes discounts from multiple supermarkets (AH, Dirk, Plus)
 - 🌐 Modern web interface with Notion-like design
 - 📡 REST API for triggering scraper runs
-- 🐳 Fully containerized with Docker
+- � Comprehensive run tracking with detailed metrics
+- �🐳 Fully containerized with Docker
 - 💾 PostgreSQL database with optimized indexes
 - 🔍 Full-text search on product names
-- 📊 Advanced filtering by price, category, and expiration date
+- � Advanced filtering by price, category, and expiration date
 - ⚡ 10-15x faster searches compared to JSON storage
+- 📝 Full audit trail of all scraper executions
 
 ## Quick Setup with Docker (Recommended)
 
@@ -163,7 +165,27 @@ curl http://localhost:3001/api/discounts
 **Run Scraper**
 
 ```bash
-curl -X POST http://localhost:3001/scraper/run/:supermarket
+curl -X POST http://localhost:3001/api/scraper/run/:supermarket
+```
+
+**Get Scraper Runs**
+
+```bash
+# Get all runs
+curl http://localhost:3001/api/scraper/runs
+
+# Get runs for specific supermarket
+curl http://localhost:3001/api/scraper/runs/albert-heijn
+
+# Get specific run by ID
+curl http://localhost:3001/api/scraper/run/1
+```
+
+**Dashboard Statistics**
+
+```bash
+curl http://localhost:3001/api/dashboard/stats
+# Returns: totalRuns, successRate, scrapedProducts, uniqueProducts
 ```
 
 Where `:supermarket` is one of: `albert-heijn`, `ah`, `dirk`, or `plus`
@@ -198,12 +220,25 @@ SELECT * FROM discounts WHERE expire_date > NOW() ORDER BY discount_price;
 - **supermarket_configs** - Scraping configurations
 - **products** - Product information with 6 indexes (unique constraint on name + supermarket)
 - **discounts** - Discount data with 7 indexes for fast queries, includes `active` flag
+- **scraper_runs** - Complete audit trail of all scraper executions with metrics
 
 ### UPSERT Logic
 
 Products are updated instead of deleted when re-scraping. The unique identifier is the combination of product name and supermarket. When new discounts are scraped, old discounts are marked as `active=false` rather than deleted, preserving historical data.
 
-For detailed migration information, see [Database Migration Guide](./docs/DATABASE_MIGRATION.md).
+### Run Tracking
+
+Every scraper execution is tracked with detailed metrics including:
+
+- Products scraped, created, and updated
+- Discounts deactivated and created
+- Run duration and status
+- Error messages for failed runs
+
+For detailed information:
+
+- [Database Migration Guide](./docs/DATABASE_MIGRATION.md)
+- [Scraper Run Tracking](./docs/SCRAPER_RUN_TRACKING.md)
 
 ## Docker Commands
 

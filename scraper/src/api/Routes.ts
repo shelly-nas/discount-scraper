@@ -132,11 +132,13 @@ router.get("/dashboard/stats", async (req: Request, res: Response) => {
     const scrapedProductsResult = await dbContext.query(scrapedProductsQuery);
     const scrapedProducts = parseInt(scrapedProductsResult.rows[0].count, 10);
 
-    // For now, we'll use placeholder values for totalRuns and successRate
-    // In a real scenario, you'd track these in a separate runs/logs table
+    // Get run statistics from scraper_runs table
+    const scraperRunController = dataManager.getScraperRunController();
+    const runStats = await scraperRunController.getRunStats();
+
     const stats = {
-      totalRuns: 0,
-      successRate: 0,
+      totalRuns: runStats.totalRuns,
+      successRate: runStats.successRate,
       scrapedProducts,
       uniqueProducts,
       nextScheduledRun: "Not scheduled", // This would come from your scheduler
@@ -160,6 +162,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
     serverLogger.info("Fetching supermarket statuses");
 
     const dbContext = (dataManager as any).db;
+    const scraperRunController = dataManager.getScraperRunController();
 
     // Get last update and product count for each supermarket
     const query = `
@@ -190,25 +193,42 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
       { key: "plus", name: "PLUS" },
     ];
 
-    const statuses = allSupermarkets.map((sm) => {
-      const dbRow = result.rows.find((row: any) => row.supermarket === sm.name);
+    const statuses = await Promise.all(
+      allSupermarkets.map(async (sm) => {
+        const dbRow = result.rows.find(
+          (row: any) => row.supermarket === sm.name
+        );
+        const lastRun = await scraperRunController.getLastRunBySupermarket(
+          sm.name
+        );
 
-      if (dbRow) {
-        return {
-          key: sm.key,
-          name: sm.name,
-          status: "success" as const,
-          lastRun: dbRow.last_run,
-          productsScraped: parseInt(dbRow.products_scraped, 10),
-        };
-      } else {
-        return {
-          key: sm.key,
-          name: sm.name,
-          status: "pending" as const,
-        };
-      }
-    });
+        if (dbRow && lastRun) {
+          return {
+            key: sm.key,
+            name: sm.name,
+            status: lastRun.status as "success" | "failed" | "running",
+            lastRun: lastRun.completedAt || lastRun.startedAt,
+            productsScraped: parseInt(dbRow.products_scraped, 10),
+            runId: lastRun.id,
+          };
+        } else if (lastRun) {
+          return {
+            key: sm.key,
+            name: sm.name,
+            status: lastRun.status as "success" | "failed" | "running",
+            lastRun: lastRun.completedAt || lastRun.startedAt,
+            productsScraped: 0,
+            runId: lastRun.id,
+          };
+        } else {
+          return {
+            key: sm.key,
+            name: sm.name,
+            status: "pending" as const,
+          };
+        }
+      })
+    );
 
     serverLogger.info("Supermarket statuses retrieved successfully");
     res.status(200).json(statuses);
@@ -273,6 +293,8 @@ router.get("/discounts", async (req: Request, res: Response) => {
 router.post(
   "/scraper/run/:supermarket",
   async (req: Request, res: Response) => {
+    let runId: number | null = null;
+
     try {
       const supermarketParam = req.params.supermarket.toLowerCase();
 
@@ -310,6 +332,11 @@ router.post(
       }
       scraperLogger.info("Database connection verified");
 
+      // Create scraper run record
+      const scraperRunController = dataManager.getScraperRunController();
+      runId = await scraperRunController.createRun(supermarketName);
+      scraperLogger.info(`Scraper run tracked with ID: ${runId}`);
+
       // Get configuration from database
       scraperLogger.info("Fetching supermarket configuration from database");
       const supermarketConfig = await getConfigFromDatabase(
@@ -325,17 +352,30 @@ router.post(
 
       // Update database
       scraperLogger.info("Updating database with scraped data");
-      await dataManager.deleteRecordsBySupermarket(supermarketConfig.name);
+      const discountsDeactivated = await dataManager.deleteRecordsBySupermarket(
+        supermarketConfig.name
+      );
       scraperLogger.info("Old discounts deactivated");
 
-      await dataManager.addProductDb(
+      const productMetrics = await dataManager.addProductDb(
         supermarketConfig.name,
         supermarketDiscounts
       );
       scraperLogger.info("Products upserted to database");
 
-      await dataManager.addDiscountDb(supermarketDiscounts);
+      const discountsCreated = await dataManager.addDiscountDb(
+        supermarketDiscounts
+      );
       scraperLogger.info("New discounts added to database");
+
+      // Update scraper run to success
+      await scraperRunController.updateRunSuccess(runId, {
+        productsScraped: supermarketDiscounts.length,
+        productsUpdated: productMetrics.updated,
+        productsCreated: productMetrics.created,
+        discountsDeactivated,
+        discountsCreated,
+      });
 
       scraperLogger.info(`=== Scraper session completed successfully ===`);
       serverLogger.info(
@@ -346,13 +386,31 @@ router.post(
         success: true,
         message: `Scraper completed for ${supermarketName}`,
         data: {
+          runId,
           supermarket: supermarketConfig.name,
           productsScraped: supermarketDiscounts.length,
+          productsCreated: productMetrics.created,
+          productsUpdated: productMetrics.updated,
+          discountsDeactivated,
+          discountsCreated,
           timestamp: new Date().toISOString(),
         },
       });
     } catch (error: any) {
       const errorMessage = error.message || "Unknown error";
+
+      // Update scraper run to failed if we have a runId
+      if (runId) {
+        try {
+          const scraperRunController = dataManager.getScraperRunController();
+          await scraperRunController.updateRunFailure(runId, errorMessage);
+        } catch (updateError) {
+          scraperLogger.error(
+            "Failed to update scraper run status:",
+            updateError
+          );
+        }
+      }
 
       if (scraperLogger) {
         scraperLogger.error("Error during scraping:", error);
@@ -371,5 +429,116 @@ router.post(
     // Don't close the pool - it's a singleton that should stay open
   }
 );
+
+// Get all scraper runs
+router.get("/scraper/runs", async (req: Request, res: Response) => {
+  try {
+    serverLogger.info("Fetching all scraper runs");
+
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : 100;
+    const scraperRunController = dataManager.getScraperRunController();
+    const runs = await scraperRunController.getAllRuns(limit);
+
+    serverLogger.info(`Retrieved ${runs.length} scraper runs`);
+    res.status(200).json(runs);
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error fetching scraper runs: ${errorMessage}`);
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+// Get scraper runs for a specific supermarket
+router.get(
+  "/scraper/runs/:supermarket",
+  async (req: Request, res: Response) => {
+    try {
+      const supermarketParam = req.params.supermarket.toLowerCase();
+
+      // Map URL params to full supermarket names
+      const nameMap: { [key: string]: string } = {
+        "albert-heijn": "Albert Heijn",
+        dirk: "Dirk",
+        plus: "PLUS",
+      };
+
+      const supermarketName = nameMap[supermarketParam];
+
+      if (!supermarketName) {
+        serverLogger.warn(
+          `Invalid supermarket parameter: ${req.params.supermarket}`
+        );
+        return res.status(400).json({
+          success: false,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+        });
+      }
+
+      serverLogger.info(`Fetching scraper runs for "${supermarketName}"`);
+
+      const limit = req.query.limit
+        ? parseInt(req.query.limit as string, 10)
+        : 50;
+      const scraperRunController = dataManager.getScraperRunController();
+      const runs = await scraperRunController.getRunsBySupermarket(
+        supermarketName,
+        limit
+      );
+
+      serverLogger.info(
+        `Retrieved ${runs.length} scraper runs for ${supermarketName}`
+      );
+      res.status(200).json(runs);
+    } catch (error: any) {
+      const errorMessage = error.message || "Unknown error";
+      serverLogger.error(`Error fetching scraper runs: ${errorMessage}`);
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+      });
+    }
+  }
+);
+
+// Get specific scraper run by ID
+router.get("/scraper/run/:id", async (req: Request, res: Response) => {
+  try {
+    const runId = parseInt(req.params.id, 10);
+
+    if (isNaN(runId)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid run ID",
+      });
+    }
+
+    serverLogger.info(`Fetching scraper run with ID: ${runId}`);
+
+    const scraperRunController = dataManager.getScraperRunController();
+    const run = await scraperRunController.getRunById(runId);
+
+    if (!run) {
+      return res.status(404).json({
+        success: false,
+        error: "Scraper run not found",
+      });
+    }
+
+    serverLogger.info(`Retrieved scraper run ${runId}`);
+    res.status(200).json(run);
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error fetching scraper run: ${errorMessage}`);
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
 
 export default router;

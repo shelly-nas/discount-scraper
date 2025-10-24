@@ -194,6 +194,45 @@ class PostgresProductController {
     }
   }
 
+  async addProductWithTracking(
+    name: string,
+    category: string,
+    supermarket: string
+  ): Promise<{ id: number; wasCreated: boolean }> {
+    try {
+      // Check if product exists first to track creation vs update
+      const existingProduct = await this.db.query<{ id: number }>(
+        "SELECT id FROM products WHERE name = $1 AND supermarket = $2",
+        [name, supermarket]
+      );
+
+      const wasCreated = existingProduct.rows.length === 0;
+
+      // Use UPSERT to insert or update product
+      const result = await this.db.query<{ id: number }>(
+        `INSERT INTO products (name, category, supermarket) 
+         VALUES ($1, $2, $3) 
+         ON CONFLICT (name, supermarket) 
+         DO UPDATE SET 
+           category = EXCLUDED.category,
+           updated_at = CURRENT_TIMESTAMP
+         RETURNING id`,
+        [name, category, supermarket]
+      );
+
+      const id = result.rows[0].id;
+      scraperLogger.debug(
+        `Product '${name}' ${
+          wasCreated ? "created" : "updated"
+        } with ID '${id}'.`
+      );
+      return { id, wasCreated };
+    } catch (error) {
+      scraperLogger.error(`Error upserting product '${name}'`, error);
+      throw error;
+    }
+  }
+
   async updateProduct(
     id: number,
     updates: Partial<Omit<ProductModel, "id">>

@@ -4,6 +4,7 @@
 -- Drop existing tables if they exist (for clean migration)
 DROP TABLE IF EXISTS discounts CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
+DROP TABLE IF EXISTS scraper_runs CASCADE;
 DROP TABLE IF EXISTS supermarket_configs CASCADE;
 
 -- Supermarket Configuration Table
@@ -40,6 +41,30 @@ CREATE INDEX idx_product_category_supermarket ON products(category, supermarket)
 
 -- Full-text search index for product names
 CREATE INDEX idx_product_name_fulltext ON products USING gin(to_tsvector('english', name));
+
+-- Scraper Runs Table
+CREATE TABLE scraper_runs (
+    id SERIAL PRIMARY KEY,
+    supermarket VARCHAR(255) NOT NULL,
+    status VARCHAR(50) NOT NULL CHECK (status IN ('running', 'success', 'failed')),
+    products_scraped INTEGER DEFAULT 0,
+    products_updated INTEGER DEFAULT 0,
+    products_created INTEGER DEFAULT 0,
+    discounts_deactivated INTEGER DEFAULT 0,
+    discounts_created INTEGER DEFAULT 0,
+    error_message TEXT,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    duration_seconds INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for scraper runs
+CREATE INDEX idx_scraper_runs_supermarket ON scraper_runs(supermarket);
+CREATE INDEX idx_scraper_runs_status ON scraper_runs(status);
+CREATE INDEX idx_scraper_runs_started_at ON scraper_runs(started_at DESC);
+CREATE INDEX idx_scraper_runs_supermarket_status ON scraper_runs(supermarket, status);
 
 -- Discounts Table
 CREATE TABLE discounts (
@@ -82,15 +107,26 @@ CREATE TRIGGER update_supermarket_configs_updated_at BEFORE UPDATE ON supermarke
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_scraper_runs_updated_at BEFORE UPDATE ON scraper_runs
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_discounts_updated_at BEFORE UPDATE ON discounts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Comments for documentation
 COMMENT ON TABLE supermarket_configs IS 'Stores supermarket web scraping configuration';
 COMMENT ON TABLE products IS 'Stores product information from various supermarkets';
+COMMENT ON TABLE scraper_runs IS 'Stores information about each scraper run including status and metrics';
 COMMENT ON TABLE discounts IS 'Stores discount information linked to products';
 
 COMMENT ON COLUMN supermarket_configs.web_identifiers IS 'JSON object containing web scraping identifiers';
+COMMENT ON COLUMN scraper_runs.status IS 'Current status of the scraper run: running, success, or failed';
+COMMENT ON COLUMN scraper_runs.products_scraped IS 'Total number of products scraped in this run';
+COMMENT ON COLUMN scraper_runs.products_updated IS 'Number of existing products that were updated';
+COMMENT ON COLUMN scraper_runs.products_created IS 'Number of new products that were created';
+COMMENT ON COLUMN scraper_runs.discounts_deactivated IS 'Number of discounts that were deactivated';
+COMMENT ON COLUMN scraper_runs.discounts_created IS 'Number of new discounts that were created';
+COMMENT ON COLUMN scraper_runs.duration_seconds IS 'Duration of the scraper run in seconds';
 COMMENT ON COLUMN discounts.special_discount IS 'Additional discount information like quantity or special conditions';
 COMMENT ON COLUMN discounts.expire_date IS 'Date when the discount expires';
 COMMENT ON COLUMN discounts.active IS 'Whether the discount is currently active (true) or has been deactivated (false)';
