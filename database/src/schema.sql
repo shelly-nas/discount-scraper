@@ -92,8 +92,7 @@ CREATE TABLE discounts (
     special_discount VARCHAR(255),
     expire_date TIMESTAMP NOT NULL,
     active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for optimized searching
@@ -128,9 +127,6 @@ CREATE TRIGGER update_scraper_runs_updated_at BEFORE UPDATE ON scraper_runs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_scheduled_runs_updated_at BEFORE UPDATE ON scheduled_runs
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_discounts_updated_at BEFORE UPDATE ON discounts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Comments for documentation

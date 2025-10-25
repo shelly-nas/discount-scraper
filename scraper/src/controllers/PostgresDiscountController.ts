@@ -226,6 +226,158 @@ class PostgresDiscountController {
     }
   }
 
+  /**
+   * Check if a discount exists for a product (regardless of expire date)
+   */
+  async hasDiscount(productId: number): Promise<boolean> {
+    scraperLogger.debug(
+      `Checking if discount exists for product ID: ${productId}`
+    );
+    try {
+      const result = await this.db.query<{ count: string }>(
+        `SELECT COUNT(*) as count FROM discounts WHERE product_id = $1`,
+        [productId]
+      );
+      return parseInt(result.rows[0].count, 10) > 0;
+    } catch (error) {
+      scraperLogger.error(
+        `Error checking discount existence for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Get the most recent discount for a product
+   */
+  async getLatestDiscountByProductId(
+    productId: number
+  ): Promise<DiscountModel | null> {
+    scraperLogger.debug(
+      `Fetching latest discount for product ID: ${productId}`
+    );
+    try {
+      const result = await this.db.query<DiscountRow>(
+        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
+         FROM discounts 
+         WHERE product_id = $1 
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [productId]
+      );
+
+      if (result.rows.length === 0) {
+        return null;
+      }
+
+      const row = result.rows[0];
+      return new DiscountModel(
+        row.product_id,
+        parseFloat(row.original_price),
+        parseFloat(row.discount_price),
+        row.special_discount,
+        row.expire_date.toISOString(),
+        row.active
+      );
+    } catch (error) {
+      scraperLogger.error(
+        `Error fetching latest discount for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a product has an active discount that hasn't expired yet
+   */
+  async hasActiveNonExpiredDiscount(productId: number): Promise<boolean> {
+    scraperLogger.debug(
+      `Checking if product ID ${productId} has an active non-expired discount`
+    );
+    try {
+      const result = await this.db.query<{ count: string }>(
+        `SELECT COUNT(*) as count 
+         FROM discounts 
+         WHERE product_id = $1 
+         AND active = true 
+         AND expire_date > NOW()`,
+        [productId]
+      );
+      const hasActive = parseInt(result.rows[0].count, 10) > 0;
+      scraperLogger.debug(
+        `Product ID ${productId} has active non-expired discount: ${hasActive}`
+      );
+      return hasActive;
+    } catch (error) {
+      scraperLogger.error(
+        `Error checking active discount for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Smart add discount with new logic:
+   * - Add discount if product_id doesn't exist in discount table
+   * - Add discount if product_id exists but the discount is deactivated (active = false)
+   * - Skip if product_id exists and discount is active (active = true)
+   * - Note: Discounts are automatically deactivated when expire_date passes (handled by scheduler)
+   *
+   * @param productId The product ID
+   * @param originalPrice Original price
+   * @param discountPrice Discount price
+   * @param specialDiscount Special discount text
+   * @param expireDate Expire date for this discount
+   * @param previousBatchExpireDate The expire date from the previous successful batch run (not used in new logic)
+   * @param currentBatchRunDate The date of the current batch run (not used in new logic)
+   * @returns The discount ID if created, -1 if skipped
+   */
+  async addDiscountSmart(
+    productId: number,
+    originalPrice: number,
+    discountPrice: number,
+    specialDiscount: string,
+    expireDate: string,
+    previousBatchExpireDate: Date | null,
+    currentBatchRunDate: Date
+  ): Promise<number> {
+    scraperLogger.debug(`Smart add discount for product ID: ${productId}`);
+
+    try {
+      // Check if product has an active, non-expired discount
+      const hasActive = await this.hasActiveNonExpiredDiscount(productId);
+
+      if (hasActive) {
+        // Skip: Product already has an active discount
+        scraperLogger.debug(
+          `Product ID ${productId} already has an active discount. Skipping.`
+        );
+        return -1;
+      }
+
+      // Add discount: Either no discount exists or existing discount is deactivated/expired
+      scraperLogger.debug(
+        `Product ID ${productId} has no active discount. Adding new discount.`
+      );
+      return await this.addDiscount(
+        productId,
+        originalPrice,
+        discountPrice,
+        specialDiscount,
+        expireDate
+      );
+    } catch (error) {
+      scraperLogger.error(
+        `Error in smart add discount for product ID: ${productId}`,
+        error
+      );
+      throw error;
+    }
+  }
+
   async deleteDiscount(productId: number): Promise<boolean> {
     scraperLogger.debug(
       `Attempting to delete discounts for product ID: ${productId}`
@@ -270,6 +422,10 @@ class PostgresDiscountController {
     }
   }
 
+  /**
+   * @deprecated This method updates existing discounts, which is not aligned with the historic table approach.
+   * Use addDiscountSmart() instead to add new discount records over time.
+   */
   async updateDiscount(
     productId: number,
     originalPrice: number,
@@ -356,6 +512,37 @@ class PostgresDiscountController {
         `Error deactivating discounts for ${supermarket}`,
         error
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Deactivate all discounts that have passed their expire_date
+   * This ensures the active flag reflects the actual validity of the discount
+   */
+  async deactivateExpiredDiscounts(): Promise<number> {
+    scraperLogger.debug(
+      "Deactivating discounts that have passed their expire_date"
+    );
+    try {
+      const result = await this.db.query(
+        `UPDATE discounts 
+         SET active = false 
+         WHERE active = true 
+         AND expire_date <= NOW()`
+      );
+
+      const deactivatedCount = result.rowCount || 0;
+      if (deactivatedCount > 0) {
+        scraperLogger.info(
+          `Deactivated ${deactivatedCount} expired discounts.`
+        );
+      } else {
+        scraperLogger.debug("No expired discounts to deactivate.");
+      }
+      return deactivatedCount;
+    } catch (error) {
+      scraperLogger.error("Error deactivating expired discounts", error);
       throw error;
     }
   }

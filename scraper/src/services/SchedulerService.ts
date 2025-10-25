@@ -56,6 +56,14 @@ class SchedulerService {
     this.isRunning = true;
 
     try {
+      // First, deactivate any expired discounts
+      const discountController = this.dataManager.getDiscountController();
+      const deactivatedCount =
+        await discountController.deactivateExpiredDiscounts();
+      if (deactivatedCount > 0) {
+        serverLogger.info(`Deactivated ${deactivatedCount} expired discounts`);
+      }
+
       const scheduledRunController =
         this.dataManager.getScheduledRunController();
       const dueRuns = await scheduledRunController.getDueScheduledRuns();

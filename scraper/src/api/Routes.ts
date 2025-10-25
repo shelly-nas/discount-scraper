@@ -284,8 +284,7 @@ router.get("/discounts", async (req: Request, res: Response) => {
           'special_discount', d.special_discount,
           'expire_date', d.expire_date,
           'active', d.active,
-          'created_at', d.created_at,
-          'updated_at', d.updated_at
+          'created_at', d.created_at
         ) as discount
       FROM products p
       INNER JOIN discounts d ON p.id = d.product_id
@@ -356,7 +355,11 @@ router.post(
       // Create scraper run record
       const scraperRunController = dataManager.getScraperRunController();
       runId = await scraperRunController.createRun(supermarketName);
-      scraperLogger.info(`Scraper run tracked with ID: ${runId}`);
+      const scraperRun = await scraperRunController.getRunById(runId);
+      const currentBatchRunDate = scraperRun?.startedAt || new Date();
+      scraperLogger.info(
+        `Scraper run tracked with ID: ${runId}, started at: ${currentBatchRunDate.toISOString()}`
+      );
 
       // Get configuration from database
       scraperLogger.info("Fetching supermarket configuration from database");
@@ -376,10 +379,6 @@ router.post(
 
       // Update database
       scraperLogger.info("Updating database with scraped data");
-      const discountsDeactivated = await dataManager.deleteRecordsBySupermarket(
-        supermarketConfig.name
-      );
-      scraperLogger.info("Old discounts deactivated");
 
       const productMetrics = await dataManager.addProductDb(
         supermarketConfig.name,
@@ -387,18 +386,22 @@ router.post(
       );
       scraperLogger.info("Products upserted to database");
 
-      const discountsCreated = await dataManager.addDiscountDb(
-        supermarketDiscounts
+      const discountMetrics = await dataManager.addDiscountDb(
+        supermarketDiscounts,
+        supermarketConfig.name,
+        currentBatchRunDate
       );
-      scraperLogger.info("New discounts added to database");
+      scraperLogger.info(
+        `New discounts processed: ${discountMetrics.created} created, ${discountMetrics.skipped} skipped`
+      );
 
       // Update scraper run to success
       await scraperRunController.updateRunSuccess(runId, {
         productsScraped: supermarketDiscounts.length,
         productsUpdated: productMetrics.updated,
         productsCreated: productMetrics.created,
-        discountsDeactivated,
-        discountsCreated,
+        discountsDeactivated: 0, // No longer deactivating all discounts
+        discountsCreated: discountMetrics.created,
         promotionExpireDate,
       });
 
@@ -429,8 +432,8 @@ router.post(
           productsScraped: supermarketDiscounts.length,
           productsCreated: productMetrics.created,
           productsUpdated: productMetrics.updated,
-          discountsDeactivated,
-          discountsCreated,
+          discountsCreated: discountMetrics.created,
+          discountsSkipped: discountMetrics.skipped,
           timestamp: new Date().toISOString(),
         },
       });
@@ -736,6 +739,31 @@ router.get("/scheduler/due", async (req: Request, res: Response) => {
   } catch (error: any) {
     const errorMessage = error.message || "Unknown error";
     serverLogger.error(`Error fetching due scheduled runs: ${errorMessage}`);
+    res.status(500).json({
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+// Manually deactivate expired discounts
+router.post("/discounts/cleanup", async (req: Request, res: Response) => {
+  try {
+    serverLogger.info("Manually triggered expired discounts cleanup");
+
+    const discountController = dataManager.getDiscountController();
+    const deactivatedCount =
+      await discountController.deactivateExpiredDiscounts();
+
+    serverLogger.info(`Deactivated ${deactivatedCount} expired discounts`);
+    res.status(200).json({
+      success: true,
+      message: `Deactivated ${deactivatedCount} expired discounts`,
+      deactivatedCount,
+    });
+  } catch (error: any) {
+    const errorMessage = error.message || "Unknown error";
+    serverLogger.error(`Error during cleanup: ${errorMessage}`);
     res.status(500).json({
       success: false,
       error: errorMessage,
