@@ -18,7 +18,7 @@ jobs:
       dockerfile: Dockerfile
       runner: shelly
     secrets:
-      registry_username: ${{ secrets.REGISTRY_USERNAME }}
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-scraper:
@@ -31,7 +31,7 @@ jobs:
       dockerfile: Dockerfile
       runner: shelly
     secrets:
-      registry_username: ${{ secrets.REGISTRY_USERNAME }}
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-web:
@@ -44,5 +44,5 @@ jobs:
       dockerfile: Dockerfile
       runner: shelly
     secrets:
-      registry_username: ${{ secrets.REGISTRY_USERNAME }}
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}

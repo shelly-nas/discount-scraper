@@ -73,7 +73,7 @@ jobs:
       - name: Log in to Registry
         working-directory: ${{ env.DEPLOY_DIR }}
         run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ vars.REGISTRY_USERNAME }}" --password-stdin
           
       - name: Stop existing containers
         working-directory: ${{ env.DEPLOY_DIR }}

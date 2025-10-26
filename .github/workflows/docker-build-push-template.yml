@@ -30,10 +30,11 @@ on:
         required: false
         type: string
         default: 'ubuntu-latest'
-    secrets:
       registry_username:
         description: 'Registry username'
         required: true
+        type: string
+    secrets:
       registry_password:
         description: 'Registry password'
         required: true
@@ -50,7 +51,7 @@ jobs:
       - name: Log in to Registry
         run: |
           echo "${{ secrets.registry_password }}" | docker login ${{ inputs.registry }} \
-            --username "${{ secrets.registry_username }}" \
+            --username "${{ inputs.registry_username }}" \
             --password-stdin
       
       - name: Build Docker image
