@@ -10,7 +10,7 @@ on:
 jobs:
   build-database:
     name: Build and Push Database
-    uses: .github/workflows/templates/docker-build-push-template.yml@main
+    uses: ./templates/docker-build-push-template.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
@@ -23,7 +23,7 @@ jobs:
   
   build-scraper:
     name: Build and Push Scraper API
-    uses: .github/workflows/templates/docker-build-push-template.yml@main
+    uses: ./templates/docker-build-push-template.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
@@ -36,7 +36,7 @@ jobs:
   
   build-web:
     name: Build and Push Web
-    uses: .github/workflows/templates/docker-build-push-template.yml@main
+    uses: ./templates/docker-build-push-template.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
