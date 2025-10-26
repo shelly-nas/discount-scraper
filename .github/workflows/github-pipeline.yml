@@ -67,15 +67,14 @@ jobs:
           cp docker-compose.prod.yml ${{ env.DEPLOY_DIR }}/docker-compose.yml
         
       - name: Create .env file
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: |
-          FILE_PATH="${{ env.DEPLOY_DIR }}/.env"
-          mkdir -p $(dirname $FILE_PATH) # Ensure directory exists
-
-          printf "DB_NAME=%s\n" "${{ vars.DB_NAME }}" > $FILE_PATH
-          printf "DB_USER=%s\n" "${{ vars.DB_USER }}" > $FILE_PATH
-          printf "DB_PASSWORD=%s\n" "${{ secrets.DB_PASSWORD }}" >> $FILE_PATH
-          printf "LOG_LEVEL=%s\n" "${{ vars.LOG_LEVEL || 'DEBUG' }}" >> $FILE_PATH
-        shell: bash
+          cat > .env << EOF
+          DB_NAME=${{ vars.DB_NAME }}
+          DB_USER=${{ vars.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
+          EOF
           
       - name: Log in to Registry
         working-directory: ${{ env.DEPLOY_DIR }}
