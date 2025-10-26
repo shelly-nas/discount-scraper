@@ -18,7 +18,7 @@ COPY src ./src
 RUN npm run build
 
 # Remove dev dependencies to reduce image size
-RUN npm prune --production
+RUN npm prune --omit=dev
 
 # Create logs directory
 RUN mkdir -p logs
