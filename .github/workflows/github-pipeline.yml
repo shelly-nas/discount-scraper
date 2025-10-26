@@ -1,53 +1,70 @@
-name: Deploy to NAS
+name: Discount Scraper Build, Push & Deploy
 
 on:
-  workflow_run:
-    workflows: ["Build and Push to Registry"]
-    types:
-      - completed
+  push:
     branches:
       - main
+      - feature/Deploy
   workflow_dispatch:
-    inputs:
-      image_tag:
-        description: 'Image tag to deploy (leave empty for latest)'
-        required: false
-        default: 'latest'
 
 jobs:
+  build-database:
+    name: Build and Push Database
+    uses: ./.github/workflows/docker-build-push-template.yml
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
+      context: database
+      dockerfile: Dockerfile
+      runner: shelly
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+  
+  build-scraper:
+    name: Build and Push Scraper API
+    uses: ./.github/workflows/docker-build-push-template.yml
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
+      context: scraper
+      dockerfile: Dockerfile
+      runner: shelly
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+  
+  build-web:
+    name: Build and Push Web
+    uses: ./.github/workflows/docker-build-push-template.yml
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
+      context: web
+      dockerfile: Dockerfile
+      runner: shelly
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+
   deploy:
     name: Deploy from Registry
     runs-on: shelly
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    needs: [build-database, build-scraper, build-web]
+    if: ${{ success() }}
     
     env:
       DEPLOY_DIR: /volume1/docker/discount-scraper
-      REGISTRY: ${{ secrets.REGISTRY_URL }}
+      REGISTRY: ${{ vars.REGISTRY_URL }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         
-      - name: Download deployment artifacts
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
-        with:
-          name: deployment-config
-          path: deployment-artifacts/
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          
       - name: Set image tag
         id: set-tag
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            TAG="${{ github.event.inputs.image_tag }}"
-          elif [ -f "deployment-artifacts/image-tag.env" ]; then
-            source deployment-artifacts/image-tag.env
-            TAG="${IMAGE_TAG}"
-          else
-            TAG="latest"
-          fi
+          TAG="latest"
           echo "IMAGE_TAG=${TAG}" >> $GITHUB_OUTPUT
           echo "Deploying image tag: ${TAG}"
         
