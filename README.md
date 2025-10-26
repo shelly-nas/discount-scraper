@@ -15,9 +15,11 @@ A containerized web scraper with REST API that fetches discount information from
 - ⚡ 10-15x faster searches compared to JSON storage
 - 📝 Full audit trail of all scraper executions
 
-## Quick Setup with Docker (Recommended)
+## Deployment Options
 
-### 1. Configure Environment
+### Option 1: Local Development with Docker (Recommended for Development)
+
+**1. Configure Environment**
 
 Create `.env` file in the project root:
 
@@ -28,7 +30,7 @@ DB_PASSWORD=discount_pass
 LOG_LEVEL=INFO
 ```
 
-### 2. Start All Services
+**2. Start All Services**
 
 ```bash
 # Build and start all services (database, API, and web interface)
@@ -40,6 +42,30 @@ docker compose logs -f
 # Stop services
 docker compose down
 ```
+
+### Option 2: Production Deployment with CI/CD (NAS/Server)
+
+This project includes automated CI/CD workflows for building images and deploying to your NAS.
+
+**Architecture:**
+
+1. **Build & Push**: Builds Docker images and pushes to your local registry
+2. **Deploy**: Pulls images from registry and deploys to your NAS
+
+**Setup:**
+
+1. Set up a local Docker registry on your NAS (see [Workflow README](./.github/workflows/README.md))
+2. Configure GitHub secrets (registry URL, credentials, database settings)
+3. Push to `main` branch - automatic build and deploy
+
+**Manual deployment:**
+
+```bash
+# Use production compose file with registry images
+REGISTRY=your-registry:5000 IMAGE_TAG=latest docker compose -f docker-compose.prod.yml up -d
+```
+
+See [.github/workflows/README.md](./.github/workflows/README.md) for detailed setup instructions.
 
 This automatically creates:
 
@@ -86,65 +112,6 @@ The web interface provides a clean, Notion-inspired UI for viewing and filtering
 - **Responsive Design**: Works on desktop and mobile
 
 Access at: **http://localhost:3000**
-
-## Development Setup (Without Docker)
-
-### 1. Install PostgreSQL
-
-```bash
-# macOS
-brew install postgresql@15
-brew services start postgresql@15
-
-# Initialize database
-psql -U postgres -f database/src/init-db.sql
-```
-
-### 2. Install Dependencies
-
-```bash
-cd scraper
-npm install
-```
-
-### 3. Configure Environment
-
-```properties
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=discount
-DB_USER=discount_user
-DB_PASSWORD=your_secure_password
-API_PORT=3000
-```
-
-### 4. Build & Run
-
-```bash
-npm run build
-npm start
-```
-
-For the web interface:
-
-```bash
-cd web
-npm install
-npm run dev  # Development server on port 3000
-```
-
-## Database Setup (Alternative to Docker)
-
-If not using Docker, install PostgreSQL locally:
-
-```bash
-# macOS
-brew install postgresql@15
-brew services start postgresql@15
-
-# Initialize database
-psql -U postgres -f database/src/init-db.sql
-```
 
 ## API Usage
 

@@ -1,0 +1,77 @@
+name: Reusable Docker Build and Push
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        description: 'Container registry URL'
+        required: true
+        type: string
+      image_tag:
+        description: 'Full image tag (registry/image:tag)'
+        required: true
+        type: string
+      context:
+        description: 'Build context directory'
+        required: true
+        type: string
+      dockerfile:
+        description: 'Path to Dockerfile (relative to context)'
+        required: false
+        type: string
+        default: 'Dockerfile'
+      build_args:
+        description: 'Build arguments as JSON object (optional)'
+        required: false
+        type: string
+        default: '{}'
+      runner:
+        description: 'GitHub runner to use'
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+    secrets:
+      registry_username:
+        description: 'Registry username'
+        required: true
+      registry_password:
+        description: 'Registry password'
+        required: true
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ${{ inputs.runner }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to Registry
+        run: |
+          echo "${{ secrets.registry_password }}" | docker login ${{ inputs.registry }} \
+            --username "${{ secrets.registry_username }}" \
+            --password-stdin
+      
+      - name: Build Docker image
+        working-directory: ${{ inputs.context }}
+        run: |
+          docker build \
+            --tag ${{ inputs.image_tag }} \
+            --file ${{ inputs.dockerfile }} \
+            ${{ fromJson(inputs.build_args) != null && format('--build-arg {0}', join(fromJson(inputs.build_args), ' --build-arg ')) || '' }} \
+            .
+      
+      - name: Push Docker image
+        run: docker push ${{ inputs.image_tag }}
+      
+      - name: Remove local image
+        if: always()
+        run: docker image rm -f ${{ inputs.image_tag }} || true
+      
+      - name: Log out from Registry
+        if: always()
+        run: docker logout ${{ inputs.registry }}

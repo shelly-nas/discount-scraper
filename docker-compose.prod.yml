@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: ${REGISTRY}/discount-scraper-db:${IMAGE_TAG:-latest}
+    container_name: discount-scraper-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  scraper-api:
+    image: ${REGISTRY}/discount-scraper-api:${IMAGE_TAG:-latest}
+    container_name: discount-scraper-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      API_PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    volumes:
+      # Mount logs directory for persistence
+      - scraper_logs:/app/logs
+
+  web:
+    image: ${REGISTRY}/discount-scraper-web:${IMAGE_TAG:-latest}
+    container_name: discount-scraper-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - scraper-api
+    restart: always
+
+volumes:
+  postgres_data:
+    driver: local
+  scraper_logs:
+    driver: local

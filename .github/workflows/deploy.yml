@@ -1,0 +1,128 @@
+name: Deploy to NAS
+
+on:
+  workflow_run:
+    workflows: ["Build and Push to Registry"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (leave empty for latest)'
+        required: false
+        default: 'latest'
+
+jobs:
+  deploy:
+    name: Deploy from Registry
+    runs-on: shelly
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    env:
+      DEPLOY_DIR: /volume1/docker/discount-scraper
+      REGISTRY: ${{ secrets.REGISTRY_URL }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download deployment artifacts
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-config
+          path: deployment-artifacts/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          elif [ -f "deployment-artifacts/image-tag.env" ]; then
+            source deployment-artifacts/image-tag.env
+            TAG="${IMAGE_TAG}"
+          else
+            TAG="latest"
+          fi
+          echo "IMAGE_TAG=${TAG}" >> $GITHUB_OUTPUT
+          echo "Deploying image tag: ${TAG}"
+        
+      - name: Create deployment directory
+        run: mkdir -p ${{ env.DEPLOY_DIR }}
+        
+      - name: Copy docker-compose file
+        run: |
+          cp docker-compose.prod.yml ${{ env.DEPLOY_DIR }}/docker-compose.yml
+        
+      - name: Create .env file
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          cat > .env << EOF
+          REGISTRY=${{ env.REGISTRY }}
+          IMAGE_TAG=${{ steps.set-tag.outputs.IMAGE_TAG }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          LOG_LEVEL=${{ secrets.LOG_LEVEL || 'INFO' }}
+          EOF
+          
+      - name: Log in to Registry
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+          
+      - name: Stop existing containers
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose down
+        continue-on-error: true
+        
+      - name: Pull latest images
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose pull
+        
+      - name: Start containers
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose up -d
+        
+      - name: Wait for services to be healthy
+        run: |
+          echo "Waiting for services to start..."
+          sleep 15
+          
+      - name: Check container status
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose ps
+        
+      - name: Verify services are running
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          # Check if all containers are running
+          RUNNING=$(docker compose ps --services --filter "status=running" | wc -l)
+          TOTAL=$(docker compose ps --services | wc -l)
+          
+          echo "Running containers: $RUNNING/$TOTAL"
+          
+          if [ "$RUNNING" -ne "$TOTAL" ]; then
+            echo "Not all services are running!"
+            exit 1
+          fi
+        
+      - name: Show logs on failure
+        if: failure()
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: docker compose logs --tail=100
+        
+      - name: Clean up
+        if: always()
+        working-directory: ${{ env.DEPLOY_DIR }}
+        run: |
+          docker logout ${{ env.REGISTRY }}
+          rm -f .env
+          
+      - name: Prune old images
+        if: success()
+        run: docker image prune -f --filter "until=168h"
