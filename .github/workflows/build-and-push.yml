@@ -17,8 +17,8 @@ jobs:
       context: database
       dockerfile: Dockerfile
       runner: shelly
-    secrets:
       registry_username: ${{ vars.REGISTRY_USERNAME }}
+    secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-scraper:
@@ -30,8 +30,8 @@ jobs:
       context: scraper
       dockerfile: Dockerfile
       runner: shelly
-    secrets:
       registry_username: ${{ vars.REGISTRY_USERNAME }}
+    secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-web:
@@ -43,6 +43,6 @@ jobs:
       context: web
       dockerfile: Dockerfile
       runner: shelly
-    secrets:
       registry_username: ${{ vars.REGISTRY_USERNAME }}
+    secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
