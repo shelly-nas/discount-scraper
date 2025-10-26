@@ -72,8 +72,8 @@ jobs:
           mkdir -p $(dirname $FILE_PATH) # Ensure directory exists
 
           printf "DB_NAME=%s\n" "${{ vars.DB_NAME }}" > $FILE_PATH
+          printf "DB_USER=%s\n" "${{ vars.DB_USER }}" > $FILE_PATH
           printf "DB_PASSWORD=%s\n" "${{ secrets.DB_PASSWORD }}" >> $FILE_PATH
-          printf "API_KEY=%s\n" "${{ secrets.API_KEY }}" >> $FILE_PATH
           printf "LOG_LEVEL=%s\n" "${{ vars.LOG_LEVEL || 'DEBUG' }}" >> $FILE_PATH
         shell: bash
           
