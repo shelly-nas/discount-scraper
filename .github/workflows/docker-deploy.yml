@@ -12,11 +12,20 @@ jobs:
     name: Deploy with Docker Compose
     runs-on: shelly
     
+    env:
+      DEPLOY_DIR: /volume1/docker/discount-scraper
+    
     steps:
-      - name: Checkout code
+      - name: Create deployment directory
+        run: mkdir -p ${{ env.DEPLOY_DIR }}
+        
+      - name: Checkout code to deployment directory
         uses: actions/checkout@v4
+        with:
+          path: ${{ env.DEPLOY_DIR }}
         
       - name: Create .env file
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: |
           cat > .env << EOF
           DB_NAME=${{ secrets.DB_NAME }}
@@ -26,14 +35,17 @@ jobs:
           EOF
           
       - name: Stop existing containers
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: docker compose down
         continue-on-error: true
         
       - name: Remove old images (optional cleanup)
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: docker image prune -f
         continue-on-error: true
         
       - name: Build and start containers
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: docker compose up --build -d
         
       - name: Wait for services to be healthy
@@ -42,12 +54,15 @@ jobs:
           sleep 10
           
       - name: Check container status
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: docker compose ps
         
       - name: Show logs
         if: failure()
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: docker compose logs --tail=50
         
       - name: Clean up .env file
         if: always()
+        working-directory: ${{ env.DEPLOY_DIR }}
         run: rm -f .env
