@@ -15,29 +15,11 @@ on:
         description: 'Build context directory'
         required: true
         type: string
-      dockerfile:
-        description: 'Path to Dockerfile (relative to context)'
-        required: false
-        type: string
-        default: 'Dockerfile'
-      build_args:
-        description: 'Build arguments as JSON object (optional)'
-        required: false
-        type: string
-        default: '{}'
       runner:
         description: 'GitHub runner to use'
         required: false
         type: string
-        default: 'ubuntu-latest'
-      registry_username:
-        description: 'Registry username'
-        required: true
-        type: string
-    secrets:
-      registry_password:
-        description: 'Registry password'
-        required: true
+        default: 'self-hosted'
 
 jobs:
   build-and-push:
@@ -50,8 +32,8 @@ jobs:
       
       - name: Log in to Registry
         run: |
-          echo "${{ secrets.registry_password }}" | docker login ${{ inputs.registry }} \
-            --username "${{ inputs.registry_username }}" \
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ inputs.registry }} \
+            --username "${{ vars.REGISTRY_USERNAME }}" \
             --password-stdin
       
       - name: Clean up old images
@@ -63,7 +45,7 @@ jobs:
         run: |
           docker build \
             --tag ${{ inputs.image_tag }} \
-            --file ${{ inputs.dockerfile }} \
+            --file Dockerfile \
             .
 
       

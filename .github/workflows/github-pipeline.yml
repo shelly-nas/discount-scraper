@@ -15,11 +15,7 @@ jobs:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
       context: database
-      dockerfile: Dockerfile
       runner: shelly
-      registry_username: ${{ vars.REGISTRY_USERNAME }}
-    secrets:
-      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-scraper:
     name: Build and Push Scraper API
@@ -28,11 +24,7 @@ jobs:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
       context: scraper
-      dockerfile: Dockerfile
       runner: shelly
-      registry_username: ${{ vars.REGISTRY_USERNAME }}
-    secrets:
-      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-web:
     name: Build and Push Web
@@ -41,11 +33,7 @@ jobs:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
       context: web
-      dockerfile: Dockerfile
       runner: shelly
-      registry_username: ${{ vars.REGISTRY_USERNAME }}
-    secrets:
-      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
   deploy:
     name: Deploy from Registry
@@ -58,9 +46,6 @@ jobs:
       REGISTRY: ${{ vars.REGISTRY_URL }}
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
       - name: Set image tag
         id: set-tag
         run: |
@@ -79,12 +64,10 @@ jobs:
         working-directory: ${{ env.DEPLOY_DIR }}
         run: |
           cat > .env << EOF
-          REGISTRY=${{ env.REGISTRY }}
-          IMAGE_TAG=${{ steps.set-tag.outputs.IMAGE_TAG }}
-          DB_NAME=${{ secrets.DB_NAME }}
-          DB_USER=${{ secrets.DB_USER }}
+          DB_NAME=${{ vars.DB_NAME }}
+          DB_USER=${{ vars.DB_USER }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          LOG_LEVEL=${{ secrets.LOG_LEVEL || 'INFO' }}
+          LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
           EOF
           
       - name: Log in to Registry
