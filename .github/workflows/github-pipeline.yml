@@ -127,7 +127,6 @@ jobs:
         working-directory: ${{ env.DEPLOY_DIR }}
         run: |
           docker logout ${{ env.REGISTRY }}
-          rm -f .env
           
       - name: Prune old images
         if: success()
