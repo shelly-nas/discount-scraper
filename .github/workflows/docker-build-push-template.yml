@@ -59,7 +59,8 @@ jobs:
         run: |
           docker build \
             --tag ${{ inputs.image_tag }} \
-            --file ${{ inputs.dockerfile }}
+            --file ${{ inputs.dockerfile }} \
+            .
 
       
       - name: Push Docker image
