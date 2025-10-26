@@ -16,13 +16,18 @@ jobs:
       DEPLOY_DIR: /volume1/docker/discount-scraper
     
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
       - name: Create deployment directory
         run: mkdir -p ${{ env.DEPLOY_DIR }}
         
-      - name: Checkout code to deployment directory
-        uses: actions/checkout@v4
-        with:
-          path: ${{ env.DEPLOY_DIR }}
+      - name: Copy files to deployment directory
+        run: |
+          rsync -av --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            ./ ${{ env.DEPLOY_DIR }}/
         
       - name: Create .env file
         working-directory: ${{ env.DEPLOY_DIR }}
