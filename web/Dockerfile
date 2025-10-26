@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM --platform=linux/amd64 node:18-alpine AS builder
 
 WORKDIR /app
 

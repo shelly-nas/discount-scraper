@@ -1,5 +1,5 @@
 # Use Node.js LTS version
-FROM mcr.microsoft.com/playwright:v1.56.1-jammy
+FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.56.1-jammy
 
 # Create app directory
 WORKDIR /app

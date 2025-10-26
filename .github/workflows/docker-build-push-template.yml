@@ -54,6 +54,10 @@ jobs:
             --username "${{ inputs.registry_username }}" \
             --password-stdin
       
+      - name: Clean up old images
+        run: |
+          docker image prune -af || true
+      
       - name: Build Docker image
         working-directory: ${{ inputs.context }}
         run: |
