@@ -59,9 +59,8 @@ jobs:
         run: |
           docker build \
             --tag ${{ inputs.image_tag }} \
-            --file ${{ inputs.dockerfile }} \
-            ${{ fromJson(inputs.build_args) != null && format('--build-arg {0}', join(fromJson(inputs.build_args), ' --build-arg ')) || '' }} \
-            .
+            --file ${{ inputs.dockerfile }}
+
       
       - name: Push Docker image
         run: docker push ${{ inputs.image_tag }}
