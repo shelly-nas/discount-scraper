@@ -1,6 +1,5 @@
 services:
   postgres:
-    platform: linux/arm64
     build:
       context: database
       dockerfile: Dockerfile
@@ -22,7 +21,6 @@ services:
     restart: unless-stopped
 
   scraper-api:
-    platform: linux/arm64
     build:
       context: scraper
       dockerfile: Dockerfile
@@ -46,7 +44,6 @@ services:
       - ./scraper/logs:/app/logs
 
   web:
-    platform: linux/arm64
     build:
       context: web
       dockerfile: Dockerfile
