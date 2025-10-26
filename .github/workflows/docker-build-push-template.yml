@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         default: 'self-hosted'
+    secrets:
+      registry_password:
+        description: 'Registry password'
+        required: true
 
 jobs:
   build-and-push:
@@ -32,7 +36,7 @@ jobs:
       
       - name: Log in to Registry
         run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ inputs.registry }} \
+          echo "${{ secrets.registry_password }}" | docker login ${{ inputs.registry }} \
             --username "${{ vars.REGISTRY_USERNAME }}" \
             --password-stdin
       
@@ -47,7 +51,6 @@ jobs:
             --tag ${{ inputs.image_tag }} \
             --file Dockerfile \
             .
-
       
       - name: Push Docker image
         run: docker push ${{ inputs.image_tag }}

@@ -16,6 +16,8 @@ jobs:
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
       context: database
       runner: shelly
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-scraper:
     name: Build and Push Scraper API
@@ -25,6 +27,8 @@ jobs:
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
       context: scraper
       runner: shelly
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-web:
     name: Build and Push Web
@@ -34,6 +38,8 @@ jobs:
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
       context: web
       runner: shelly
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
   deploy:
     name: Deploy from Registry
