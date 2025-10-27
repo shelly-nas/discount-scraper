@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/Deploy
   workflow_dispatch:
 
 jobs:
@@ -129,7 +128,7 @@ jobs:
         working-directory: ${{ env.DEPLOY_DIR }}
         run: |
           docker logout ${{ env.REGISTRY }}
-          rm .env
+          rm .env -f
           
       - name: Prune old images
         if: success()
