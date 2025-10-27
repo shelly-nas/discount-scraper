@@ -1,6 +1,5 @@
-# Use Node.js LTS version with arm64 support
-# Note: Playwright official images support arm64 architecture
-FROM --platform=linux/arm64 mcr.microsoft.com/playwright:v1.56.1-jammy
+# Use Node.js LTS version
+FROM --platform=linux/amd64 mcr.microsoft.com/playwright:v1.56.1-jammy
 
 # Create app directory
 WORKDIR /app
@@ -19,7 +18,7 @@ COPY src ./src
 RUN npm run build
 
 # Remove dev dependencies to reduce image size
-RUN npm prune --production
+RUN npm prune --omit=dev
 
 # Create logs directory
 RUN mkdir -p logs

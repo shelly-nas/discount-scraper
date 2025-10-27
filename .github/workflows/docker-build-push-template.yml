@@ -1,0 +1,64 @@
+name: Reusable Docker Build and Push
+
+on:
+  workflow_call:
+    inputs:
+      registry:
+        description: 'Container registry URL'
+        required: true
+        type: string
+      image_tag:
+        description: 'Full image tag (registry/image:tag)'
+        required: true
+        type: string
+      context:
+        description: 'Build context directory'
+        required: true
+        type: string
+      runner:
+        description: 'GitHub runner to use'
+        required: false
+        type: string
+        default: 'self-hosted'
+    secrets:
+      registry_password:
+        description: 'Registry password'
+        required: true
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ${{ inputs.runner }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Log in to Registry
+        run: |
+          echo "${{ secrets.registry_password }}" | docker login ${{ inputs.registry }} \
+            --username "${{ vars.REGISTRY_USERNAME }}" \
+            --password-stdin
+      
+      - name: Clean up old images
+        run: |
+          docker image prune -af || true
+      
+      - name: Build Docker image
+        working-directory: ${{ inputs.context }}
+        run: |
+          docker build \
+            --tag ${{ inputs.image_tag }} \
+            --file Dockerfile \
+            .
+      
+      - name: Push Docker image
+        run: docker push ${{ inputs.image_tag }}
+      
+      - name: Remove local image
+        if: always()
+        run: docker image rm -f ${{ inputs.image_tag }} || true
+      
+      - name: Log out from Registry
+        if: always()
+        run: docker logout ${{ inputs.registry }}
