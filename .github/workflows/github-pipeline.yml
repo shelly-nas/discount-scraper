@@ -73,6 +73,7 @@ jobs:
           DB_NAME=${{ vars.DB_NAME }}
           DB_USER=${{ vars.DB_USER }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          REGISTRY=$REGISTRY
           LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
           EOF
           
