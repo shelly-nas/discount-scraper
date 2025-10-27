@@ -74,6 +74,7 @@ jobs:
           DB_USER=${{ vars.DB_USER }}
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           REGISTRY=$REGISTRY
+          IMAGE_TAG=${{ steps.set-tag.outputs.IMAGE_TAG }}
           LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
           EOF
           
@@ -93,7 +94,7 @@ jobs:
         
       - name: Start containers
         working-directory: ${{ env.DEPLOY_DIR }}
-        run: docker compose up -d
+        run: docker compose --env-file .env up -d
         
       - name: Wait for services to be healthy
         run: |
@@ -128,6 +129,7 @@ jobs:
         working-directory: ${{ env.DEPLOY_DIR }}
         run: |
           docker logout ${{ env.REGISTRY }}
+          rm .env
           
       - name: Prune old images
         if: success()
