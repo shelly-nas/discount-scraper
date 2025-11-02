@@ -42,12 +42,14 @@ class PostgresScheduledRunController {
 
   /**
    * Calculate the next run time based on promotion expiry date
-   * Runs at 1 minute past midnight when promotions expire (to catch new promotions immediately)
+   * Runs at 1 minute past midnight on the day AFTER promotions expire (to catch new promotions)
    */
   private calculateNextRunTime(promotionExpireDate: Date): Date {
     const nextRun = new Date(promotionExpireDate);
-    // Run at 1 minute past midnight
-    nextRun.setHours(0, 1, 0, 0);
+    // Add one day to run the day after expiry
+    nextRun.setDate(nextRun.getDate() + 1);
+    // Run at midnight
+    nextRun.setHours(0, 0, 0, 0);
     return nextRun;
   }
 
@@ -235,6 +237,41 @@ class PostgresScheduledRunController {
     } catch (error) {
       scraperLogger.error(
         `Error toggling scheduled run for ${supermarket}`,
+        error
+      );
+      throw error;
+    }
+  }
+
+  async updateNextRunTime(
+    supermarket: string,
+    nextRunAt: Date
+  ): Promise<boolean> {
+    scraperLogger.debug(
+      `Updating next run time for ${supermarket} to ${nextRunAt}`
+    );
+    try {
+      const result = await this.db.query(
+        `UPDATE scheduled_runs 
+         SET next_run_at = $2
+         WHERE supermarket = $1`,
+        [supermarket, nextRunAt]
+      );
+
+      if (result.rowCount === 0) {
+        scraperLogger.warn(
+          `No scheduled run found for supermarket: ${supermarket}`
+        );
+        return false;
+      }
+
+      scraperLogger.info(
+        `Next run time updated for ${supermarket} to ${nextRunAt}`
+      );
+      return true;
+    } catch (error) {
+      scraperLogger.error(
+        `Error updating next run time for ${supermarket}`,
         error
       );
       throw error;

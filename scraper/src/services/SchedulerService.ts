@@ -66,6 +66,7 @@ class SchedulerService {
 
       const scheduledRunController =
         this.dataManager.getScheduledRunController();
+      const scraperRunController = this.dataManager.getScraperRunController();
       const dueRuns = await scheduledRunController.getDueScheduledRuns();
 
       if (dueRuns.length === 0) {
@@ -74,15 +75,79 @@ class SchedulerService {
         return;
       }
 
+      // Filter out runs that have had a recent successful run (within last hour)
+      const filteredRuns = [];
+      for (const run of dueRuns) {
+        const lastRun = await scraperRunController.getLastRunBySupermarket(
+          run.supermarket
+        );
+
+        if (lastRun && lastRun.status === "success") {
+          const lastRunTime = new Date(
+            lastRun.completedAt || lastRun.startedAt
+          );
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+          if (lastRunTime > oneHourAgo) {
+            serverLogger.info(
+              `Skipping ${run.supermarket} - recent successful run at ${lastRunTime}`
+            );
+
+            // Update next run time to prevent this from being considered "due" again
+            const nextRunTime = new Date();
+            nextRunTime.setDate(nextRunTime.getDate() + 1);
+            nextRunTime.setHours(0, 1, 0, 0); // 00:01:00 next day
+
+            await scheduledRunController.updateNextRunTime(
+              run.supermarket,
+              nextRunTime
+            );
+            continue;
+          }
+        }
+
+        filteredRuns.push(run);
+      }
+
+      if (filteredRuns.length === 0) {
+        serverLogger.debug(
+          "No scraper runs need to be triggered (all have recent successful runs)"
+        );
+        this.isRunning = false;
+        return;
+      }
+
       serverLogger.info(
-        `Found ${dueRuns.length} due scraper run(s): ${dueRuns
+        `Found ${filteredRuns.length} scraper run(s) to trigger: ${filteredRuns
           .map((r) => r.supermarket)
           .join(", ")}`
       );
 
-      // Trigger each due scraper
-      for (const run of dueRuns) {
+      // Trigger each filtered due scraper
+      for (const run of filteredRuns) {
+        // First, temporarily disable the scheduled run to prevent multiple triggers
+        await scheduledRunController.toggleScheduledRun(run.supermarket, false);
+        serverLogger.info(
+          `Temporarily disabled scheduled run for ${run.supermarket}`
+        );
+
         await this.triggerScraper(run.supermarket);
+
+        // Update next run time to prevent immediate re-runs (schedule for next day)
+        const nextRunTime = new Date();
+        nextRunTime.setDate(nextRunTime.getDate() + 1);
+        nextRunTime.setHours(0, 1, 0, 0); // 00:01:00 next day
+
+        await scheduledRunController.updateNextRunTime(
+          run.supermarket,
+          nextRunTime
+        );
+
+        // Re-enable the scheduled run with updated time
+        await scheduledRunController.toggleScheduledRun(run.supermarket, true);
+        serverLogger.info(
+          `Updated next run time for ${run.supermarket} to ${nextRunTime} and re-enabled`
+        );
       }
     } catch (error) {
       serverLogger.error("Error checking for due scrapers:", error);

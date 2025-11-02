@@ -408,14 +408,36 @@ router.post(
       // Create/update scheduled run for next scrape
       if (promotionExpireDate) {
         const scheduledRunController = dataManager.getScheduledRunController();
-        await scheduledRunController.upsertScheduledRun(
-          supermarketName,
-          promotionExpireDate,
-          true
-        );
-        scraperLogger.info(
-          `Scheduled next run for ${supermarketName} based on promotion expiry: ${promotionExpireDate}`
-        );
+
+        // Check if we already have a scheduled run for this supermarket
+        const existingScheduledRun =
+          await scheduledRunController.getScheduledRun(supermarketName);
+
+        // Only create/update scheduled run if:
+        // 1. No existing scheduled run, OR
+        // 2. The promotion expire date is different (new promotion period), OR
+        // 3. The promotion expire date is in the future
+        const shouldUpdateSchedule =
+          !existingScheduledRun ||
+          !existingScheduledRun.promotionExpireDate ||
+          existingScheduledRun.promotionExpireDate.getTime() !==
+            promotionExpireDate.getTime() ||
+          promotionExpireDate > new Date();
+
+        if (shouldUpdateSchedule) {
+          await scheduledRunController.upsertScheduledRun(
+            supermarketName,
+            promotionExpireDate,
+            true
+          );
+          scraperLogger.info(
+            `Scheduled next run for ${supermarketName} based on promotion expiry: ${promotionExpireDate}`
+          );
+        } else {
+          scraperLogger.info(
+            `Skipping schedule update for ${supermarketName} - same promotion period or expired date`
+          );
+        }
       }
 
       scraperLogger.info(`=== Scraper session completed successfully ===`);
