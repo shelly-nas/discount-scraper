@@ -62,7 +62,7 @@ This project includes automated CI/CD workflows for building images and deployin
 
 ```bash
 # Use production compose file with registry images
-REGISTRY=your-registry:5000 IMAGE_TAG=latest docker compose -f docker-compose.prod.yml up -d
+REGISTRY=your-registry:5000 IMAGE_TAG=latest docker compose -f docker-compose.prod.yaml up -d
 ```
 
 See [.github/workflows/README.md](./.github/workflows/README.md) for detailed setup instructions.
