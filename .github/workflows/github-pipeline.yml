@@ -9,7 +9,7 @@ on:
 jobs:
   build-database:
     name: Build and Push Database
-    uses: ./.github/workflows/docker-build-push-template.yml
+    uses: ./.github/workflows/docker-build-push-template.yaml
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
@@ -20,7 +20,7 @@ jobs:
   
   build-scraper:
     name: Build and Push Scraper API
-    uses: ./.github/workflows/docker-build-push-template.yml
+    uses: ./.github/workflows/docker-build-push-template.yaml
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
@@ -31,7 +31,7 @@ jobs:
   
   build-web:
     name: Build and Push Web
-    uses: ./.github/workflows/docker-build-push-template.yml
+    uses: ./.github/workflows/docker-build-push-template.yaml
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
@@ -63,7 +63,7 @@ jobs:
         
       - name: Copy docker-compose file
         run: |
-          cp docker-compose.prod.yml ${{ env.DEPLOY_DIR }}/docker-compose.yml
+          cp docker-compose.prod.yaml ${{ env.DEPLOY_DIR }}/docker-compose.yaml
         
       - name: Create .env file
         working-directory: ${{ env.DEPLOY_DIR }}

@@ -1619,7 +1619,7 @@ API_PORT=3001
 LOG_LEVEL=INFO
 ```
 
-**docker-compose.yml structure:**
+**docker-compose.yaml structure:**
 
 ```yaml
 services:
