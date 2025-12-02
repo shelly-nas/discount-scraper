@@ -28,6 +28,9 @@ jobs:
     with:
       registry: ${{ vars.REGISTRY_URL }}
       deploy-directory: /volume1/docker/discount-scraper
+    secrets:
+      registry-username: ${{ vars.REGISTRY_USERNAME }}
+      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
       env-variables: |
         DB_NAME=${{ vars.DB_NAME }}
         DB_USER=${{ vars.DB_USER }}
@@ -35,6 +38,3 @@ jobs:
         REGISTRY=${{ vars.REGISTRY_URL }}
         IMAGE_TAG=latest
         LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
-    secrets:
-      registry-username: ${{ vars.REGISTRY_USERNAME }}
-      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
