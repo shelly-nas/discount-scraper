@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    uses: ShellyNAS/shared-actions/.github/workflows/build-push.yml@main
+    uses: shelly-nas/shared-actions/.github/workflows/build-push.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       images: |
@@ -24,7 +24,7 @@ jobs:
 
   deploy:
     needs: build
-    uses: ShellyNAS/shared-actions/.github/workflows/deploy.yml@main
+    uses: shelly-nas/shared-actions/.github/workflows/deploy.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       deploy-directory: /volume1/docker/discount-scraper
