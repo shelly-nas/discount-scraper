@@ -1,40 +1,57 @@
-# Discount Scraper Build, Push & Deploy
-
 name: Discount Scraper Build, Push & Deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  build:
-    uses: shelly-nas/shared-actions/.github/workflows/build-push.yml@main
+  build-database:
+    name: Build and Push Database
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      images: |
-        [
-          {"name": "discount-scraper-db", "context": "database"},
-          {"name": "discount-scraper-api", "context": "scraper"},
-          {"name": "discount-scraper-web", "context": "web"}
-        ]
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
+      context: database
     secrets:
-      registry-username: ${{ vars.REGISTRY_USERNAME }}
-      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+  
+  build-scraper:
+    name: Build and Push Scraper API
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
+      context: scraper
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+  
+  build-web:
+    name: Build and Push Web
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
+      context: web
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
   deploy:
-    needs: build
-    uses: shelly-nas/shared-actions/.github/workflows/deploy.yml@main
+    name: Deploy from Registry
+    needs: [build-database, build-scraper, build-web]
+    if: ${{ success() }}
+    uses: shelly-nas/shared-workflows/.github/workflows/deploy.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      deploy-directory: /volume1/docker/discount-scraper
+      deploy_directory: /volume1/docker/discount-scraper
+      compose_file: docker-compose.prod.yaml
+      image_tag: latest
     secrets:
-      registry-username: ${{ vars.REGISTRY_USERNAME }}
-      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-      env-variables: |
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+      env_file_content: |
         DB_NAME=${{ vars.DB_NAME }}
         DB_USER=${{ vars.DB_USER }}
         DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-        REGISTRY=${{ vars.REGISTRY_URL }}
-        IMAGE_TAG=latest
         LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
