@@ -9,7 +9,7 @@ on:
 jobs:
   build-database:
     name: Build and Push Database
-    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
@@ -19,7 +19,7 @@ jobs:
   
   build-scraper:
     name: Build and Push Scraper API
-    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
@@ -29,7 +29,7 @@ jobs:
   
   build-web:
     name: Build and Push Web
-    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
