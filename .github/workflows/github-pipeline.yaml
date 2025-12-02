@@ -9,127 +9,49 @@ on:
 jobs:
   build-database:
     name: Build and Push Database
-    uses: ./.github/workflows/docker-build-push-template.yaml
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
       context: database
-      runner: shelly
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-scraper:
     name: Build and Push Scraper API
-    uses: ./.github/workflows/docker-build-push-template.yaml
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
       context: scraper
-      runner: shelly
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
   
   build-web:
     name: Build and Push Web
-    uses: ./.github/workflows/docker-build-push-template.yaml
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
       image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
       context: web
-      runner: shelly
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
   deploy:
     name: Deploy from Registry
-    runs-on: shelly
     needs: [build-database, build-scraper, build-web]
     if: ${{ success() }}
-    
-    env:
-      DEPLOY_DIR: /volume1/docker/discount-scraper
-      REGISTRY: ${{ vars.REGISTRY_URL }}
-    
-    steps:
-      - name: Set image tag
-        id: set-tag
-        run: |
-          TAG="latest"
-          echo "IMAGE_TAG=${TAG}" >> $GITHUB_OUTPUT
-          echo "Deploying image tag: ${TAG}"
-        
-      - name: Create deployment directory
-        run: mkdir -p ${{ env.DEPLOY_DIR }}
-        
-      - name: Copy docker-compose file
-        run: |
-          cp docker-compose.prod.yaml ${{ env.DEPLOY_DIR }}/docker-compose.yaml
-        
-      - name: Create .env file
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: |
-          cat > .env << EOF
-          DB_NAME=${{ vars.DB_NAME }}
-          DB_USER=${{ vars.DB_USER }}
-          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          REGISTRY=$REGISTRY
-          IMAGE_TAG=${{ steps.set-tag.outputs.IMAGE_TAG }}
-          LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
-          EOF
-          
-      - name: Log in to Registry
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: |
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ env.REGISTRY }} -u "${{ vars.REGISTRY_USERNAME }}" --password-stdin
-          
-      - name: Stop existing containers
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: docker compose down
-        continue-on-error: true
-        
-      - name: Pull latest images
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: docker compose pull
-        
-      - name: Start containers
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: docker compose --env-file .env up -d
-        
-      - name: Wait for services to be healthy
-        run: |
-          echo "Waiting for services to start..."
-          sleep 15
-          
-      - name: Check container status
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: docker compose ps
-        
-      - name: Verify services are running
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: |
-          # Check if all containers are running
-          RUNNING=$(docker compose ps --services --filter "status=running" | wc -l)
-          TOTAL=$(docker compose ps --services | wc -l)
-          
-          echo "Running containers: $RUNNING/$TOTAL"
-          
-          if [ "$RUNNING" -ne "$TOTAL" ]; then
-            echo "Not all services are running!"
-            exit 1
-          fi
-        
-      - name: Show logs on failure
-        if: failure()
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: docker compose logs --tail=100
-        
-      - name: Clean up
-        if: always()
-        working-directory: ${{ env.DEPLOY_DIR }}
-        run: |
-          docker logout ${{ env.REGISTRY }}
-          rm .env -f
-          
-      - name: Prune old images
-        if: success()
-        run: docker image prune -f --filter "until=168h"
+    uses: shelly-nas/shared-workflows/.github/workflows/deploy.yml@main
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      deploy_directory: /volume1/docker/discount-scraper
+      compose_file: docker-compose.prod.yaml
+      image_tag: latest
+    secrets:
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+      env_file_content: |
+        DB_NAME=${{ vars.DB_NAME }}
+        DB_USER=${{ vars.DB_USER }}
+        DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+        LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
