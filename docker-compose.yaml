@@ -49,7 +49,7 @@ services:
       dockerfile: Dockerfile
     container_name: discount-scraper-web
     ports:
-      - "3010:80"
+      - "8090:80"
     depends_on:
       - scraper-api
     restart: unless-stopped

@@ -37,8 +37,8 @@ services:
   web:
     image: ${REGISTRY}/discount-scraper-web:${IMAGE_TAG:-latest}
     container_name: discount-scraper-web
-    ports:
-      - "8090:80"
+    # ports:
+    #   - "8090:80"
     depends_on:
       - scraper-api
     restart: always
