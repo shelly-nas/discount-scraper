@@ -43,7 +43,7 @@ services:
       - scraper-api
     restart: always
     networks:
-      - proxy
+      - shelly-network
       - default
     labels:
       - "traefik.enable=true"
@@ -56,5 +56,5 @@ volumes:
     driver: local
 
 networks:
-  proxy:
+  shelly-network:
     external: true
