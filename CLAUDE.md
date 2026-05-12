@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code style
+
+- **Never use emojis** anywhere in code, UI, or responses. Use proper text labels or icon components (e.g. SVG icons, icon libraries) instead.
+
+## Documentation
+
+- **REQUIRED:** After any functional change (new feature, changed behaviour, removed feature), update [docs/FUNCTIONAL_DESIGN.md](docs/FUNCTIONAL_DESIGN.md) to reflect the new state. Keep it accurate — do not leave stale descriptions.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
@@ -66,23 +74,20 @@ Three Docker services communicate over an internal network:
 postgres (port 5432) ← scraper-api (port 3001) ← web (port 3010→nginx→3000)
 ```
 
-### `scraper/` — Express API + Playwright scraper (TypeScript)
+### `scraper/` — Express API + API-based scraper clients (TypeScript)
 
 Entry point: [scraper/src/index.ts](scraper/src/index.ts)
 
 **Key layers:**
 - **`api/Routes.ts`** — All Express routes under `/api`. Scraping is triggered via `POST /api/scraper/run/:supermarket`.
-- **`clients/`** — Playwright-based scrapers. `WebClient` opens the browser; `SupermarketClient` is an abstract base implementing the scrape loop (navigate → handle cookie popup → get expiry date → iterate categories → extract products). `AhClient`, `DirkClient`, `PlusClient` extend it and implement `getOriginalPrice` / `getDiscountPrice` with site-specific selectors.
+- **`clients/`** — API-based discount fetchers. `ApiClient` is the abstract base with `fetchDiscounts()`. Concrete clients: `DirkApiClient` (public GraphQL), `AhApiClient` (Playwright intercepts AH GraphQL), `PlusApiClient` (Playwright intercepts OutSystems API), `LidlApiClient` (Playwright HTML scrape with lazy-load scrolling). No DOM scraping remains.
 - **`data/PostgresDataManager`** — Facade coordinating the four controllers. `addProductDb` upserts products (deduplicates by name); `addDiscountDb` uses smart logic comparing against the previous batch's `promotion_expire_date` to avoid duplicate discount rows.
 - **`controllers/`** — One controller per table (`PostgresProductController`, `PostgresDiscountController`, `PostgresScraperRunController`, `PostgresScheduledRunController`), each receiving a `PostgresDataContext` (singleton pg pool).
 - **`services/SchedulerService`** — node-cron job (every minute) that queries `scheduled_runs` for due entries, deactivates expired discounts, and fires scraper runs by making internal `axios.post` calls to its own API.
 
-**Supermarket config** is stored in the `supermarket_configs` table (seeded from `database/src/supermarkets/*.sql`). The `web_identifiers` JSONB column holds CSS/Playwright selectors, cookie decline selector, promotion expiry date selector, and product category selectors — no selectors are hardcoded in TypeScript.
-
 ### `database/` — PostgreSQL init scripts
 
 Schema: [database/src/schema.sql](database/src/schema.sql). Tables:
-- `supermarket_configs` — scraping config (selectors live in `web_identifiers` JSONB)
 - `products` — unique per `(name, supermarket)`; upserted on every scrape
 - `discounts` — soft-delete via `active` flag; old discounts are marked `active=false` rather than deleted
 - `scraper_runs` — audit log of every execution with metrics
@@ -96,8 +101,6 @@ Routes: `/discounts` (default) and `/configurations`. The Configurations page sh
 
 ## Adding a New Supermarket
 
-1. Create `database/src/supermarkets/<name>.sql` with an `INSERT INTO supermarket_configs` including the `web_identifiers` JSON (selectors, categories, etc.).
-2. Add the SQL file as a volume mount in `docker-compose.yaml` (in initdb order).
-3. Create `scraper/src/clients/<Name>Client.ts` extending `SupermarketClient`; implement `getOriginalPrice`, `getDiscountPrice`, and override `extractProductData` if needed.
-4. Register the new client in `scraper/src/utils/ConfigHelper.ts` (`getSupermarketClient`).
-5. Add the name mapping in `Routes.ts` (`nameMap`) and `SchedulerService.ts` (`nameMap`).
+1. Create `scraper/src/clients/<Name>ApiClient.ts` extending `ApiClient`; implement `fetchDiscounts()` returning `{ discounts: IProductDiscountDetails[], expireDate: string }`.
+2. Register the new client in `scraper/src/utils/ConfigHelper.ts` (`getSupermarketClient` switch).
+3. Add the name mappings in `scraper/src/api/Routes.ts` (all `nameMap` objects + `allSupermarkets` array) and `scraper/src/services/SchedulerService.ts` (`nameMap`).

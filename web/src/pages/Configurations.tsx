@@ -271,7 +271,7 @@ const Configurations: React.FC = () => {
                 )}
                 {status.promotionExpireDate && (
                   <p className={`supermarket-expire${expired ? ' supermarket-expire--expired' : ''}`}>
-                    {expired ? '⚠ Discounts expired' : 'Expires'}:{' '}
+                    {expired ? 'Discounts expired' : 'Expires'}:{' '}
                     {new Date(status.promotionExpireDate).toLocaleDateString('nl-NL')}
                   </p>
                 )}
@@ -287,10 +287,7 @@ const Configurations: React.FC = () => {
                         Running...
                       </>
                     ) : (
-                      <>
-                        <span className="play-icon">▶</span>
-                        Run Scraper
-                      </>
+                      'Run Scraper'
                     )}
                   </button>
                   {status.promotionExpireDate != null && (
@@ -303,9 +300,9 @@ const Configurations: React.FC = () => {
                       {isToggling ? (
                         <span className="button-spinner button-spinner--dark"></span>
                       ) : scheduledEnabled ? (
-                        '⏰ Auto: On'
+                        'Auto: On'
                       ) : (
-                        '⏰ Auto: Off'
+                        'Auto: Off'
                       )}
                     </button>
                   )}

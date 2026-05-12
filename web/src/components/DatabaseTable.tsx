@@ -41,13 +41,13 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
   };
 
   const columns = [
-    { key: 'discount.expire_date', label: 'Expire Date', width: '140px' },
     { key: 'category', label: 'Category', width: '180px' },
     { key: 'name', label: 'Product Name', width: 'auto' },
     { key: 'supermarket', label: 'Supermarket', width: '140px' },
     { key: 'discount.discount_price', label: 'Discount Price', width: '140px' },
     { key: 'discount.original_price', label: 'Original Price', width: '140px' },
     { key: 'discount.special_discount', label: 'Special Discount', width: '160px' },
+    { key: 'discount.expire_date', label: 'Expire Date', width: '140px' },
   ];
 
   const getCellValue = (item: ProductWithDiscount, columnKey: string) => {
@@ -69,6 +69,27 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
     return '—';
   };
 
+  const emptyState = (
+    <div className="empty-content">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <path
+          d="M40 18V38C40 39.1046 39.1046 40 38 40H10C8.89543 40 8 39.1046 8 38V10C8 8.89543 8.89543 8 10 8H30"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M16 24H32M16 32H24"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+      <p className="empty-text">No discounts found</p>
+      <p className="empty-subtext">Try adjusting your filters</p>
+    </div>
+  );
+
   return (
     <div className="database-table-wrapper">
       <div className="database-table-scroll">
@@ -76,8 +97,8 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
           <thead>
             <tr className="table-header-row">
               {columns.map((column) => (
-                <th 
-                  key={column.key} 
+                <th
+                  key={column.key}
                   className="table-header-cell"
                   style={{ width: column.width }}
                 >
@@ -119,24 +140,7 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
             {data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="empty-state">
-                  <div className="empty-content">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                      <path
-                        d="M40 18V38C40 39.1046 39.1046 40 38 40H10C8.89543 40 8 39.1046 8 38V10C8 8.89543 8.89543 8 10 8H30"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M16 24H32M16 32H24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <p className="empty-text">No discounts found</p>
-                    <p className="empty-subtext">Try adjusting your filters</p>
-                  </div>
+                  {emptyState}
                 </td>
               </tr>
             ) : (

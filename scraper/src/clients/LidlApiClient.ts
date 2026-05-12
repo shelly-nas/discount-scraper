@@ -173,7 +173,7 @@ class LidlApiClient extends ApiClient {
 
     for (const raw of rawList) {
       try {
-        const data: LidlGridboxImpression = JSON.parse(raw);
+        const data: LidlGridboxImpression = JSON.parse(decodeURIComponent(raw));
 
         if (!data.name) continue;
 
