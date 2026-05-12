@@ -107,6 +107,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
     const nameToKeyMap: { [key: string]: string } = {
       "Albert Heijn": "albert-heijn",
       Dirk: "dirk",
+      Lidl: "lidl",
       PLUS: "plus",
     };
 
@@ -114,8 +115,11 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
     const allSupermarkets = [
       { key: "albert-heijn", name: "Albert Heijn" },
       { key: "dirk", name: "Dirk" },
+      { key: "lidl", name: "Lidl" },
       { key: "plus", name: "PLUS" },
     ];
+
+    const scheduledRunController = dataManager.getScheduledRunController();
 
     const statuses = await Promise.all(
       allSupermarkets.map(async (sm) => {
@@ -125,11 +129,20 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
         const lastRun = await scraperRunController.getLastRunBySupermarket(
           sm.name
         );
+        const scheduledRun = await scheduledRunController.getScheduledRun(
+          sm.name
+        );
+
+        const base = {
+          key: sm.key,
+          name: sm.name,
+          promotionExpireDate: scheduledRun?.promotionExpireDate?.toISOString() ?? null,
+          scheduledEnabled: scheduledRun?.enabled ?? false,
+        };
 
         if (dbRow && lastRun) {
           return {
-            key: sm.key,
-            name: sm.name,
+            ...base,
             status: lastRun.status as "success" | "failed" | "running",
             lastRun: lastRun.completedAt || lastRun.startedAt,
             productsScraped: parseInt(dbRow.products_scraped, 10),
@@ -137,8 +150,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
           };
         } else if (lastRun) {
           return {
-            key: sm.key,
-            name: sm.name,
+            ...base,
             status: lastRun.status as "success" | "failed" | "running",
             lastRun: lastRun.completedAt || lastRun.startedAt,
             productsScraped: 0,
@@ -146,8 +158,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
           };
         } else {
           return {
-            key: sm.key,
-            name: sm.name,
+            ...base,
             status: "pending" as const,
           };
         }
@@ -225,6 +236,7 @@ router.post(
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
         dirk: "Dirk",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -236,7 +248,7 @@ router.post(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
         });
       }
 
@@ -422,6 +434,7 @@ router.get(
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
         dirk: "Dirk",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -433,7 +446,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
         });
       }
 
@@ -530,6 +543,7 @@ router.get(
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
         dirk: "Dirk",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -541,7 +555,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
         });
       }
 
@@ -591,6 +605,7 @@ router.put(
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
         dirk: "Dirk",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -602,7 +617,7 @@ router.put(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
         });
       }
 

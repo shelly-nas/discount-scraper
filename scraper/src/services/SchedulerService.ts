@@ -165,6 +165,7 @@ class SchedulerService {
       const nameMap: { [key: string]: string } = {
         "Albert Heijn": "albert-heijn",
         Dirk: "dirk",
+        Lidl: "lidl",
         PLUS: "plus",
       };
 

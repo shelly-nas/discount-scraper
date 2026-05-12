@@ -42,6 +42,8 @@ export interface SupermarketStatus {
   status: "success" | "failed" | "running" | "pending";
   lastRun?: string;
   productsScraped?: number;
+  promotionExpireDate?: string | null;
+  scheduledEnabled?: boolean;
 }
 
 export interface ScraperRun {

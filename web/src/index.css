@@ -11,6 +11,39 @@
   --notion-accent-light: rgba(35, 131, 226, 0.2);
   --notion-shadow: rgba(15, 15, 15, 0.05);
   --notion-shadow-hover: rgba(15, 15, 15, 0.1);
+
+  --status-success-bg: #d4edda;
+  --status-success-text: #155724;
+  --status-failed-bg: #f8d7da;
+  --status-failed-text: #721c24;
+  --status-running-bg: #fff3cd;
+  --status-running-text: #856404;
+  --status-pending-bg: #e2e3e5;
+  --status-pending-text: #383d41;
+}
+
+[data-theme="dark"] {
+  --notion-bg: #191919;
+  --notion-surface: #202020;
+  --notion-border: #373737;
+  --notion-text: #e6e6e4;
+  --notion-text-secondary: #8a8a87;
+  --notion-hover: #2c2c2c;
+  --notion-selected: #373737;
+  --notion-accent: #4a9eed;
+  --notion-accent-hover: #3a8ddc;
+  --notion-accent-light: rgba(74, 158, 237, 0.2);
+  --notion-shadow: rgba(0, 0, 0, 0.2);
+  --notion-shadow-hover: rgba(0, 0, 0, 0.35);
+
+  --status-success-bg: #1a3a25;
+  --status-success-text: #6fcf97;
+  --status-failed-bg: #3a1a1a;
+  --status-failed-text: #eb5757;
+  --status-running-bg: #3a3010;
+  --status-running-text: #f2c94c;
+  --status-pending-bg: #2c2c2c;
+  --status-pending-text: #9b9b98;
 }
 
 * {
@@ -43,19 +76,25 @@ code {
 }
 
 .app-container {
-  padding: 48px 96px;
+  padding: 32px 64px;
   max-width: 1600px;
   margin: 0 auto;
 }
 
 @media (max-width: 1024px) {
   .app-container {
-    padding: 32px 48px;
+    padding: 24px 32px;
   }
 }
 
 @media (max-width: 768px) {
   .app-container {
-    padding: 24px 16px;
+    padding: 16px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 12px 12px;
   }
 }

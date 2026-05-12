@@ -19,6 +19,7 @@ const Configurations: React.FC = () => {
     supermarketKey: '',
   });
   const [runningScrapers, setRunningScrapers] = useState<Set<string>>(new Set());
+  const [togglingSchedule, setTogglingSchedule] = useState<Set<string>>(new Set());
   
   // Logs state
   const [runs, setRuns] = useState<ScraperRun[]>([]);
@@ -106,6 +107,28 @@ const Configurations: React.FC = () => {
 
   const cancelRunScraper = () => {
     setConfirmDialog({ isOpen: false, supermarket: '', supermarketKey: '' });
+  };
+
+  const handleToggleSchedule = async (supermarketKey: string, currentlyEnabled: boolean) => {
+    setTogglingSchedule(prev => new Set(prev).add(supermarketKey));
+    try {
+      await configurationsService.toggleScheduledRun(supermarketKey, !currentlyEnabled);
+      await loadConfigurationsData();
+    } catch (err) {
+      console.error('Failed to toggle scheduled run:', err);
+      alert('Failed to update schedule setting.');
+    } finally {
+      setTogglingSchedule(prev => {
+        const next = new Set(prev);
+        next.delete(supermarketKey);
+        return next;
+      });
+    }
+  };
+
+  const isExpired = (expireDate: string | null | undefined): boolean => {
+    if (!expireDate) return false;
+    return new Date(expireDate) < new Date();
   };
 
   const getStatusClass = (status: 'success' | 'failed' | 'running' | 'pending') => {
@@ -223,10 +246,13 @@ const Configurations: React.FC = () => {
         <div className="supermarket-grid">
           {statuses.map((status) => {
             const isRunning = runningScrapers.has(status.key);
+            const isToggling = togglingSchedule.has(status.key);
             const displayStatus = isRunning ? 'running' : status.status;
-            
+            const expired = isExpired(status.promotionExpireDate);
+            const scheduledEnabled = status.scheduledEnabled ?? false;
+
             return (
-              <div key={status.key} className="supermarket-card">
+              <div key={status.key} className={`supermarket-card${expired ? ' supermarket-card--expired' : ''}`}>
                 <div className="supermarket-header">
                   <h3 className="supermarket-name">{status.name}</h3>
                   <span className={`status-badge ${getStatusClass(displayStatus)}`}>
@@ -243,23 +269,47 @@ const Configurations: React.FC = () => {
                     Products: {status.productsScraped}
                   </p>
                 )}
-                <button
-                  className="run-button"
-                  onClick={() => handleRunScraper(status.name, status.key)}
-                  disabled={isRunning}
-                >
-                  {isRunning ? (
-                    <>
-                      <span className="button-spinner"></span>
-                      Running...
-                    </>
-                  ) : (
-                    <>
-                      <span className="play-icon">▶</span>
-                      Run Scraper
-                    </>
+                {status.promotionExpireDate && (
+                  <p className={`supermarket-expire${expired ? ' supermarket-expire--expired' : ''}`}>
+                    {expired ? '⚠ Discounts expired' : 'Expires'}:{' '}
+                    {new Date(status.promotionExpireDate).toLocaleDateString('nl-NL')}
+                  </p>
+                )}
+                <div className="card-actions">
+                  <button
+                    className="run-button"
+                    onClick={() => handleRunScraper(status.name, status.key)}
+                    disabled={isRunning}
+                  >
+                    {isRunning ? (
+                      <>
+                        <span className="button-spinner"></span>
+                        Running...
+                      </>
+                    ) : (
+                      <>
+                        <span className="play-icon">▶</span>
+                        Run Scraper
+                      </>
+                    )}
+                  </button>
+                  {status.promotionExpireDate != null && (
+                    <button
+                      className={`schedule-toggle-button${scheduledEnabled ? ' schedule-toggle-button--enabled' : ''}`}
+                      onClick={() => handleToggleSchedule(status.key, scheduledEnabled)}
+                      disabled={isToggling}
+                      title={scheduledEnabled ? 'Disable automatic re-scrape when discounts expire' : 'Enable automatic re-scrape when discounts expire'}
+                    >
+                      {isToggling ? (
+                        <span className="button-spinner button-spinner--dark"></span>
+                      ) : scheduledEnabled ? (
+                        '⏰ Auto: On'
+                      ) : (
+                        '⏰ Auto: Off'
+                      )}
+                    </button>
                   )}
-                </button>
+                </div>
               </div>
             );
           })}

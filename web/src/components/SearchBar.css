@@ -7,7 +7,6 @@
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 480px;
 }
 
 .search-icon {
@@ -19,16 +18,17 @@
 
 .search-input {
   width: 100%;
-  padding: 6px 36px 6px 36px;
-  font-size: 14px;
+  padding: 10px 36px 10px 36px;
+  font-size: 15px;
   line-height: 20px;
   color: var(--notion-text);
   background: var(--notion-surface);
   border: 1px solid var(--notion-border);
-  border-radius: 4px;
+  border-radius: 6px;
   outline: none;
   transition: all 0.2s;
   font-family: inherit;
+  -webkit-appearance: none;
 }
 
 .search-input::placeholder {
@@ -37,13 +37,13 @@
 
 .search-input:focus {
   border-color: var(--notion-accent);
-  box-shadow: 0 0 0 1px var(--notion-accent);
+  box-shadow: 0 0 0 2px var(--notion-accent-light);
 }
 
 .clear-button {
   position: absolute;
   right: 8px;
-  padding: 4px;
+  padding: 6px;
   background: transparent;
   border: none;
   color: var(--notion-text-secondary);
@@ -51,7 +51,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 3px;
+  border-radius: 4px;
   transition: all 0.2s;
 }
 
@@ -62,4 +62,11 @@
 
 .clear-button:active {
   background: var(--notion-selected);
+}
+
+@media (max-width: 480px) {
+  .search-input {
+    font-size: 16px; /* prevent iOS zoom on focus */
+    padding: 12px 40px 12px 38px;
+  }
 }

@@ -143,7 +143,7 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
               data.map((item) => (
                 <tr key={item.id} className="table-row">
                   {columns.map((column) => (
-                    <td key={column.key} className="table-cell">
+                    <td key={column.key} className="table-cell" data-label={column.label}>
                       {getCellValue(item, column.key)}
                     </td>
                   ))}

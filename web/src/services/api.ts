@@ -75,4 +75,13 @@ export const configurationsService = {
       throw error;
     }
   },
+
+  async toggleScheduledRun(supermarket: string, enabled: boolean): Promise<void> {
+    try {
+      await axios.put(`${API_BASE_URL}/scheduler/toggle/${supermarket}`, { enabled });
+    } catch (error) {
+      console.error(`Error toggling scheduled run for ${supermarket}:`, error);
+      throw error;
+    }
+  },
 };
