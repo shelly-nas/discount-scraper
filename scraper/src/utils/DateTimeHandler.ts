@@ -1,6 +1,5 @@
 import moment from "moment";
 import { scraperLogger } from "./Logger";
-moment.locale("nl");
 
 enum TimeUnit {
   Minutes = 'minutes',
@@ -28,30 +27,6 @@ class DateTimeHandler {
       throw new Error(`Invalid ISO date string: '${isoDateStr}'.`);
     }
     return date.format(pattern);
-  }
-
-  public static parseDateISOString(dateStr: string): string { // Method to parse strings like '12 mei', 'zaterdag 11 mei'
-    const dateRegex = /(\d{1,2}\s+[a-zA-Z]+)/i;
-    const match = dateStr.match(dateRegex);
-    if (!match) {
-      scraperLogger.warn(`No match found for date string: '${dateStr}'. Using current date.`);
-      return moment().toISOString(true);
-    }
-
-    // Try different Dutch date formats to handle both full and abbreviated month names
-    let date = moment(match[0], "D MMMM", true); // Full month name format like "12 maart"
-    
-    if (!date.isValid()) {
-      // Try abbreviated month format like "12 mrt"
-      date = moment(match[0], "D MMM", true);
-    }
-    
-    if (!date.isValid()) {
-      scraperLogger.warn(`Invalid date parsed from: '${match[0]}'. Using current date.`);
-      return moment().toISOString(true);
-    }
-    
-    return date.toISOString(true);
   }
 
   public static getDateTimeString(pattern: string, toUTC: boolean = true): string {

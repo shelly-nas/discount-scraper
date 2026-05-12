@@ -1,6 +1,5 @@
 import { Request, Response, Router } from "express";
 import { serverLogger, scraperLogger } from "../utils/Logger";
-import { Locator } from "playwright";
 import PostgresDataManager from "../data/PostgresDataManager";
 import { getSupermarketClient } from "../utils/ConfigHelper";
 
@@ -8,102 +7,6 @@ const router = Router();
 
 // Create a single shared instance of PostgresDataManager
 const dataManager = new PostgresDataManager();
-
-// Helper function to get config from database
-async function getConfigFromDatabase(
-  dataManager: PostgresDataManager,
-  supermarketName: string
-): Promise<ISupermarketWebConfig> {
-  const query = `
-    SELECT name, name_short, url, web_identifiers
-    FROM supermarket_configs
-    WHERE name = $1
-  `;
-
-  const dbContext = (dataManager as any).db;
-  const result = await dbContext.query(query, [supermarketName]);
-
-  if (result.rows.length === 0) {
-    throw new Error(`No config found for supermarket: ${supermarketName}`);
-  }
-
-  const row = result.rows[0];
-  return {
-    name: row.name,
-    nameShort: row.name_short,
-    url: row.url,
-    webIdentifiers: row.web_identifiers,
-  };
-}
-
-// Helper function to scrape supermarket discounts
-async function getSupermarketDiscounts(
-  config: ISupermarketWebConfig,
-  supermarketClient: any
-): Promise<{
-  discounts: IProductDiscountDetails[];
-  expireDate: string;
-}> {
-  let productDiscountDetails: IProductDiscountDetails[] = [];
-
-  scraperLogger.info(`Initializing scraper for ${config.name}`);
-  await supermarketClient.init();
-
-  scraperLogger.info(`Navigating to ${config.url}`);
-  await supermarketClient.navigate(config.url);
-
-  scraperLogger.info(`Handling cookie popup`);
-  await supermarketClient.handleCookiePopup(
-    config.webIdentifiers.cookieDecline
-  );
-
-  scraperLogger.info(`Getting promotion expiry date`);
-  await supermarketClient.getPromotionExpireDate(
-    config.webIdentifiers.promotionExpireDate
-  );
-
-  const expireDate = supermarketClient.getExpireDate();
-
-  for (const productCategory of config.webIdentifiers.productCategories) {
-    scraperLogger.info(`Processing product category: ${productCategory}`);
-
-    const discountProducts: Locator[] | undefined =
-      await supermarketClient.getDiscountProductsByProductCategory(
-        productCategory,
-        config.webIdentifiers.products
-      );
-
-    if (!discountProducts) {
-      scraperLogger.error(
-        `No discount products found for category '${productCategory}'`
-      );
-      continue;
-    }
-
-    scraperLogger.info(
-      `Found ${discountProducts.length} discount products in category '${productCategory}'`
-    );
-
-    for (const discountProduct of discountProducts) {
-      const details: IProductDiscountDetails =
-        await supermarketClient.getDiscountProductDetails(
-          discountProduct,
-          config.webIdentifiers.promotionProducts
-        );
-      productDiscountDetails.push(details);
-      scraperLogger.debug(`Scraped product: ${details.name}`);
-    }
-    scraperLogger.info(
-      `Completed scraping ${productDiscountDetails.length} products from category '${productCategory}'`
-    );
-  }
-
-  scraperLogger.info(
-    `Total products scraped: ${productDiscountDetails.length}`
-  );
-  await supermarketClient.close();
-  return { discounts: productDiscountDetails, expireDate };
-}
 
 // Health check endpoint
 router.get("/health", (req: Request, res: Response) => {
@@ -361,18 +264,10 @@ router.post(
         `Scraper run tracked with ID: ${runId}, started at: ${currentBatchRunDate.toISOString()}`
       );
 
-      // Get configuration from database
-      scraperLogger.info("Fetching supermarket configuration from database");
-      const supermarketConfig = await getConfigFromDatabase(
-        dataManager,
-        supermarketName
-      );
-      scraperLogger.info("Configuration loaded successfully");
-
-      // Scrape discounts
+      // Fetch discounts via API client
       const supermarketClient = getSupermarketClient(supermarketName);
       const { discounts: supermarketDiscounts, expireDate } =
-        await getSupermarketDiscounts(supermarketConfig, supermarketClient);
+        await supermarketClient.fetchDiscounts();
 
       // Parse the expiration date
       const promotionExpireDate = expireDate ? new Date(expireDate) : undefined;
@@ -381,14 +276,14 @@ router.post(
       scraperLogger.info("Updating database with scraped data");
 
       const productMetrics = await dataManager.addProductDb(
-        supermarketConfig.name,
+        supermarketName,
         supermarketDiscounts
       );
       scraperLogger.info("Products upserted to database");
 
       const discountMetrics = await dataManager.addDiscountDb(
         supermarketDiscounts,
-        supermarketConfig.name,
+        supermarketName,
         currentBatchRunDate
       );
       scraperLogger.info(
@@ -450,7 +345,7 @@ router.post(
         message: `Scraper completed for ${supermarketName}`,
         data: {
           runId,
-          supermarket: supermarketConfig.name,
+          supermarket: supermarketName,
           productsScraped: supermarketDiscounts.length,
           productsCreated: productMetrics.created,
           productsUpdated: productMetrics.updated,

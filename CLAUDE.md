@@ -11,6 +11,8 @@ Rules:
 - IF graphify-out/wiki/index.md EXISTS, navigate it instead of reading raw files
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- **REQUIRED:** After every code change (file edit, creation, or deletion), run `graphify update .` before finishing the task.
+- **REQUIRED:** After every code change, update this CLAUDE.md to reflect any architectural changes, new/removed files, renamed modules, or changed responsibilities. Keep the Architecture and Adding a New Supermarket sections accurate.
 
 ## Development Commands
 

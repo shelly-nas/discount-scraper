@@ -5,21 +5,6 @@
 DROP TABLE IF EXISTS discounts CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS scraper_runs CASCADE;
-DROP TABLE IF EXISTS supermarket_configs CASCADE;
-
--- Supermarket Configuration Table
-CREATE TABLE supermarket_configs (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    name_short VARCHAR(50),
-    url VARCHAR(512) NOT NULL,
-    web_identifiers JSONB NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create index on name for faster lookups
-CREATE INDEX idx_supermarket_name ON supermarket_configs(name);
 
 -- Products Table
 CREATE TABLE products (
@@ -117,9 +102,6 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers to automatically update updated_at
-CREATE TRIGGER update_supermarket_configs_updated_at BEFORE UPDATE ON supermarket_configs
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -130,13 +112,11 @@ CREATE TRIGGER update_scheduled_runs_updated_at BEFORE UPDATE ON scheduled_runs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Comments for documentation
-COMMENT ON TABLE supermarket_configs IS 'Stores supermarket web scraping configuration';
 COMMENT ON TABLE products IS 'Stores product information from various supermarkets';
 COMMENT ON TABLE scraper_runs IS 'Stores information about each scraper run including status and metrics';
 COMMENT ON TABLE scheduled_runs IS 'Stores scheduled run information for automated scraping';
 COMMENT ON TABLE discounts IS 'Stores discount information linked to products';
 
-COMMENT ON COLUMN supermarket_configs.web_identifiers IS 'JSON object containing web scraping identifiers';
 COMMENT ON COLUMN scraper_runs.status IS 'Current status of the scraper run: running, success, or failed';
 COMMENT ON COLUMN scraper_runs.products_scraped IS 'Total number of products scraped in this run';
 COMMENT ON COLUMN scraper_runs.products_updated IS 'Number of existing products that were updated';

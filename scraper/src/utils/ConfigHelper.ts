@@ -1,20 +1,20 @@
-import AhClient from "../clients/AhClient";
-import DirkClient from "../clients/DirkClient";
-import PlusClient from "../clients/PlusClient";
-import SupermarketClient from "../clients/SupermarketClient";
+import AhApiClient from "../clients/AhApiClient";
+import DirkApiClient from "../clients/DirkApiClient";
+import PlusApiClient from "../clients/PlusApiClient";
+import ApiClient from "../clients/ApiClient";
 import { serverLogger } from "./Logger";
 
-export function getSupermarketClient(name: string): SupermarketClient {
+export function getSupermarketClient(name: string): ApiClient {
   switch (name) {
     case "Albert Heijn":
-      return new AhClient();
+      return new AhApiClient();
     case "Dirk":
-      return new DirkClient();
+      return new DirkApiClient();
     case "PLUS":
-      return new PlusClient();
+      return new PlusApiClient();
     default:
       serverLogger.error(
-        "Descendent of Supermarket Client could not be found or instantiated."
+        "Supermarket client not found for: " + name
       );
       process.exit(1);
   }

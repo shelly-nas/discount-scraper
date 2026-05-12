@@ -6,11 +6,7 @@ FROM postgres:15-alpine
 # No default values needed here as they are set via docker-compose
 
 # Copy initialization scripts
-# PostgreSQL will execute these in alphabetical order
 COPY src/schema.sql /docker-entrypoint-initdb.d/01-schema.sql
-COPY src/supermarkets/albert-heijn.sql /docker-entrypoint-initdb.d/02-albert-heijn.sql
-COPY src/supermarkets/dirk.sql /docker-entrypoint-initdb.d/03-dirk.sql
-COPY src/supermarkets/plus.sql /docker-entrypoint-initdb.d/04-plus.sql
 
 # Expose PostgreSQL port
 EXPOSE 5432
