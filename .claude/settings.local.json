@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(rm src/tests/aldi_debug*.ts)"
+    ],
+    "additionalDirectories": [
+      "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests"
     ]
   }
 }

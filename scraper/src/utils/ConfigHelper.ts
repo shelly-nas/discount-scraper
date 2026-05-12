@@ -1,4 +1,5 @@
 import AhApiClient from "../clients/AhApiClient";
+import AldiApiClient from "../clients/AldiApiClient";
 import DirkApiClient from "../clients/DirkApiClient";
 import LidlApiClient from "../clients/LidlApiClient";
 import PlusApiClient from "../clients/PlusApiClient";
@@ -9,6 +10,8 @@ export function getSupermarketClient(name: string): ApiClient {
   switch (name) {
     case "Albert Heijn":
       return new AhApiClient();
+    case "Aldi":
+      return new AldiApiClient();
     case "Dirk":
       return new DirkApiClient();
     case "Lidl":

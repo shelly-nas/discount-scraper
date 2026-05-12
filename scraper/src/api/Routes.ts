@@ -106,6 +106,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
     // Map supermarket names to keys
     const nameToKeyMap: { [key: string]: string } = {
       "Albert Heijn": "albert-heijn",
+      Aldi: "aldi",
       Dirk: "dirk",
       Lidl: "lidl",
       PLUS: "plus",
@@ -114,6 +115,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
     // Define all supermarkets
     const allSupermarkets = [
       { key: "albert-heijn", name: "Albert Heijn" },
+      { key: "aldi", name: "Aldi" },
       { key: "dirk", name: "Dirk" },
       { key: "lidl", name: "Lidl" },
       { key: "plus", name: "PLUS" },
@@ -235,6 +237,7 @@ router.post(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
         lidl: "Lidl",
         plus: "PLUS",
@@ -248,7 +251,7 @@ router.post(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
         });
       }
 
@@ -433,6 +436,7 @@ router.get(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
         lidl: "Lidl",
         plus: "PLUS",
@@ -446,7 +450,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
         });
       }
 
@@ -542,6 +546,7 @@ router.get(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
         lidl: "Lidl",
         plus: "PLUS",
@@ -555,7 +560,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
         });
       }
 
@@ -604,6 +609,7 @@ router.put(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
         lidl: "Lidl",
         plus: "PLUS",
@@ -617,7 +623,7 @@ router.put(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
         });
       }
 
