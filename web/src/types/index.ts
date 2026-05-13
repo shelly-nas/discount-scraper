@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   category: string;
   supermarket: string;
+  product_url: string | null;
   created_at: string;
   updated_at: string;
 }

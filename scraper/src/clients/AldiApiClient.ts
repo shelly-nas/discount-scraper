@@ -136,10 +136,12 @@ class AldiApiClient extends ApiClient {
         name,
         originalPrice: 0,
         discountPrice: priceValue ?? 0,
+        unitPrice: null,
         specialDiscount,
         category: product.mainCategoryID ?? "Overig",
         supermarket: this.name,
         expireDate,
+        productUrl: ALDI_URL,
       });
 
       if (validUntil > latestValidUntil) {

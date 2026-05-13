@@ -2,11 +2,12 @@
 FROM postgres:15-alpine
 
 # Note: Environment variables (POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD)
-# are provided by docker-compose.yaml from the root .env file
+# are provided by docker-compose.yml from the root .env file
 # No default values needed here as they are set via docker-compose
 
 # Copy initialization scripts
 COPY src/schema.sql /docker-entrypoint-initdb.d/01-schema.sql
+COPY src/migrate.sql /docker-entrypoint-initdb.d/02-migrate.sql
 
 # Expose PostgreSQL port
 EXPOSE 5432

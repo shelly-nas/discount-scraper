@@ -108,6 +108,8 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
       "Albert Heijn": "albert-heijn",
       Aldi: "aldi",
       Dirk: "dirk",
+      Hoogvliet: "hoogvliet",
+      Jumbo: "jumbo",
       Lidl: "lidl",
       PLUS: "plus",
     };
@@ -117,6 +119,8 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
       { key: "albert-heijn", name: "Albert Heijn" },
       { key: "aldi", name: "Aldi" },
       { key: "dirk", name: "Dirk" },
+      { key: "hoogvliet", name: "Hoogvliet" },
+      { key: "jumbo", name: "Jumbo" },
       { key: "lidl", name: "Lidl" },
       { key: "plus", name: "PLUS" },
     ];
@@ -185,11 +189,12 @@ router.get("/discounts", async (req: Request, res: Response) => {
     serverLogger.info("Fetching all active discounts with product details");
 
     const query = `
-      SELECT 
+      SELECT
         p.id,
         p.name,
         p.category,
         p.supermarket,
+        p.product_url,
         p.created_at,
         p.updated_at,
         json_build_object(
@@ -197,6 +202,7 @@ router.get("/discounts", async (req: Request, res: Response) => {
           'product_id', d.product_id,
           'original_price', d.original_price,
           'discount_price', d.discount_price,
+          'unit_price', d.unit_price,
           'special_discount', d.special_discount,
           'expire_date', d.expire_date,
           'active', d.active,
@@ -239,6 +245,8 @@ router.post(
         "albert-heijn": "Albert Heijn",
         aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
         lidl: "Lidl",
         plus: "PLUS",
       };
@@ -251,7 +259,7 @@ router.post(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 
@@ -438,6 +446,8 @@ router.get(
         "albert-heijn": "Albert Heijn",
         aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
         lidl: "Lidl",
         plus: "PLUS",
       };
@@ -450,7 +460,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 
@@ -548,6 +558,8 @@ router.get(
         "albert-heijn": "Albert Heijn",
         aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
         lidl: "Lidl",
         plus: "PLUS",
       };
@@ -560,7 +572,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 
@@ -611,6 +623,8 @@ router.put(
         "albert-heijn": "Albert Heijn",
         aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
         lidl: "Lidl",
         plus: "PLUS",
       };
@@ -623,7 +637,7 @@ router.put(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, lidl, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 

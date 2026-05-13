@@ -50,12 +50,37 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
     { key: 'discount.expire_date', label: 'Expire Date', width: '140px' },
   ];
 
-  const getCellValue = (item: ProductWithDiscount, columnKey: string) => {
+  const getCellValue = (item: ProductWithDiscount, columnKey: string): React.ReactNode => {
     if (columnKey === 'discount.expire_date') {
       return formatDate(item.discount.expire_date);
     } else if (columnKey === 'category') {
       return item.category;
     } else if (columnKey === 'name') {
+      if (item.product_url) {
+        return (
+          <span className="product-name-cell">
+            {item.name}
+            <a
+              href={item.product_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="product-link"
+              title="View on supermarket website"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path
+                  d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7M8 1h3m0 0v3m0-3L5.5 6.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </a>
+          </span>
+        );
+      }
       return item.name;
     } else if (columnKey === 'supermarket') {
       return item.supermarket;

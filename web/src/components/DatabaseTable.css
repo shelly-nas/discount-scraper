@@ -152,6 +152,29 @@
   color: var(--notion-text-secondary);
 }
 
+.product-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--notion-text-secondary);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.table-row:hover .product-link {
+  opacity: 1;
+}
+
+.product-link:hover {
+  color: var(--notion-text);
+}
+
 @media (max-width: 700px) {
   .database-table {
     font-size: 13px;
@@ -160,5 +183,9 @@
   .table-header-cell,
   .table-cell {
     padding: 8px 10px;
+  }
+
+  .product-link {
+    opacity: 1;
   }
 }

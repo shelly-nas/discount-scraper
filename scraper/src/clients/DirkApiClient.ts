@@ -3,6 +3,7 @@ import ApiClient from "./ApiClient";
 import { scraperLogger } from "../utils/Logger";
 
 const GRAPHQL_URL = "https://web-gateway.dirk.nl/graphql";
+const DIRK_OFFERS_URL = "https://www.dirk.nl/aanbiedingen";
 const GRAPHQL_HEADERS = {
   "Content-Type": "application/json",
   "User-Agent":
@@ -119,7 +120,9 @@ class DirkApiClient extends ApiClient {
           name: productName,
           originalPrice: offer.normalPrice,
           discountPrice: offer.offerPrice,
+          unitPrice: null,
           specialDiscount,
+          productUrl: DIRK_OFFERS_URL,
           category: dept.description,
           supermarket: this.name,
           expireDate: offer.endDate,

@@ -12,6 +12,7 @@ CREATE TABLE products (
     name VARCHAR(500) NOT NULL,
     category VARCHAR(255) NOT NULL,
     supermarket VARCHAR(255) NOT NULL,
+    product_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(name, supermarket)
@@ -74,6 +75,7 @@ CREATE TABLE discounts (
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     original_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
     discount_price DECIMAL(10, 2) NOT NULL,
+    unit_price VARCHAR(50),
     special_discount VARCHAR(255),
     expire_date TIMESTAMP NOT NULL,
     active BOOLEAN NOT NULL DEFAULT true,
@@ -113,6 +115,7 @@ CREATE TRIGGER update_scheduled_runs_updated_at BEFORE UPDATE ON scheduled_runs
 
 -- Comments for documentation
 COMMENT ON TABLE products IS 'Stores product information from various supermarkets';
+COMMENT ON COLUMN products.product_url IS 'Direct URL to the product/offer page on the supermarket website — null when not available';
 COMMENT ON TABLE scraper_runs IS 'Stores information about each scraper run including status and metrics';
 COMMENT ON TABLE scheduled_runs IS 'Stores scheduled run information for automated scraping';
 COMMENT ON TABLE discounts IS 'Stores discount information linked to products';
@@ -128,6 +131,7 @@ COMMENT ON COLUMN scraper_runs.promotion_expire_date IS 'The expiration date of 
 COMMENT ON COLUMN scheduled_runs.next_run_at IS 'The next scheduled time to run the scraper for this supermarket';
 COMMENT ON COLUMN scheduled_runs.promotion_expire_date IS 'The promotion expiration date used to calculate next_run_at';
 COMMENT ON COLUMN scheduled_runs.enabled IS 'Whether scheduled runs are enabled for this supermarket';
+COMMENT ON COLUMN discounts.unit_price IS 'Unit price string e.g. €1.49/kg, €0.99/l, €0.50/st — null when not available';
 COMMENT ON COLUMN discounts.special_discount IS 'Additional discount information like quantity or special conditions';
 COMMENT ON COLUMN discounts.expire_date IS 'Date when the discount expires';
 COMMENT ON COLUMN discounts.active IS 'Whether the discount is currently active (true) or has been deactivated (false)';

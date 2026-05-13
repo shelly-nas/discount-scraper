@@ -11,6 +11,8 @@ const DIRK_SCRAPED_PRODUCTS: IProductDiscountDetails[] = [
     discountPrice: 1.59,
     specialDiscount: "",
     expireDate: "2026-05-18",
+    unitPrice: null,
+    productUrl: null,
   },
   {
     name: "Kipfilet",
@@ -20,6 +22,8 @@ const DIRK_SCRAPED_PRODUCTS: IProductDiscountDetails[] = [
     discountPrice: 3.99,
     specialDiscount: "2 voor 7,-",
     expireDate: "2026-05-18",
+    unitPrice: null,
+    productUrl: null,
   },
   {
     name: "Halfvolle melk 1L",
@@ -29,6 +33,8 @@ const DIRK_SCRAPED_PRODUCTS: IProductDiscountDetails[] = [
     discountPrice: 0.79,
     specialDiscount: "",
     expireDate: "2026-05-18",
+    unitPrice: null,
+    productUrl: null,
   },
   {
     name: "Cola 1.5L",
@@ -38,6 +44,8 @@ const DIRK_SCRAPED_PRODUCTS: IProductDiscountDetails[] = [
     discountPrice: 1.49,
     specialDiscount: "3 voor 4,-",
     expireDate: "2026-05-18",
+    unitPrice: null,
+    productUrl: null,
   },
   {
     name: "Pasta penne 500g",
@@ -47,6 +55,8 @@ const DIRK_SCRAPED_PRODUCTS: IProductDiscountDetails[] = [
     discountPrice: 0.89,
     specialDiscount: "",
     expireDate: "2026-05-18",
+    unitPrice: null,
+    productUrl: null,
   },
 ];
 

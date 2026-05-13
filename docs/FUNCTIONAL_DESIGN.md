@@ -13,7 +13,7 @@
 
 ### 1.1 System Purpose
 
-The DiscountScraper system is designed to automatically collect, store, and present discount information from multiple Dutch supermarket chains (Albert Heijn, Dirk, and PLUS) in a centralized, searchable database with a modern web interface.
+The DiscountScraper system is designed to automatically collect, store, and present discount information from multiple Dutch supermarket chains (Albert Heijn, Aldi, Dirk, Hoogvliet, Jumbo, Lidl, and PLUS) in a centralized, searchable database with a modern web interface.
 
 ### 1.2 Business Goals
 
@@ -607,7 +607,7 @@ flowchart TD
 | FR-001.3  | System SHALL scrape discount data from PLUS website                          | HIGH     | ✅ Implemented |
 | FR-001.4  | System SHALL handle cookie consent popups automatically                      | HIGH     | ✅ Implemented |
 | FR-001.5  | System SHALL extract promotion expiration dates                              | HIGH     | ✅ Implemented |
-| FR-001.6  | System SHALL extract product names, categories, prices, and discount details | HIGH     | ✅ Implemented |
+| FR-001.6  | System SHALL extract product names, categories, prices, discount details, and product URLs | HIGH     | ✅ Implemented |
 | FR-001.7  | System SHALL use Playwright for browser automation                           | HIGH     | ✅ Implemented |
 | FR-001.8  | System SHALL support configurable web identifiers per supermarket            | MEDIUM   | ✅ Implemented |
 | FR-001.9  | System SHALL log all scraping activities with timestamps                     | MEDIUM   | ✅ Implemented |
@@ -674,6 +674,7 @@ flowchart TD
 | FR-005.12 | System SHALL use Notion-inspired design aesthetics                 | LOW      | ✅ Implemented |
 | FR-005.13 | System SHALL be responsive for mobile devices                      | LOW      | ✅ Implemented |
 | FR-005.14 | System SHALL provide confirmation dialog before running scrapers   | MEDIUM   | ✅ Implemented |
+| FR-005.15 | System SHALL display an external link icon next to product names that opens the supermarket offer page | LOW | ✅ Implemented |
 
 #### FR-006: Monitoring & Logging
 
@@ -845,6 +846,7 @@ erDiagram
         integer product_id FK
         decimal original_price
         decimal discount_price
+        varchar unit_price "e.g., €1.49/kg, null when unavailable"
         varchar special_discount "e.g., 2+1 free"
         timestamp expire_date
         boolean active "true=active, false=inactive"
@@ -930,7 +932,8 @@ erDiagram
 | id          | SERIAL       | PRIMARY KEY   | Auto-incrementing ID          |
 | name        | VARCHAR(500) | NOT NULL      | Product name                  |
 | category    | VARCHAR(255) | NOT NULL      | Product category              |
-| supermarket | VARCHAR(255) | NOT NULL      | Supermarket name              |
+| supermarket | VARCHAR(255) | NOT NULL      | Supermarket name                                        |
+| product_url | TEXT         | NULLABLE      | Direct URL to the offer page on the supermarket website |
 | created_at  | TIMESTAMP    | DEFAULT NOW() | First time product was seen   |
 | updated_at  | TIMESTAMP    | DEFAULT NOW() | Last time product was updated |
 
@@ -963,6 +966,7 @@ erDiagram
 | product_id       | INTEGER       | NOT NULL, FK → products(id) | Reference to product                    |
 | original_price   | DECIMAL(10,2) | NOT NULL, DEFAULT 0         | Pre-discount price                      |
 | discount_price   | DECIMAL(10,2) | NOT NULL                    | Discounted price                        |
+| unit_price       | VARCHAR(50)   | NULL                        | Unit price string (e.g., "€1.49/kg", "€0.99/l", "€0.50/st"); null when not available |
 | special_discount | VARCHAR(255)  | NULL                        | Special conditions (e.g., "2+1 gratis") |
 | expire_date      | TIMESTAMP     | NOT NULL                    | When discount expires                   |
 | active           | BOOLEAN       | NOT NULL, DEFAULT true      | Is discount currently active            |
@@ -1152,6 +1156,7 @@ interface DiscountResponse {
     product_id: number; // Foreign key to product
     original_price: number; // Pre-discount price
     discount_price: number; // Discounted price
+    unit_price: string | null; // e.g., "€1.49/kg", "€0.99/l", "€0.50/st"
     special_discount: string | null; // e.g., "2+1 gratis"
     expire_date: string; // ISO 8601 timestamp
     active: boolean; // Always true for this endpoint
@@ -1176,6 +1181,7 @@ interface DiscountResponse {
       "product_id": 123,
       "original_price": 2.49,
       "discount_price": 1.99,
+      "unit_price": null,
       "special_discount": null,
       "expire_date": "2025-10-31T23:59:59.000Z",
       "active": true,
@@ -1189,7 +1195,7 @@ interface DiscountResponse {
 
 **Parameters:**
 
-- `:supermarket` - One of: `albert-heijn`, `dirk`, `plus`
+- `:supermarket` - One of: `albert-heijn`, `aldi`, `dirk`, `hoogvliet`, `jumbo`, `lidl`, `plus`
 
 **Response:**
 
@@ -1619,9 +1625,9 @@ API_PORT=3001
 LOG_LEVEL=INFO
 ```
 
-**docker-compose.yaml structure:**
+**docker-compose.yml structure:**
 
-```yaml
+```yml
 services:
   postgres:
     # PostgreSQL database

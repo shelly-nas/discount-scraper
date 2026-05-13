@@ -45,7 +45,7 @@ jobs:
     with:
       registry: ${{ vars.REGISTRY_URL }}
       deploy_directory: /volume1/docker/discount-scraper
-      compose_file: docker-compose.prod.yaml
+      compose_file: docker-compose.prod.yml
       image_tag: latest
     secrets:
       registry_username: ${{ vars.REGISTRY_USERNAME }}

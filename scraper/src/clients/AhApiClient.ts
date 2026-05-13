@@ -164,10 +164,12 @@ class AhApiClient extends ApiClient {
           name: promo.title,
           originalPrice,
           discountPrice,
+          unitPrice: null,
           specialDiscount,
           category: cat.title,
           supermarket: this.name,
           expireDate,
+          productUrl: AH_URL,
         });
 
         if (!latestExpireDate || expireDate > latestExpireDate) {

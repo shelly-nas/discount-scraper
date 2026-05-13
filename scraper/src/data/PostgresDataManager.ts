@@ -71,7 +71,8 @@ export class PostgresDataManager {
       const result = await this.productController.addProductWithTracking(
         product.name,
         product.category,
-        supermarket
+        supermarket,
+        product.productUrl ?? null
       );
       if (result.wasCreated) {
         created++;
@@ -140,6 +141,7 @@ export class PostgresDataManager {
         productId,
         discount.originalPrice,
         discount.discountPrice,
+        discount.unitPrice ?? null,
         discount.specialDiscount,
         discount.expireDate,
         previousBatchExpireDate,
@@ -183,10 +185,12 @@ export class PostgresDataManager {
             name: product.name,
             originalPrice: discount.originalPrice,
             discountPrice: discount.discountPrice,
+            unitPrice: discount.unitPrice,
             specialDiscount: discount.specialDiscount,
             category: product.category,
             supermarket: product.supermarket,
             expireDate: discount.expireDate,
+            productUrl: product.product_url ?? null,
           };
           productDiscounts.push(details);
         }

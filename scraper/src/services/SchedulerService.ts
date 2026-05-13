@@ -166,6 +166,8 @@ class SchedulerService {
         "Albert Heijn": "albert-heijn",
         Aldi: "aldi",
         Dirk: "dirk",
+        Hoogvliet: "hoogvliet",
+        Jumbo: "jumbo",
         Lidl: "lidl",
         PLUS: "plus",
       };

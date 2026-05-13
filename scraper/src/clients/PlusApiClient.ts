@@ -164,10 +164,12 @@ class PlusApiClient extends ApiClient {
           name,
           originalPrice,
           discountPrice,
+          unitPrice: null,
           specialDiscount: offer.DisplayInfo_Label,
           category: cat.CategoryLabel,
           supermarket: this.name,
           expireDate,
+          productUrl: PLUS_URL,
         });
 
         if (!latestExpireDate || expireDate > latestExpireDate) {
