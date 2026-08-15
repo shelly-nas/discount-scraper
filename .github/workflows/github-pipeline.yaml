@@ -7,24 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  debug-dns:
-    name: Debug DNS and Registry Access
-    runs-on: shelly
-    steps:
-      - run: |
-          echo "=== identity ==="
-          hostname; whoami; readlink -f /proc/$$/exe
-          echo "=== resolv.conf ==="
-          cat /etc/resolv.conf
-          echo "=== hosts ==="
-          cat /etc/hosts
-          echo "=== getent ==="
-          getent hosts registry.shelly-nas.nl || echo "NO RESOLVE"
-          echo "=== docker daemon ==="
-          docker info 2>&1 | grep -i -A3 'insecure\|server version'
-          echo "=== pull test ==="
-          docker pull registry.shelly-nas.nl/discount-scraper-db:latest || echo "PULL FAILED"
-
   build-database:
     name: Build and Push Database
     uses: shelly-nas/shared-workflows/.github/workflows/build-push.yml@main
