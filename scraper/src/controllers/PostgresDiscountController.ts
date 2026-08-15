@@ -7,6 +7,7 @@ interface DiscountRow {
   product_id: number;
   original_price: string;
   discount_price: string;
+  unit_price: string | null;
   special_discount: string;
   expire_date: Date;
   active: boolean;
@@ -52,7 +53,7 @@ class PostgresDiscountController {
     scraperLogger.info("Fetching all discounts.");
     try {
       const result = await this.db.query<DiscountRow>(
-        "SELECT product_id, original_price, discount_price, special_discount, expire_date, active FROM discounts ORDER BY expire_date DESC"
+        "SELECT product_id, original_price, discount_price, unit_price, special_discount, expire_date, active FROM discounts ORDER BY expire_date DESC"
       );
 
       return result.rows.map(
@@ -61,6 +62,7 @@ class PostgresDiscountController {
             row.product_id,
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
+            row.unit_price ?? null,
             row.special_discount,
             row.expire_date.toISOString(),
             row.active
@@ -76,9 +78,9 @@ class PostgresDiscountController {
     scraperLogger.debug(`Fetching discounts for product ID: ${productId}`);
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
-         FROM discounts 
-         WHERE product_id = $1 
+        `SELECT product_id, original_price, discount_price, unit_price, special_discount, expire_date, active
+         FROM discounts
+         WHERE product_id = $1
          ORDER BY expire_date DESC`,
         [productId]
       );
@@ -89,6 +91,7 @@ class PostgresDiscountController {
             row.product_id,
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
+            row.unit_price ?? null,
             row.special_discount,
             row.expire_date.toISOString(),
             row.active
@@ -109,9 +112,9 @@ class PostgresDiscountController {
     );
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
-         FROM discounts 
-         WHERE active = true AND expire_date > NOW() 
+        `SELECT product_id, original_price, discount_price, unit_price, special_discount, expire_date, active
+         FROM discounts
+         WHERE active = true AND expire_date > NOW()
          ORDER BY expire_date ASC`
       );
 
@@ -121,6 +124,7 @@ class PostgresDiscountController {
             row.product_id,
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
+            row.unit_price ?? null,
             row.special_discount,
             row.expire_date.toISOString(),
             row.active
@@ -136,9 +140,9 @@ class PostgresDiscountController {
     scraperLogger.debug("Fetching expired discounts.");
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
-         FROM discounts 
-         WHERE expire_date <= NOW() 
+        `SELECT product_id, original_price, discount_price, unit_price, special_discount, expire_date, active
+         FROM discounts
+         WHERE expire_date <= NOW()
          ORDER BY expire_date DESC`
       );
 
@@ -148,6 +152,7 @@ class PostgresDiscountController {
             row.product_id,
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
+            row.unit_price ?? null,
             row.special_discount,
             row.expire_date.toISOString(),
             row.active
@@ -168,9 +173,9 @@ class PostgresDiscountController {
     );
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
-         FROM discounts 
-         WHERE discount_price BETWEEN $1 AND $2 
+        `SELECT product_id, original_price, discount_price, unit_price, special_discount, expire_date, active
+         FROM discounts
+         WHERE discount_price BETWEEN $1 AND $2
          AND active = true
          AND expire_date > NOW()
          ORDER BY discount_price ASC`,
@@ -183,6 +188,7 @@ class PostgresDiscountController {
             row.product_id,
             parseFloat(row.original_price),
             parseFloat(row.discount_price),
+            row.unit_price ?? null,
             row.special_discount,
             row.expire_date.toISOString(),
             row.active
@@ -201,15 +207,16 @@ class PostgresDiscountController {
     productId: number,
     originalPrice: number,
     discountPrice: number,
+    unitPrice: string | null,
     specialDiscount: string,
     expireDate: string
   ): Promise<number> {
     try {
       const result = await this.db.query<{ id: number }>(
-        `INSERT INTO discounts (product_id, original_price, discount_price, special_discount, expire_date, active) 
-         VALUES ($1, $2, $3, $4, $5, true) 
+        `INSERT INTO discounts (product_id, original_price, discount_price, unit_price, special_discount, expire_date, active)
+         VALUES ($1, $2, $3, $4, $5, $6, true)
          RETURNING id`,
-        [productId, originalPrice, discountPrice, specialDiscount, expireDate]
+        [productId, originalPrice, discountPrice, unitPrice, specialDiscount, expireDate]
       );
 
       const newId = result.rows[0].id;
@@ -259,9 +266,9 @@ class PostgresDiscountController {
     );
     try {
       const result = await this.db.query<DiscountRow>(
-        `SELECT product_id, original_price, discount_price, special_discount, expire_date, active 
-         FROM discounts 
-         WHERE product_id = $1 
+        `SELECT product_id, original_price, discount_price, unit_price, special_discount, expire_date, active
+         FROM discounts
+         WHERE product_id = $1
          ORDER BY created_at DESC
          LIMIT 1`,
         [productId]
@@ -276,6 +283,7 @@ class PostgresDiscountController {
         row.product_id,
         parseFloat(row.original_price),
         parseFloat(row.discount_price),
+        row.unit_price ?? null,
         row.special_discount,
         row.expire_date.toISOString(),
         row.active
@@ -339,6 +347,7 @@ class PostgresDiscountController {
     productId: number,
     originalPrice: number,
     discountPrice: number,
+    unitPrice: string | null,
     specialDiscount: string,
     expireDate: string,
     previousBatchExpireDate: Date | null,
@@ -366,6 +375,7 @@ class PostgresDiscountController {
         productId,
         originalPrice,
         discountPrice,
+        unitPrice,
         specialDiscount,
         expireDate
       );

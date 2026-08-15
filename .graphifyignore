@@ -1,0 +1,16 @@
+# Dependency directories
+node_modules/
+
+# Compiled JavaScript files
+dist/
+build/
+out/
+
+# Environment variables
+.env
+
+# Editor directories and files
+.vscode/
+
+# Project-specific ignore files
+logs/

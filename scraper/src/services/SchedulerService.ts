@@ -164,7 +164,11 @@ class SchedulerService {
       // Map full names to URL params
       const nameMap: { [key: string]: string } = {
         "Albert Heijn": "albert-heijn",
+        Aldi: "aldi",
         Dirk: "dirk",
+        Hoogvliet: "hoogvliet",
+        Jumbo: "jumbo",
+        Lidl: "lidl",
         PLUS: "plus",
       };
 

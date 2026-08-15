@@ -41,21 +41,46 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
   };
 
   const columns = [
-    { key: 'discount.expire_date', label: 'Expire Date', width: '140px' },
     { key: 'category', label: 'Category', width: '180px' },
     { key: 'name', label: 'Product Name', width: 'auto' },
     { key: 'supermarket', label: 'Supermarket', width: '140px' },
     { key: 'discount.discount_price', label: 'Discount Price', width: '140px' },
     { key: 'discount.original_price', label: 'Original Price', width: '140px' },
     { key: 'discount.special_discount', label: 'Special Discount', width: '160px' },
+    { key: 'discount.expire_date', label: 'Expire Date', width: '140px' },
   ];
 
-  const getCellValue = (item: ProductWithDiscount, columnKey: string) => {
+  const getCellValue = (item: ProductWithDiscount, columnKey: string): React.ReactNode => {
     if (columnKey === 'discount.expire_date') {
       return formatDate(item.discount.expire_date);
     } else if (columnKey === 'category') {
       return item.category;
     } else if (columnKey === 'name') {
+      if (item.product_url) {
+        return (
+          <span className="product-name-cell">
+            {item.name}
+            <a
+              href={item.product_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="product-link"
+              title="View on supermarket website"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path
+                  d="M5 2H2a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V7M8 1h3m0 0v3m0-3L5.5 6.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </a>
+          </span>
+        );
+      }
       return item.name;
     } else if (columnKey === 'supermarket') {
       return item.supermarket;
@@ -69,6 +94,27 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
     return '—';
   };
 
+  const emptyState = (
+    <div className="empty-content">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <path
+          d="M40 18V38C40 39.1046 39.1046 40 38 40H10C8.89543 40 8 39.1046 8 38V10C8 8.89543 8.89543 8 10 8H30"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M16 24H32M16 32H24"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      </svg>
+      <p className="empty-text">No discounts found</p>
+      <p className="empty-subtext">Try adjusting your filters</p>
+    </div>
+  );
+
   return (
     <div className="database-table-wrapper">
       <div className="database-table-scroll">
@@ -76,8 +122,8 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
           <thead>
             <tr className="table-header-row">
               {columns.map((column) => (
-                <th 
-                  key={column.key} 
+                <th
+                  key={column.key}
                   className="table-header-cell"
                   style={{ width: column.width }}
                 >
@@ -119,31 +165,14 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
             {data.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="empty-state">
-                  <div className="empty-content">
-                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                      <path
-                        d="M40 18V38C40 39.1046 39.1046 40 38 40H10C8.89543 40 8 39.1046 8 38V10C8 8.89543 8.89543 8 10 8H30"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M16 24H32M16 32H24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <p className="empty-text">No discounts found</p>
-                    <p className="empty-subtext">Try adjusting your filters</p>
-                  </div>
+                  {emptyState}
                 </td>
               </tr>
             ) : (
               data.map((item) => (
                 <tr key={item.id} className="table-row">
                   {columns.map((column) => (
-                    <td key={column.key} className="table-cell">
+                    <td key={column.key} className="table-cell" data-label={column.label}>
                       {getCellValue(item, column.key)}
                     </td>
                   ))}

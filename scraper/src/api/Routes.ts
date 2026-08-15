@@ -1,6 +1,5 @@
 import { Request, Response, Router } from "express";
 import { serverLogger, scraperLogger } from "../utils/Logger";
-import { Locator } from "playwright";
 import PostgresDataManager from "../data/PostgresDataManager";
 import { getSupermarketClient } from "../utils/ConfigHelper";
 
@@ -8,102 +7,6 @@ const router = Router();
 
 // Create a single shared instance of PostgresDataManager
 const dataManager = new PostgresDataManager();
-
-// Helper function to get config from database
-async function getConfigFromDatabase(
-  dataManager: PostgresDataManager,
-  supermarketName: string
-): Promise<ISupermarketWebConfig> {
-  const query = `
-    SELECT name, name_short, url, web_identifiers
-    FROM supermarket_configs
-    WHERE name = $1
-  `;
-
-  const dbContext = (dataManager as any).db;
-  const result = await dbContext.query(query, [supermarketName]);
-
-  if (result.rows.length === 0) {
-    throw new Error(`No config found for supermarket: ${supermarketName}`);
-  }
-
-  const row = result.rows[0];
-  return {
-    name: row.name,
-    nameShort: row.name_short,
-    url: row.url,
-    webIdentifiers: row.web_identifiers,
-  };
-}
-
-// Helper function to scrape supermarket discounts
-async function getSupermarketDiscounts(
-  config: ISupermarketWebConfig,
-  supermarketClient: any
-): Promise<{
-  discounts: IProductDiscountDetails[];
-  expireDate: string;
-}> {
-  let productDiscountDetails: IProductDiscountDetails[] = [];
-
-  scraperLogger.info(`Initializing scraper for ${config.name}`);
-  await supermarketClient.init();
-
-  scraperLogger.info(`Navigating to ${config.url}`);
-  await supermarketClient.navigate(config.url);
-
-  scraperLogger.info(`Handling cookie popup`);
-  await supermarketClient.handleCookiePopup(
-    config.webIdentifiers.cookieDecline
-  );
-
-  scraperLogger.info(`Getting promotion expiry date`);
-  await supermarketClient.getPromotionExpireDate(
-    config.webIdentifiers.promotionExpireDate
-  );
-
-  const expireDate = supermarketClient.getExpireDate();
-
-  for (const productCategory of config.webIdentifiers.productCategories) {
-    scraperLogger.info(`Processing product category: ${productCategory}`);
-
-    const discountProducts: Locator[] | undefined =
-      await supermarketClient.getDiscountProductsByProductCategory(
-        productCategory,
-        config.webIdentifiers.products
-      );
-
-    if (!discountProducts) {
-      scraperLogger.error(
-        `No discount products found for category '${productCategory}'`
-      );
-      continue;
-    }
-
-    scraperLogger.info(
-      `Found ${discountProducts.length} discount products in category '${productCategory}'`
-    );
-
-    for (const discountProduct of discountProducts) {
-      const details: IProductDiscountDetails =
-        await supermarketClient.getDiscountProductDetails(
-          discountProduct,
-          config.webIdentifiers.promotionProducts
-        );
-      productDiscountDetails.push(details);
-      scraperLogger.debug(`Scraped product: ${details.name}`);
-    }
-    scraperLogger.info(
-      `Completed scraping ${productDiscountDetails.length} products from category '${productCategory}'`
-    );
-  }
-
-  scraperLogger.info(
-    `Total products scraped: ${productDiscountDetails.length}`
-  );
-  await supermarketClient.close();
-  return { discounts: productDiscountDetails, expireDate };
-}
 
 // Health check endpoint
 router.get("/health", (req: Request, res: Response) => {
@@ -203,16 +106,26 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
     // Map supermarket names to keys
     const nameToKeyMap: { [key: string]: string } = {
       "Albert Heijn": "albert-heijn",
+      Aldi: "aldi",
       Dirk: "dirk",
+      Hoogvliet: "hoogvliet",
+      Jumbo: "jumbo",
+      Lidl: "lidl",
       PLUS: "plus",
     };
 
     // Define all supermarkets
     const allSupermarkets = [
       { key: "albert-heijn", name: "Albert Heijn" },
+      { key: "aldi", name: "Aldi" },
       { key: "dirk", name: "Dirk" },
+      { key: "hoogvliet", name: "Hoogvliet" },
+      { key: "jumbo", name: "Jumbo" },
+      { key: "lidl", name: "Lidl" },
       { key: "plus", name: "PLUS" },
     ];
+
+    const scheduledRunController = dataManager.getScheduledRunController();
 
     const statuses = await Promise.all(
       allSupermarkets.map(async (sm) => {
@@ -222,11 +135,20 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
         const lastRun = await scraperRunController.getLastRunBySupermarket(
           sm.name
         );
+        const scheduledRun = await scheduledRunController.getScheduledRun(
+          sm.name
+        );
+
+        const base = {
+          key: sm.key,
+          name: sm.name,
+          promotionExpireDate: scheduledRun?.promotionExpireDate?.toISOString() ?? null,
+          scheduledEnabled: scheduledRun?.enabled ?? false,
+        };
 
         if (dbRow && lastRun) {
           return {
-            key: sm.key,
-            name: sm.name,
+            ...base,
             status: lastRun.status as "success" | "failed" | "running",
             lastRun: lastRun.completedAt || lastRun.startedAt,
             productsScraped: parseInt(dbRow.products_scraped, 10),
@@ -234,8 +156,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
           };
         } else if (lastRun) {
           return {
-            key: sm.key,
-            name: sm.name,
+            ...base,
             status: lastRun.status as "success" | "failed" | "running",
             lastRun: lastRun.completedAt || lastRun.startedAt,
             productsScraped: 0,
@@ -243,8 +164,7 @@ router.get("/dashboard/statuses", async (req: Request, res: Response) => {
           };
         } else {
           return {
-            key: sm.key,
-            name: sm.name,
+            ...base,
             status: "pending" as const,
           };
         }
@@ -269,11 +189,12 @@ router.get("/discounts", async (req: Request, res: Response) => {
     serverLogger.info("Fetching all active discounts with product details");
 
     const query = `
-      SELECT 
+      SELECT
         p.id,
         p.name,
         p.category,
         p.supermarket,
+        p.product_url,
         p.created_at,
         p.updated_at,
         json_build_object(
@@ -281,6 +202,7 @@ router.get("/discounts", async (req: Request, res: Response) => {
           'product_id', d.product_id,
           'original_price', d.original_price,
           'discount_price', d.discount_price,
+          'unit_price', d.unit_price,
           'special_discount', d.special_discount,
           'expire_date', d.expire_date,
           'active', d.active,
@@ -321,7 +243,11 @@ router.post(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -333,7 +259,7 @@ router.post(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 
@@ -361,18 +287,10 @@ router.post(
         `Scraper run tracked with ID: ${runId}, started at: ${currentBatchRunDate.toISOString()}`
       );
 
-      // Get configuration from database
-      scraperLogger.info("Fetching supermarket configuration from database");
-      const supermarketConfig = await getConfigFromDatabase(
-        dataManager,
-        supermarketName
-      );
-      scraperLogger.info("Configuration loaded successfully");
-
-      // Scrape discounts
+      // Fetch discounts via API client
       const supermarketClient = getSupermarketClient(supermarketName);
       const { discounts: supermarketDiscounts, expireDate } =
-        await getSupermarketDiscounts(supermarketConfig, supermarketClient);
+        await supermarketClient.fetchDiscounts();
 
       // Parse the expiration date
       const promotionExpireDate = expireDate ? new Date(expireDate) : undefined;
@@ -381,14 +299,14 @@ router.post(
       scraperLogger.info("Updating database with scraped data");
 
       const productMetrics = await dataManager.addProductDb(
-        supermarketConfig.name,
+        supermarketName,
         supermarketDiscounts
       );
       scraperLogger.info("Products upserted to database");
 
       const discountMetrics = await dataManager.addDiscountDb(
         supermarketDiscounts,
-        supermarketConfig.name,
+        supermarketName,
         currentBatchRunDate
       );
       scraperLogger.info(
@@ -450,7 +368,7 @@ router.post(
         message: `Scraper completed for ${supermarketName}`,
         data: {
           runId,
-          supermarket: supermarketConfig.name,
+          supermarket: supermarketName,
           productsScraped: supermarketDiscounts.length,
           productsCreated: productMetrics.created,
           productsUpdated: productMetrics.updated,
@@ -526,7 +444,11 @@ router.get(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -538,7 +460,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 
@@ -634,7 +556,11 @@ router.get(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -646,7 +572,7 @@ router.get(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 
@@ -695,7 +621,11 @@ router.put(
       // Map URL params to full supermarket names
       const nameMap: { [key: string]: string } = {
         "albert-heijn": "Albert Heijn",
+        aldi: "Aldi",
         dirk: "Dirk",
+        hoogvliet: "Hoogvliet",
+        jumbo: "Jumbo",
+        lidl: "Lidl",
         plus: "PLUS",
       };
 
@@ -707,7 +637,7 @@ router.put(
         );
         return res.status(400).json({
           success: false,
-          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, dirk, plus`,
+          error: `Unknown supermarket: ${req.params.supermarket}. Valid values: albert-heijn, aldi, dirk, hoogvliet, jumbo, lidl, plus`,
         });
       }
 

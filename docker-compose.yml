@@ -1,0 +1,56 @@
+services:
+  postgres:
+    build:
+      context: database
+      dockerfile: Dockerfile
+    container_name: discount-scraper-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persist data
+      - postgres_data:/var/lib/postgresql/data
+      # Mount schema for easy updates during development
+      - ./database/src/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    restart: unless-stopped
+
+  scraper-api:
+    build:
+      context: scraper
+      dockerfile: Dockerfile
+    container_name: discount-scraper-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      API_PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      # Mount logs directory for persistence
+      - ./scraper/logs:/app/logs
+
+  web:
+    build:
+      context: web
+      dockerfile: Dockerfile
+    container_name: discount-scraper-web
+    ports:
+      - "3010:80"
+    depends_on:
+      - scraper-api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

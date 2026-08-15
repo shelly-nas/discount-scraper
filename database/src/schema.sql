@@ -5,21 +5,6 @@
 DROP TABLE IF EXISTS discounts CASCADE;
 DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS scraper_runs CASCADE;
-DROP TABLE IF EXISTS supermarket_configs CASCADE;
-
--- Supermarket Configuration Table
-CREATE TABLE supermarket_configs (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    name_short VARCHAR(50),
-    url VARCHAR(512) NOT NULL,
-    web_identifiers JSONB NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Create index on name for faster lookups
-CREATE INDEX idx_supermarket_name ON supermarket_configs(name);
 
 -- Products Table
 CREATE TABLE products (
@@ -27,6 +12,7 @@ CREATE TABLE products (
     name VARCHAR(500) NOT NULL,
     category VARCHAR(255) NOT NULL,
     supermarket VARCHAR(255) NOT NULL,
+    product_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(name, supermarket)
@@ -89,6 +75,7 @@ CREATE TABLE discounts (
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     original_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
     discount_price DECIMAL(10, 2) NOT NULL,
+    unit_price VARCHAR(50),
     special_discount VARCHAR(255),
     expire_date TIMESTAMP NOT NULL,
     active BOOLEAN NOT NULL DEFAULT true,
@@ -117,9 +104,6 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers to automatically update updated_at
-CREATE TRIGGER update_supermarket_configs_updated_at BEFORE UPDATE ON supermarket_configs
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -130,13 +114,12 @@ CREATE TRIGGER update_scheduled_runs_updated_at BEFORE UPDATE ON scheduled_runs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Comments for documentation
-COMMENT ON TABLE supermarket_configs IS 'Stores supermarket web scraping configuration';
 COMMENT ON TABLE products IS 'Stores product information from various supermarkets';
+COMMENT ON COLUMN products.product_url IS 'Direct URL to the product/offer page on the supermarket website — null when not available';
 COMMENT ON TABLE scraper_runs IS 'Stores information about each scraper run including status and metrics';
 COMMENT ON TABLE scheduled_runs IS 'Stores scheduled run information for automated scraping';
 COMMENT ON TABLE discounts IS 'Stores discount information linked to products';
 
-COMMENT ON COLUMN supermarket_configs.web_identifiers IS 'JSON object containing web scraping identifiers';
 COMMENT ON COLUMN scraper_runs.status IS 'Current status of the scraper run: running, success, or failed';
 COMMENT ON COLUMN scraper_runs.products_scraped IS 'Total number of products scraped in this run';
 COMMENT ON COLUMN scraper_runs.products_updated IS 'Number of existing products that were updated';
@@ -148,6 +131,7 @@ COMMENT ON COLUMN scraper_runs.promotion_expire_date IS 'The expiration date of 
 COMMENT ON COLUMN scheduled_runs.next_run_at IS 'The next scheduled time to run the scraper for this supermarket';
 COMMENT ON COLUMN scheduled_runs.promotion_expire_date IS 'The promotion expiration date used to calculate next_run_at';
 COMMENT ON COLUMN scheduled_runs.enabled IS 'Whether scheduled runs are enabled for this supermarket';
+COMMENT ON COLUMN discounts.unit_price IS 'Unit price string e.g. €1.49/kg, €0.99/l, €0.50/st — null when not available';
 COMMENT ON COLUMN discounts.special_discount IS 'Additional discount information like quantity or special conditions';
 COMMENT ON COLUMN discounts.expire_date IS 'Date when the discount expires';
 COMMENT ON COLUMN discounts.active IS 'Whether the discount is currently active (true) or has been deactivated (false)';

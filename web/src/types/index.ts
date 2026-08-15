@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   category: string;
   supermarket: string;
+  product_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +43,8 @@ export interface SupermarketStatus {
   status: "success" | "failed" | "running" | "pending";
   lastRun?: string;
   productsScraped?: number;
+  promotionExpireDate?: string | null;
+  scheduledEnabled?: boolean;
 }
 
 export interface ScraperRun {
