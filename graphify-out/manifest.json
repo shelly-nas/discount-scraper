@@ -1,42 +1,42 @@
 {
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/vitest.config.ts": {
-    "mtime": 1778595677.4804955,
+    "mtime": 1786802286.2067957,
     "hash": "b83463ea7ce647059b8319bc2be9ce14"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/index.ts": {
-    "mtime": 1762503754.8439863,
-    "hash": "07a9c56961584fc566734899e4e4229f"
+    "mtime": 1786803496.1721928,
+    "hash": "e4c09104bc14da56c4ff47155da87edb"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/PlusApiClient.ts": {
-    "mtime": 1778653866.650337,
+    "mtime": 1786802286.2019632,
     "hash": "cd5ac78be71cbe387c033b14b85ecc0f"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/AldiApiClient.ts": {
-    "mtime": 1778653851.1709,
+    "mtime": 1786802286.2008083,
     "hash": "f3fb01ab7e3f3c143f14b75befbd0d44"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/AhApiClient.ts": {
-    "mtime": 1778659453.4155166,
+    "mtime": 1786802286.2005887,
     "hash": "c03c01939dfd38bbc83bdd1d49466254"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/HoogvlietApiClient.ts": {
-    "mtime": 1778653873.5239034,
+    "mtime": 1786802286.2013502,
     "hash": "0f83610bc58578cbadad4aacd27c15f1"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/LidlApiClient.ts": {
-    "mtime": 1778653858.1615708,
+    "mtime": 1786802286.2017674,
     "hash": "4c665047e46d3ab19721499afffb13ae"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/ApiClient.ts": {
-    "mtime": 1778610886.1057189,
+    "mtime": 1786802286.2009726,
     "hash": "6f31ce96c718d4c7321a727ab0d16773"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/DirkApiClient.ts": {
-    "mtime": 1778653832.2662997,
+    "mtime": 1786802286.2011487,
     "hash": "1928605f98a60ca8099abec745b5b65c"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/clients/JumboApiClient.ts": {
-    "mtime": 1778653882.0963964,
+    "mtime": 1786802286.2015653,
     "hash": "77c97bfabc6818a7771e8aac15be2803"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/config/database.ts": {
@@ -44,55 +44,55 @@
     "hash": "041aa17ff39a28b633f0b5d4f719a51c"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug8.ts": {
-    "mtime": 1778618458.3433764,
+    "mtime": 1786802286.2058473,
     "hash": "fdb5208d82d3ac9c24fcf2667ad9f519"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug9.ts": {
-    "mtime": 1778618485.8794622,
+    "mtime": 1786802286.2060313,
     "hash": "a548abb78ae38a29edd6a783d2a96331"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/dirk-database.test.ts": {
-    "mtime": 1778653813.4127185,
+    "mtime": 1786802286.204113,
     "hash": "ff6a3ae27f92c49bff24b2d512cf3dd3"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug6.ts": {
-    "mtime": 1778618398.7481747,
+    "mtime": 1786802286.2054715,
     "hash": "02294a812f65f6e2c5b8c09cd52c81d4"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug2.ts": {
-    "mtime": 1778618108.130832,
+    "mtime": 1786802286.2047474,
     "hash": "cefc235aca2c37d33cf96dc6bc220eda"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug3.ts": {
-    "mtime": 1778618140.6908092,
+    "mtime": 1786802286.204944,
     "hash": "e5d0a399c81aacdfd749f2cb1959a555"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug7.ts": {
-    "mtime": 1778618422.795766,
+    "mtime": 1786802286.2056372,
     "hash": "acca120fd5c552a81ffabad93bb0086b"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug.ts": {
-    "mtime": 1778618081.7343748,
+    "mtime": 1786802286.2042913,
     "hash": "98390309a8f5449cb1265b512debc3df"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug4.ts": {
-    "mtime": 1778618323.2589006,
+    "mtime": 1786802286.2051208,
     "hash": "b0f3a246a6f335b9cb8cba0a92cffb76"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug10.ts": {
-    "mtime": 1778618516.2543235,
+    "mtime": 1786802286.2044466,
     "hash": "1eeea16d5dab78f430473296c5d08ca9"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests/hoogvliet_debug5.ts": {
-    "mtime": 1778618367.920451,
+    "mtime": 1786802286.2052972,
     "hash": "5436e9529f9d8a4100e662cc46b66c7b"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/utils/DateTimeHandler.ts": {
-    "mtime": 1778614897.100379,
+    "mtime": 1786802286.2065978,
     "hash": "58e4ae92686c75610dadd92d57808823"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/utils/ConfigHelper.ts": {
-    "mtime": 1778653091.5634217,
+    "mtime": 1786802286.2063153,
     "hash": "bf00944d2c1f5a00b1064dd7595caf2d"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/utils/Logger.ts": {
@@ -100,11 +100,11 @@
     "hash": "fb00860f85b5a4681453116cdf2e2cb1"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/models/ProductModel.ts": {
-    "mtime": 1778653742.4926736,
+    "mtime": 1786802286.203537,
     "hash": "dfd9936ad0959dc8454d478e1a350ec0"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/models/DiscountModel.ts": {
-    "mtime": 1778653633.24379,
+    "mtime": 1786802286.203305,
     "hash": "e11e95c83677e9506cedd37b28ce082a"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/models/ScraperRunModel.ts": {
@@ -116,7 +116,7 @@
     "hash": "32e87fd4bb97e799849ef18942925b01"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/api/Routes.ts": {
-    "mtime": 1778653903.3089945,
+    "mtime": 1786802286.2002594,
     "hash": "bc120ac26e5e0f0ebdb2b66733e79549"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/controllers/PostgresScheduledRunController.ts": {
@@ -124,39 +124,43 @@
     "hash": "401c87d07e6484240defa72581f0ff93"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/controllers/PostgresDiscountController.ts": {
-    "mtime": 1778653700.9679496,
+    "mtime": 1786802286.2022192,
     "hash": "491b839d368f1cfd3f7ad8793a9f835a"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/controllers/PostgresProductController.ts": {
-    "mtime": 1778653780.4406593,
+    "mtime": 1786802286.202519,
     "hash": "d7f3505f7b03dccd7f015882ba69b4d7"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/controllers/PostgresScraperRunController.ts": {
     "mtime": 1762503754.843594,
     "hash": "7f2e7610241bfdd5e3f52f886f04bcb4"
   },
+  "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/data/Migrations.ts": {
+    "mtime": 1786803456.3159752,
+    "hash": "6b694c4a8965bacfd8812c07920a7500"
+  },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/data/PostgresDataContext.ts": {
     "mtime": 1762503754.8437414,
     "hash": "93b6b8e97fb2da2dc22aa69f8282ea91"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/data/PostgresDataManager.ts": {
-    "mtime": 1778653808.6722329,
+    "mtime": 1786802286.2028146,
     "hash": "0e08fcf4f032c84d23c196d533c377cd"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/services/SchedulerService.ts": {
-    "mtime": 1778653119.3843079,
+    "mtime": 1786802286.203841,
     "hash": "4e64e6bce74e8c47f7ab1b779aa7b8ce"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/interfaces/IProductDiscountDetails.ts": {
-    "mtime": 1778653707.2644603,
+    "mtime": 1786802286.2030423,
     "hash": "9cae5c4c0f9f34019fc3cb065f82bbec"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/database/src/schema.sql": {
-    "mtime": 1778653716.919231,
+    "mtime": 1786802286.1382608,
     "hash": "afc2ebff3365bb6e30f35b4613b38ca2"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/database/src/migrate.sql": {
-    "mtime": 1778653726.4577456,
+    "mtime": 1786802286.1379797,
     "hash": "bf7b4a1c36549b0e1b8f25677c781d3b"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/vite.config.ts": {
@@ -164,7 +168,7 @@
     "hash": "376573af30cdef269a4bb7e646758c65"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/App.tsx": {
-    "mtime": 1778615952.709658,
+    "mtime": 1786802286.2070997,
     "hash": "d1b3072540eb239c282a89f9bde720a5"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/main.tsx": {
@@ -172,11 +176,11 @@
     "hash": "78fffb4190e85688f3e63b8caaf799e5"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/types/index.ts": {
-    "mtime": 1778653907.8447764,
+    "mtime": 1786802286.210296,
     "hash": "2e40a6b3f5e469af2f7bf726c1b06c74"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/context/ThemeContext.tsx": {
-    "mtime": 1778615780.1666987,
+    "mtime": 1786802286.2085972,
     "hash": "4660fefc93bb4c2e1478d95c9cae26e3"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/components/ConfirmDialog.tsx": {
@@ -184,7 +188,7 @@
     "hash": "2188d1ecad662c67ca43175bf8277ac7"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/components/DatabaseTable.tsx": {
-    "mtime": 1778653926.4499104,
+    "mtime": 1786802286.2076776,
     "hash": "215941237635c53bd0c49a52f637993c"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/components/SearchBar.tsx": {
@@ -192,7 +196,7 @@
     "hash": "18460e0f10a6c5e48c56efabd08b5a9d"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/components/TabBar.tsx": {
-    "mtime": 1778615802.377779,
+    "mtime": 1786802286.2083483,
     "hash": "6b041ebad973e566e04d4a672792979c"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/pages/DiscountsView.tsx": {
@@ -200,28 +204,28 @@
     "hash": "acc825838e13caa405efb9f388ed1199"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/pages/Configurations.tsx": {
-    "mtime": 1778616563.6769235,
+    "mtime": 1786802286.209538,
     "hash": "9c6f47e0622efe8829e4feea016907d1"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/src/services/api.ts": {
-    "mtime": 1778615903.435005,
+    "mtime": 1786802286.2100434,
     "hash": "52b7105ddc8bbd545cfae8f455b3142d"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/README.md": {
-    "mtime": 1778618039.7425153,
+    "mtime": 1786802286.1375291,
     "hash": "298175a8475ce3d8a87d664ea998e0bf"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/docker-compose.yml": {
-    "mtime": 1778614868.0153236,
+    "mtime": 1786802286.1385906,
     "hash": "caa1c1cf35a4d3ae3665a2c75c8b1d6e"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/docker-compose.prod.yml": {
-    "mtime": 1778594840.0970626,
+    "mtime": 1786802286.1384242,
     "hash": "e63b6c36cdcdcba6d1119535ee49810e"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/CLAUDE.md": {
-    "mtime": 1778659465.777139,
-    "hash": "258452744e3ba2213a6c8e7de8a60faf"
+    "mtime": 1786803539.644108,
+    "hash": "9b00ba1472d278551828e7504a24c5f7"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/web/index.html": {
     "mtime": 1762503754.8461018,
@@ -232,7 +236,7 @@
     "hash": "98d91179276bd7301487083f91713c69"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/docs/FUNCTIONAL_DESIGN.md": {
-    "mtime": 1778655127.737775,
-    "hash": "b3f84c6278fa32423d8d23a25af8ee2a"
+    "mtime": 1786803524.926514,
+    "hash": "43405fe665a29f360c88afeb29e605b7"
   }
 }

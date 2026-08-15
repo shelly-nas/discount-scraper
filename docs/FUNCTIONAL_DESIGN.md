@@ -1326,7 +1326,31 @@ interface WebIdentifiers {
 - Stored in database for runtime flexibility
 - Can be modified via database migrations
 
-### 5.7 System Architecture Diagram
+### 5.7 Schema Migrations
+
+**Purpose:** Keep the schema of long-lived deployments in sync with the code that queries it
+
+The database image copies `schema.sql` and `migrate.sql` into
+`/docker-entrypoint-initdb.d/`, but PostgreSQL only executes those scripts when the
+data directory is **empty**. A deployment whose volume already exists therefore never
+receives columns added after that volume was created, which causes runtime errors such
+as `column "product_url" of relation "products" does not exist`.
+
+To close that gap, the scraper API applies migrations itself:
+
+- Migrations are declared in `scraper/src/data/Migrations.ts` as an ordered list of
+  named, idempotent SQL statements.
+- `runMigrations()` executes on every API startup, after the connection test succeeds
+  and before the HTTP server starts accepting requests.
+- Every statement must be safe to run repeatedly (`ADD COLUMN IF NOT EXISTS` and
+  similar). Entries are appended; existing entries are never edited or removed.
+- If a migration fails, startup aborts rather than serving requests against a schema
+  the code cannot query.
+
+**Result:** a redeploy of the scraper API is sufficient to bring an existing database
+up to date — no manual `psql` intervention and no volume reset.
+
+### 5.8 System Architecture Diagram
 
 ```mermaid
 C4Context

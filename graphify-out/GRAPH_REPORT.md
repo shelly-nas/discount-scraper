@@ -1,16 +1,16 @@
-# Graph Report - discount-scraper  (2026-05-13)
+# Graph Report - discount-scraper  (2026-08-15)
 
 ## Corpus Check
-- 56 files · ~30,587 words
+- 57 files · ~31,062 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 659 nodes · 821 edges · 64 communities (37 shown, 27 thin omitted)
+- 665 nodes · 833 edges · 73 communities (42 shown, 31 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 27 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b76bf59f`
+- Built from commit: `3876953c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -54,15 +54,24 @@
 - [[_COMMUNITY_Community 36|Community 36]]
 - [[_COMMUNITY_Community 37|Community 37]]
 - [[_COMMUNITY_Community 38|Community 38]]
-- [[_COMMUNITY_Community 49|Community 49]]
-- [[_COMMUNITY_Community 57|Community 57]]
+- [[_COMMUNITY_Community 39|Community 39]]
+- [[_COMMUNITY_Community 40|Community 40]]
+- [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
+- [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 44|Community 44]]
+- [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 47|Community 47]]
 - [[_COMMUNITY_Community 58|Community 58]]
-- [[_COMMUNITY_Community 59|Community 59]]
-- [[_COMMUNITY_Community 62|Community 62]]
-- [[_COMMUNITY_Community 63|Community 63]]
+- [[_COMMUNITY_Community 66|Community 66]]
+- [[_COMMUNITY_Community 67|Community 67]]
+- [[_COMMUNITY_Community 68|Community 68]]
+- [[_COMMUNITY_Community 71|Community 71]]
+- [[_COMMUNITY_Community 72|Community 72]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `ScraperLogger` - 33 edges
+1. `ScraperLogger` - 34 edges
 2. `PostgresDiscountController` - 20 edges
 3. `PostgresProductController` - 15 edges
 4. `ServerLogger` - 14 edges
@@ -93,15 +102,15 @@
 - **Configurations Page Scraper Management Flow** — configurations_configurations, api_configurationsservice, confirmdialog_confirmdialog, types_scraperrun, types_supermarketstatus [INFERRED 0.95]
 - **Three-Tier Docker Deployment Architecture** — docker_compose_dev, docker_compose_prod, traefik_routing, shelly_network [INFERRED 0.85]
 
-## Communities (64 total, 27 thin omitted)
+## Communities (73 total, 31 thin omitted)
 
 ### Community 0 - "Supermarket Scraping Core"
-Cohesion: 0.05
-Nodes (32): AldiAlgoliaDataMap, AldiCurrentPrice, AldiProduct, DirkDepartment, DirkOffer, GRAPHQL_HEADERS, NL_MONTHS, DUTCH_MONTHS (+24 more)
-
-### Community 1 - "Data Models & Config"
 Cohesion: 0.09
 Nodes (39): AhClient, Albert Heijn Supermarket DB Config (SQL seed), getSupermarketClient (Factory), getDatabaseConfig, DateTimeHandler.getDateTimeString, Dirk Supermarket DB Config (SQL seed), DirkClient, DiscountModel (+31 more)
+
+### Community 1 - "Data Models & Config"
+Cohesion: 0.06
+Nodes (37): 5.1 Entity Relationship Diagram, 5.2 Table Specifications, 5.3 Database Indexes Strategy, 5.4 Data Flow Diagram, 5.5 API Data Contracts, 5.6 Configuration Data Structure, 5.7 Schema Migrations, 5.7 System Architecture Diagram (+29 more)
 
 ### Community 2 - "UI Components"
 Cohesion: 0.06
@@ -109,35 +118,35 @@ Nodes (34): 1.1 System Purpose, 1.2 Business Goals, 1.3 Target Audience, 1.4 Key
 
 ### Community 3 - "API Routes"
 Cohesion: 0.06
-Nodes (35): 5.1 Entity Relationship Diagram, 5.2 Table Specifications, 5.3 Database Indexes Strategy, 5.4 Data Flow Diagram, 5.5 API Data Contracts, 5.6 Configuration Data Structure, 5.7 System Architecture Diagram, 5. Data Structure (+27 more)
-
-### Community 4 - "Discount Controller"
-Cohesion: 0.06
 Nodes (32): 3. Access the Application, API Usage, code:properties (DB_NAME=discount), code:json ({), code:bash (# Access database directly), code:bash (# Start services), code:bash (docker compose logs), code:bash (docker compose ps              # Check if postgres is health) (+24 more)
 
-### Community 5 - "Logger Utilities"
+### Community 4 - "Discount Controller"
 Cohesion: 0.14
 Nodes (12): ConfirmDialogProps, DatabaseTableProps, SearchBarProps, configurationsService, discountService, ColumnFilter, ConfigurationsStats, Discount (+4 more)
 
-### Community 6 - "Product Controller"
+### Community 5 - "Logger Utilities"
 Cohesion: 0.08
 Nodes (25): API Endpoints Used, API Proxy, Browser Support, Build for Production, code:bash (# Navigate to web directory), code:bash (# Start development server), code:bash (# Create production build), code:block4 (web/) (+17 more)
 
-### Community 7 - "Frontend Discount View"
+### Community 6 - "Product Controller"
 Cohesion: 0.08
 Nodes (26): 3.1 User Personas, 3.2 User Stories, 3.3 Use Cases, 3. User Stories & Use Cases, code:mermaid (sequenceDiagram), code:mermaid (sequenceDiagram), code:mermaid (sequenceDiagram), code:mermaid (flowchart TD) (+18 more)
 
-### Community 8 - "Frontend Config & App"
+### Community 7 - "Frontend Discount View"
 Cohesion: 0.1
 Nodes (18): allSupermarkets, base, dataManager, dbRow, discountController, earliestRun, nameMap, nameToKeyMap (+10 more)
 
-### Community 9 - "Data Manager Facade"
+### Community 8 - "Frontend Config & App"
 Cohesion: 0.1
 Nodes (19): Adding a New Supermarket, Architecture, Code style, code:bash (cd scraper), code:bash (cd web), code:bash (# Development), code:block4 (DB_NAME=discount), code:block5 (postgres (port 5432) ← scraper-api (port 3001) ← web (port 3) (+11 more)
 
-### Community 11 - "Scraper Run Controller"
+### Community 10 - "Scheduled Run Controller"
 Cohesion: 0.1
 Nodes (20): 4.1 Core System Requirements, 4.2 Non-Functional Requirements, 4.3 System Behavior, 4. Functional Requirements, code:mermaid (stateDiagram-v2), code:mermaid (stateDiagram-v2), Discount Lifecycle, FR-001: Web Scraping Engine (+12 more)
+
+### Community 12 - "Postgres Data Context"
+Cohesion: 0.18
+Nodes (5): NL_MONTHS, DUTCH_MONTHS, RawCard, LidlGridboxImpression, LogLevel
 
 ### Community 13 - "Scheduler Service"
 Cohesion: 0.15
@@ -148,44 +157,64 @@ Cohesion: 0.17
 Nodes (8): AhApiClient, AhBonusCategoriesResponse, AhBonusCategory, AhMoney, AhPrice, AhPromotion, AhPromotionLabel, EXCLUDED_CATEGORY_IDS
 
 ### Community 16 - "Web Browser Client"
+Cohesion: 0.17
+Nodes (6): DatabaseConfig, getDatabaseConfig(), ScheduledRunRow, DatabaseConfig, ProductModel, ScheduledRunModel
+
+### Community 17 - "Dirk Supermarket Client"
 Cohesion: 0.23
 Nodes (15): discountService API, getAllDiscounts Method, getDiscountsByFilter Method, Client-Side Filtering Pattern, DatabaseTable Component, DatabaseView Page, Discount Lifecycle (Active/Inactive), DiscountsView Page (+7 more)
 
-### Community 17 - "Dirk Supermarket Client"
+### Community 18 - "DateTime Handler"
 Cohesion: 0.22
 Nodes (14): configurationsService API, getScraperRuns Method, getStats Method, getStatuses Method, runScraper Method, App Component, Configurations Page, ConfirmDialog Component (+6 more)
 
-### Community 35 - "Community 35"
+### Community 24 - "Filter Bar Component"
+Cohesion: 0.31
+Nodes (6): Migration, migrations, runMigrations(), app, initializeDatabase(), startServer()
+
+### Community 34 - "Community 34"
+Cohesion: 0.4
+Nodes (4): PlusCategory, PlusOffer, PlusPromoItem, PlusPromoResponse
+
+### Community 37 - "Community 37"
+Cohesion: 0.4
+Nodes (3): DirkDepartment, DirkOffer, GRAPHQL_HEADERS
+
+### Community 43 - "Community 43"
+Cohesion: 0.5
+Nodes (3): AldiAlgoliaDataMap, AldiCurrentPrice, AldiProduct
+
+### Community 44 - "Community 44"
 Cohesion: 0.5
 Nodes (3): IProductDetails, ISupermarketWebConfig, IWebIdentifiers
 
-### Community 36 - "Community 36"
+### Community 45 - "Community 45"
 Cohesion: 0.5
 Nodes (4): Docker Compose Dev Config, Docker Compose Prod Config, Shelly External Docker Network, Traefik Reverse Proxy Routing
 
-### Community 37 - "Community 37"
+### Community 46 - "Community 46"
 Cohesion: 0.5
 Nodes (4): Functional Design Document, Promotion-Driven Scheduling, Project README, Web README
 
 ## Knowledge Gaps
-- **209 isolated node(s):** `app`, `PlusOffer`, `PlusCategory`, `PlusPromoItem`, `PlusPromoResponse` (+204 more)
+- **211 isolated node(s):** `app`, `PlusOffer`, `PlusCategory`, `PlusPromoItem`, `PlusPromoResponse` (+206 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **27 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ScraperLogger` connect `Supermarket Scraping Core` to `Frontend Config & App`, `Postgres Data Context`, `Plus Supermarket Client`?**
+- **Why does `ScraperLogger` connect `Community 33` to `Community 34`, `Community 35`, `Community 36`, `Community 37`, `Frontend Discount View`, `Community 43`, `Postgres Data Context`, `Scraper Run Controller`, `Plus Supermarket Client`, `Web Browser Client`, `Scraper Run Model`, `Filter Bar Component`?**
   _High betweenness centrality (0.067) - this node is a cross-community bridge._
-- **Why does `Functional Design Document` connect `UI Components` to `API Routes`, `Scraper Run Controller`, `Frontend Discount View`?**
+- **Why does `Functional Design Document` connect `UI Components` to `Data Models & Config`, `Scheduled Run Controller`, `Product Controller`?**
   _High betweenness centrality (0.025) - this node is a cross-community bridge._
-- **Why does `PostgresDiscountController` connect `Scheduled Run Controller` to `Supermarket Scraping Core`?**
+- **Why does `PostgresDiscountController` connect `Data Manager Facade` to `Community 36`?**
   _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **What connects `app`, `PlusOffer`, `PlusCategory` to the rest of the system?**
-  _209 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _211 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Supermarket Scraping Core` be split into smaller, more focused modules?**
-  _Cohesion score 0.05 - nodes in this community are weakly interconnected._
-- **Should `Data Models & Config` be split into smaller, more focused modules?**
   _Cohesion score 0.09 - nodes in this community are weakly interconnected._
+- **Should `Data Models & Config` be split into smaller, more focused modules?**
+  _Cohesion score 0.06 - nodes in this community are weakly interconnected._
 - **Should `UI Components` be split into smaller, more focused modules?**
   _Cohesion score 0.06 - nodes in this community are weakly interconnected._

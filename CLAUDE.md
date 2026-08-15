@@ -81,13 +81,16 @@ Entry point: [scraper/src/index.ts](scraper/src/index.ts)
 **Key layers:**
 - **`api/Routes.ts`** — All Express routes under `/api`. Scraping is triggered via `POST /api/scraper/run/:supermarket`.
 - **`clients/`** — API-based discount fetchers. `ApiClient` is the abstract base with `fetchDiscounts()` returning `{ discounts: IProductDiscountDetails[], expireDate: string }`. Each discount includes a `productUrl` (direct link to the supermarket offer page, or the offers listing page when per-product URLs are unavailable). Concrete clients: `DirkApiClient` (public GraphQL), `AhApiClient` (Playwright intercepts AH GraphQL), `PlusApiClient` (Playwright intercepts OutSystems API), `LidlApiClient` (Playwright HTML scrape with lazy-load scrolling), `AldiApiClient` (Playwright reads `__NEXT_DATA__` double-encoded JSON), `HoogvlietApiClient` (Playwright fetches paginated AJAX via `GetCategoriesForPromotionPage`, parses product HTML per page), `JumboApiClient` (Playwright HTML scrape — waits for Vue hydration, scrolls to load all carousels, reads `expiration-date` attr from `[data-testid="promotion-card"]` elements). All clients set `productUrl` to the supermarket's offers listing page — none of the APIs expose stable per-product deep links.
+- **`data/Migrations.ts`** — Ordered list of idempotent schema migrations, applied by `runMigrations()` on every API startup (after the connection test, before the server listens). The database init scripts only run on an empty data directory, so this is what upgrades existing deployments. Append new entries; never edit or remove existing ones, and keep every statement safe to re-run.
 - **`data/PostgresDataManager`** — Facade coordinating the four controllers. `addProductDb` upserts products (deduplicates by name); `addDiscountDb` uses smart logic comparing against the previous batch's `promotion_expire_date` to avoid duplicate discount rows.
 - **`controllers/`** — One controller per table (`PostgresProductController`, `PostgresDiscountController`, `PostgresScraperRunController`, `PostgresScheduledRunController`), each receiving a `PostgresDataContext` (singleton pg pool).
 - **`services/SchedulerService`** — node-cron job (every minute) that queries `scheduled_runs` for due entries, deactivates expired discounts, and fires scraper runs by making internal `axios.post` calls to its own API.
 
 ### `database/` — PostgreSQL init scripts
 
-Schema: [database/src/schema.sql](database/src/schema.sql). Tables:
+Schema: [database/src/schema.sql](database/src/schema.sql). These init scripts run **only when the Postgres data volume is empty** — when adding a column, also append an idempotent migration to [scraper/src/data/Migrations.ts](scraper/src/data/Migrations.ts), or existing deployments will error on the missing column.
+
+Tables:
 - `products` — unique per `(name, supermarket)`; upserted on every scrape; stores `product_url` (offer page link)
 - `discounts` — soft-delete via `active` flag; old discounts are marked `active=false` rather than deleted
 - `scraper_runs` — audit log of every execution with metrics

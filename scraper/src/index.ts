@@ -2,6 +2,7 @@ import express, { Request, Response, Application } from "express";
 import cors from "cors";
 import { serverLogger } from "./utils/Logger";
 import PostgresDataManager from "./data/PostgresDataManager";
+import { runMigrations } from "./data/Migrations";
 import SchedulerService from "./services/SchedulerService";
 import routes from "./api/Routes";
 
@@ -33,12 +34,18 @@ async function initializeDatabase(): Promise<boolean> {
   const dataManager = new PostgresDataManager();
   try {
     const connected = await dataManager.testConnection();
-    if (connected) {
-      serverLogger.info("Database connection established successfully");
-    } else {
+    if (!connected) {
       serverLogger.error("Failed to establish database connection");
+      return false;
     }
-    return connected;
+
+    serverLogger.info("Database connection established successfully");
+
+    // Apply idempotent schema migrations. The database init scripts only run on
+    // an empty data directory, so existing volumes are upgraded here instead.
+    await runMigrations();
+
+    return true;
   } catch (error) {
     serverLogger.error("Error during database initialization:", error);
     return false;
