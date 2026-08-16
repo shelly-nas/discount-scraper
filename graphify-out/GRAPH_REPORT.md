@@ -1,16 +1,16 @@
-# Graph Report - discount-scraper  (2026-08-15)
+# Graph Report - discount-scraper  (2026-08-16)
 
 ## Corpus Check
-- 57 files · ~31,062 words
+- 57 files · ~31,118 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 665 nodes · 833 edges · 73 communities (42 shown, 31 thin omitted)
+- 665 nodes · 833 edges · 71 communities (41 shown, 30 thin omitted)
 - Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 27 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3876953c`
+- Built from commit: `ee296c03`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -61,14 +61,12 @@
 - [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
-- [[_COMMUNITY_Community 46|Community 46]]
-- [[_COMMUNITY_Community 47|Community 47]]
-- [[_COMMUNITY_Community 58|Community 58]]
+- [[_COMMUNITY_Community 56|Community 56]]
+- [[_COMMUNITY_Community 64|Community 64]]
+- [[_COMMUNITY_Community 65|Community 65]]
 - [[_COMMUNITY_Community 66|Community 66]]
-- [[_COMMUNITY_Community 67|Community 67]]
-- [[_COMMUNITY_Community 68|Community 68]]
-- [[_COMMUNITY_Community 71|Community 71]]
-- [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Community 69|Community 69]]
+- [[_COMMUNITY_Community 70|Community 70]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `ScraperLogger` - 34 edges
@@ -102,7 +100,7 @@
 - **Configurations Page Scraper Management Flow** — configurations_configurations, api_configurationsservice, confirmdialog_confirmdialog, types_scraperrun, types_supermarketstatus [INFERRED 0.95]
 - **Three-Tier Docker Deployment Architecture** — docker_compose_dev, docker_compose_prod, traefik_routing, shelly_network [INFERRED 0.85]
 
-## Communities (73 total, 31 thin omitted)
+## Communities (71 total, 30 thin omitted)
 
 ### Community 0 - "Supermarket Scraping Core"
 Cohesion: 0.09
@@ -133,32 +131,32 @@ Cohesion: 0.08
 Nodes (26): 3.1 User Personas, 3.2 User Stories, 3.3 Use Cases, 3. User Stories & Use Cases, code:mermaid (sequenceDiagram), code:mermaid (sequenceDiagram), code:mermaid (sequenceDiagram), code:mermaid (flowchart TD) (+18 more)
 
 ### Community 7 - "Frontend Discount View"
-Cohesion: 0.1
-Nodes (18): allSupermarkets, base, dataManager, dbRow, discountController, earliestRun, nameMap, nameToKeyMap (+10 more)
+Cohesion: 0.14
+Nodes (8): AldiAlgoliaDataMap, AldiCurrentPrice, AldiProduct, NL_MONTHS, DUTCH_MONTHS, RawCard, LidlGridboxImpression, LogLevel
 
 ### Community 8 - "Frontend Config & App"
 Cohesion: 0.1
+Nodes (18): allSupermarkets, base, dataManager, dbRow, discountController, earliestRun, nameMap, nameToKeyMap (+10 more)
+
+### Community 9 - "Data Manager Facade"
+Cohesion: 0.1
 Nodes (19): Adding a New Supermarket, Architecture, Code style, code:bash (cd scraper), code:bash (cd web), code:bash (# Development), code:block4 (DB_NAME=discount), code:block5 (postgres (port 5432) ← scraper-api (port 3001) ← web (port 3) (+11 more)
 
-### Community 10 - "Scheduled Run Controller"
+### Community 11 - "Scraper Run Controller"
+Cohesion: 0.13
+Nodes (8): DatabaseConfig, getDatabaseConfig(), ScheduledRunRow, ScraperRunRow, DatabaseConfig, ProductModel, ScheduledRunModel, ScraperRunModel
+
+### Community 12 - "Postgres Data Context"
 Cohesion: 0.1
 Nodes (20): 4.1 Core System Requirements, 4.2 Non-Functional Requirements, 4.3 System Behavior, 4. Functional Requirements, code:mermaid (stateDiagram-v2), code:mermaid (stateDiagram-v2), Discount Lifecycle, FR-001: Web Scraping Engine (+12 more)
 
-### Community 12 - "Postgres Data Context"
-Cohesion: 0.18
-Nodes (5): NL_MONTHS, DUTCH_MONTHS, RawCard, LidlGridboxImpression, LogLevel
-
-### Community 13 - "Scheduler Service"
+### Community 14 - "Plus Supermarket Client"
 Cohesion: 0.15
 Nodes (8): TabType, THEME_CYCLE, ThemeToggle(), ThemeContext, ThemeContextValue, ThemeMode, ThemeProvider(), useTheme()
 
-### Community 14 - "Plus Supermarket Client"
+### Community 15 - "Albert Heijn Client"
 Cohesion: 0.17
 Nodes (8): AhApiClient, AhBonusCategoriesResponse, AhBonusCategory, AhMoney, AhPrice, AhPromotion, AhPromotionLabel, EXCLUDED_CATEGORY_IDS
-
-### Community 16 - "Web Browser Client"
-Cohesion: 0.17
-Nodes (6): DatabaseConfig, getDatabaseConfig(), ScheduledRunRow, DatabaseConfig, ProductModel, ScheduledRunModel
 
 ### Community 17 - "Dirk Supermarket Client"
 Cohesion: 0.23
@@ -172,43 +170,39 @@ Nodes (14): configurationsService API, getScraperRuns Method, getStats Method, g
 Cohesion: 0.31
 Nodes (6): Migration, migrations, runMigrations(), app, initializeDatabase(), startServer()
 
-### Community 34 - "Community 34"
-Cohesion: 0.4
-Nodes (4): PlusCategory, PlusOffer, PlusPromoItem, PlusPromoResponse
-
-### Community 37 - "Community 37"
+### Community 33 - "Community 33"
 Cohesion: 0.4
 Nodes (3): DirkDepartment, DirkOffer, GRAPHQL_HEADERS
 
-### Community 43 - "Community 43"
-Cohesion: 0.5
-Nodes (3): AldiAlgoliaDataMap, AldiCurrentPrice, AldiProduct
+### Community 36 - "Community 36"
+Cohesion: 0.4
+Nodes (4): PlusCategory, PlusOffer, PlusPromoItem, PlusPromoResponse
 
-### Community 44 - "Community 44"
+### Community 42 - "Community 42"
 Cohesion: 0.5
 Nodes (3): IProductDetails, ISupermarketWebConfig, IWebIdentifiers
 
-### Community 45 - "Community 45"
+### Community 43 - "Community 43"
 Cohesion: 0.5
 Nodes (4): Docker Compose Dev Config, Docker Compose Prod Config, Shelly External Docker Network, Traefik Reverse Proxy Routing
 
-### Community 46 - "Community 46"
+### Community 44 - "Community 44"
 Cohesion: 0.5
 Nodes (4): Functional Design Document, Promotion-Driven Scheduling, Project README, Web README
 
 ## Knowledge Gaps
 - **211 isolated node(s):** `app`, `PlusOffer`, `PlusCategory`, `PlusPromoItem`, `PlusPromoResponse` (+206 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **31 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ScraperLogger` connect `Community 33` to `Community 34`, `Community 35`, `Community 36`, `Community 37`, `Frontend Discount View`, `Community 43`, `Postgres Data Context`, `Scraper Run Controller`, `Plus Supermarket Client`, `Web Browser Client`, `Scraper Run Model`, `Filter Bar Component`?**
+- **Why does `ScraperLogger` connect `Community 35` to `Community 33`, `Community 34`, `Community 36`, `Frontend Discount View`, `Frontend Config & App`, `Scraper Run Controller`, `Scheduler Service`, `Albert Heijn Client`, `Scraper Run Model`, `Filter Bar Component`?**
   _High betweenness centrality (0.067) - this node is a cross-community bridge._
-- **Why does `Functional Design Document` connect `UI Components` to `Data Models & Config`, `Scheduled Run Controller`, `Product Controller`?**
+- **Why does `Functional Design Document` connect `UI Components` to `Data Models & Config`, `Postgres Data Context`, `Product Controller`?**
   _High betweenness centrality (0.025) - this node is a cross-community bridge._
-- **Why does `PostgresDiscountController` connect `Data Manager Facade` to `Community 36`?**
+- **Why does `PostgresDiscountController` connect `Scheduled Run Controller` to `Community 34`?**
   _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **What connects `app`, `PlusOffer`, `PlusCategory` to the rest of the system?**
   _211 weakly-connected nodes found - possible documentation gaps or missing edges._

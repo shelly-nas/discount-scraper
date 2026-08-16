@@ -136,8 +136,8 @@
     "hash": "7f2e7610241bfdd5e3f52f886f04bcb4"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/data/Migrations.ts": {
-    "mtime": 1786803456.3159752,
-    "hash": "6b694c4a8965bacfd8812c07920a7500"
+    "mtime": 1786805492.6533995,
+    "hash": "d3757d3cae6edf8dd51644e55e4d1cd5"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/data/PostgresDataContext.ts": {
     "mtime": 1762503754.8437414,
@@ -236,7 +236,7 @@
     "hash": "98d91179276bd7301487083f91713c69"
   },
   "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/docs/FUNCTIONAL_DESIGN.md": {
-    "mtime": 1786803524.926514,
-    "hash": "43405fe665a29f360c88afeb29e605b7"
+    "mtime": 1786869668.5862195,
+    "hash": "4338a58dd292de956597f278b3cd6bd5"
   }
 }

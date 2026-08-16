@@ -23,6 +23,10 @@ const migrations: Migration[] = [
     name: "products.product_url",
     sql: "ALTER TABLE products ADD COLUMN IF NOT EXISTS product_url TEXT",
   },
+  {
+    name: "discounts.unit_price",
+    sql: "ALTER TABLE discounts ADD COLUMN IF NOT EXISTS unit_price VARCHAR(50)",
+  },
 ];
 
 export async function runMigrations(): Promise<void> {

@@ -1347,6 +1347,13 @@ To close that gap, the scraper API applies migrations itself:
 - If a migration fails, startup aborts rather than serving requests against a schema
   the code cannot query.
 
+**Currently declared migrations:**
+
+| Migration              | Statement                                                       |
+| ---------------------- | --------------------------------------------------------------- |
+| `products.product_url` | `ALTER TABLE products ADD COLUMN IF NOT EXISTS product_url TEXT` |
+| `discounts.unit_price` | `ALTER TABLE discounts ADD COLUMN IF NOT EXISTS unit_price VARCHAR(50)` |
+
 **Result:** a redeploy of the scraper API is sufficient to bring an existing database
 up to date — no manual `psql` intervention and no volume reset.
 
