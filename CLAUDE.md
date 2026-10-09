@@ -57,6 +57,8 @@ DB_USER=discount_user
 DB_PASSWORD=change_this_password
 LOG_LEVEL=INFO   # DEBUG | INFO | WARN | ERROR
 CORS_ORIGINS=    # optional, comma separated allowed origins (empty = all)
+CATALOG_ENABLED=true          # weekly full catalog scrape on/off
+CATALOG_CRON=17 3 * * 1       # when the catalog scrape runs
 ```
 
 ## Architecture
@@ -73,8 +75,13 @@ Entry point: [scraper/src/index.ts](scraper/src/index.ts)
 
 **Key layers:**
 - **`api/Routes.ts`** — Admin Express routes under `/api` (used by the management `web/`). Scraping is triggered via `POST /api/scraper/run/:supermarket`.
-- **`api/PublicRoutes.ts`** — Read-only, versioned consumer API under `/api/public/v1` used by the Baskit app (`/health`, `/supermarkets`, `/categories`, `/search`, `/products/:id`). camelCase responses, only active non-expired discounts, no scraper/scheduler endpoints. Holds its own `SUPERMARKETS` key/name list. CORS origins are restricted via `CORS_ORIGINS` in `index.ts`.
+- **`api/PublicRoutes.ts`** — Read-only, versioned consumer API under `/api/public/v1` used by the Baskit app (`/health`, `/supermarkets`, `/categories`, `/search`, `/products/:id`). camelCase responses, no scraper/scheduler endpoints; `/search` and `/categories` take `scope=offers|all`, `/products/:id` includes `catalog` and `priceHistory`. Search logic lives in `ProductSearch.ts`. CORS origins are restricted via `CORS_ORIGINS` in `index.ts`.
 - **`clients/`** — API-based discount fetchers. `ApiClient` is the abstract base with `fetchDiscounts()` returning `{ discounts: IProductDiscountDetails[], expireDate: string }`. Each discount includes a `productUrl` (direct link to the supermarket offer page, or the offers listing page when per-product URLs are unavailable). Concrete clients: `DirkApiClient` (public GraphQL), `AhApiClient` (Playwright intercepts AH GraphQL), `PlusApiClient` (Playwright intercepts OutSystems API), `LidlApiClient` (Playwright HTML scrape with lazy-load scrolling), `AldiApiClient` (Playwright reads `__NEXT_DATA__` double-encoded JSON), `HoogvlietApiClient` (Playwright fetches paginated AJAX via `GetCategoriesForPromotionPage`, parses product HTML per page), `JumboApiClient` (Playwright HTML scrape — waits for Vue hydration, scrolls to load all carousels, reads `expiration-date` attr from `[data-testid="promotion-card"]` elements). All clients set `productUrl` to the supermarket's offers listing page — none of the APIs expose stable per-product deep links.
+- **`api/ProductSearch.ts`** — Search SQL shared by the public endpoints: one current (cheapest active) discount per product via `CURRENT_DISCOUNT_JOIN`, `scope` `offers` (default) or `all` (also catalog products at regular price), relevance ranking, `mapSearchRow` response shape (`price`, `discount`, `catalog`). Also owns the `SUPERMARKETS` key/name list re-exported by `PublicRoutes.ts`.
+- **`api/CatalogRoutes.ts`** — Admin catalog endpoints under `/api/catalog`: `GET /status`, `GET /runs`, `POST /run/:supermarket` (202, runs in the background).
+- **`clients/catalog/`** — Full assortment fetchers at regular price. `CatalogClient` (abstract, `fetchCatalog(onPage)` streams pages), `AhCatalogClient` (AH mobile API: anonymous token, categories, paged product search; retries on 401/429/5xx). Registered in `ConfigHelper.getCatalogClient` / `CATALOG_SUPERMARKETS`. No Dirk client yet: `src/scripts/discoverDirkCatalog.ts` (`npm run discover:dirk`) lists Dirk's GraphQL queries to find the assortment query.
+- **`services/CatalogService`** — Starts catalog runs (one per supermarket at a time), upserts pages through `controllers/PostgresCatalogController` (match on `(supermarket, external_id)`, then adopts an offer-only row with the same name; `price_history` row only when the regular price changes), marks products not seen as `in_catalog = false` unless the run saw under 50% of the known products, and records `catalog_runs`. `SchedulerService.startCatalogSchedule` runs all of them on `CATALOG_CRON` (default `17 3 * * 1`, off with `CATALOG_ENABLED=false`).
+- **`data/Migrations.ts`** — Applies `scraper/migrations/NNN_*.sql` on startup (recorded in `schema_migrations`, one transaction per file). Every schema change after the base `database/src/schema.sql` goes into a new numbered migration; the Dockerfile copies the directory.
 - **`data/PostgresDataManager`** — Facade coordinating the four controllers. `addProductDb` upserts products (deduplicates by name); `addDiscountDb` uses smart logic comparing against the previous batch's `promotion_expire_date` to avoid duplicate discount rows.
 - **`controllers/`** — One controller per table (`PostgresProductController`, `PostgresDiscountController`, `PostgresScraperRunController`, `PostgresScheduledRunController`), each receiving a `PostgresDataContext` (singleton pg pool).
 - **`services/SchedulerService`** — node-cron job (every minute) that queries `scheduled_runs` for due entries, deactivates expired discounts, and fires scraper runs by making internal `axios.post` calls to its own API.
@@ -90,15 +97,22 @@ Schema: [database/src/schema.sql](database/src/schema.sql). Tables:
 - `discounts` — soft-delete via `active` flag; old discounts are marked `active=false` rather than deleted
 - `scraper_runs` — audit log of every execution with metrics
 - `scheduled_runs` — one row per supermarket, holds `next_run_at` and `promotion_expire_date`
+- `products` catalog columns (migration 001): `external_id`, `brand`, `unit_size`, `image_url`, `regular_price`, `unit_price`, `in_catalog`, `catalog_updated_at`
+- `price_history` — regular price changes per product; `catalog_runs` — audit log of catalog scrapes; `schema_migrations` — applied migrations
 
 ### `web/` — React + Vite frontend (TypeScript)
 
-Routes: `/discounts` (default) and `/configurations`. The Configurations page shows supermarket statuses, dashboard stats, scraper run history, and lets you trigger manual runs or toggle scheduled runs. All data fetched from the scraper API via [web/src/services/api.ts](web/src/services/api.ts). Served by nginx in production (see [web/nginx.conf](web/nginx.conf)).
+Routes: `/discounts` (default) and `/configurations`. The Configurations page shows supermarket statuses, dashboard stats, scraper run history, and lets you trigger manual runs or toggle scheduled runs. Its "Product Catalog" section (`components/CatalogSection.tsx`) shows catalog status per supported supermarket and starts catalog runs. All data fetched from the scraper API via [web/src/services/api.ts](web/src/services/api.ts). Served by nginx in production (see [web/nginx.conf](web/nginx.conf)).
 
 **Theme system:** `web/src/context/ThemeContext.tsx` provides a `ThemeProvider` and `useTheme` hook. Mode is `system | light | dark`, persisted in `localStorage`. The resolved theme (`light` or `dark`) is applied as `data-theme` on `<html>`. CSS variables in `index.css` are scoped with `:root` (light) and `[data-theme="dark"]`. The toggle button in `TabBar` cycles through all three modes.
+
+## Adding a Catalog Scraper
+
+1. Create `scraper/src/clients/catalog/<Name>CatalogClient.ts` extending `CatalogClient`; deliver `ICatalogProduct` pages through `onPage` with a stable `externalId` and the regular (non-promotion) price.
+2. Register it in `getCatalogClient` and add the name to `CATALOG_SUPERMARKETS` in `scraper/src/utils/ConfigHelper.ts`.
 
 ## Adding a New Supermarket
 
 1. Create `scraper/src/clients/<Name>ApiClient.ts` extending `ApiClient`; implement `fetchDiscounts()` returning `{ discounts: IProductDiscountDetails[], expireDate: string }`.
 2. Register the new client in `scraper/src/utils/ConfigHelper.ts` (`getSupermarketClient` switch).
-3. Add the name mappings in `scraper/src/api/Routes.ts` (all `nameMap` objects + `allSupermarkets` array), `scraper/src/api/PublicRoutes.ts` (`SUPERMARKETS`) and `scraper/src/services/SchedulerService.ts` (`nameMap`).
+3. Add the name mappings in `scraper/src/api/Routes.ts` (all `nameMap` objects + `allSupermarkets` array), `scraper/src/api/ProductSearch.ts` (`SUPERMARKETS`) and `scraper/src/services/SchedulerService.ts` (`nameMap`).

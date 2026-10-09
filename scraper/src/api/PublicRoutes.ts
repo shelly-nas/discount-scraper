@@ -1,6 +1,16 @@
 import { Request, Response, Router } from "express";
 import { serverLogger } from "../utils/Logger";
 import PostgresDataManager from "../data/PostgresDataManager";
+import {
+  SUPERMARKETS,
+  CURRENT_DISCOUNT_JOIN,
+  mapSearchRow,
+  parseScope,
+  parseSupermarkets,
+  scopeFilter,
+  searchProducts,
+  supermarketKey,
+} from "./ProductSearch";
 
 /**
  * Public, read-only API for consumer apps (e.g. Baskit).
@@ -13,31 +23,10 @@ const router = Router();
 
 const dataManager = new PostgresDataManager();
 
-export const SUPERMARKETS: { key: string; name: string }[] = [
-  { key: "albert-heijn", name: "Albert Heijn" },
-  { key: "aldi", name: "Aldi" },
-  { key: "dirk", name: "Dirk" },
-  { key: "hoogvliet", name: "Hoogvliet" },
-  { key: "jumbo", name: "Jumbo" },
-  { key: "lidl", name: "Lidl" },
-  { key: "plus", name: "PLUS" },
-];
+export { SUPERMARKETS };
 
 const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 100;
-const MAX_QUERY_TOKENS = 8;
-
-const SORTS: { [key: string]: string } = {
-  relevance: "relevance DESC, d.discount_price ASC, p.name ASC",
-  price: "d.discount_price ASC, p.name ASC",
-  discount: "discount_percentage DESC NULLS LAST, p.name ASC",
-  expiry: "d.expire_date ASC, p.name ASC",
-  name: "p.name ASC",
-};
-
-function toKey(name: string): string {
-  return SUPERMARKETS.find((s) => s.name === name)?.key ?? name;
-}
 
 function parseIntParam(value: unknown, fallback: number, min: number, max: number): number {
   const parsed = parseInt(String(value ?? ""), 10);
@@ -45,53 +34,8 @@ function parseIntParam(value: unknown, fallback: number, min: number, max: numbe
   return Math.min(Math.max(parsed, min), max);
 }
 
-/** Accepts `?supermarket=dirk,aldi` or repeated `?supermarket=dirk&supermarket=aldi`. */
-function parseSupermarkets(value: unknown): string[] {
-  const raw = Array.isArray(value) ? value.join(",") : String(value ?? "");
-  return raw
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter((s) => s.length > 0)
-    .map((key) => SUPERMARKETS.find((s) => s.key === key)?.name)
-    .filter((name): name is string => !!name);
-}
-
-/** Escapes LIKE wildcards so user input is matched literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (c) => `\\${c}`);
-}
-
-/** Escapes regex metacharacters so user input is matched literally. */
-function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function mapItem(row: any) {
-  const originalPrice = parseFloat(row.original_price);
-  const discountPrice = parseFloat(row.discount_price);
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category,
-    supermarket: {
-      key: toKey(row.supermarket),
-      name: row.supermarket,
-    },
-    productUrl: row.product_url ?? null,
-    discount: {
-      id: row.discount_id,
-      originalPrice: originalPrice > 0 ? originalPrice : null,
-      discountPrice,
-      unitPrice: row.unit_price ?? null,
-      specialDiscount: row.special_discount || null,
-      discountPercentage:
-        row.discount_percentage !== null && row.discount_percentage !== undefined
-          ? parseFloat(row.discount_percentage)
-          : null,
-      expireDate: row.expire_date,
-    },
-    updatedAt: row.updated_at,
-  };
+function toKey(name: string): string {
+  return supermarketKey(name);
 }
 
 router.use((req: Request, res: Response, next) => {
@@ -118,14 +62,22 @@ router.get("/supermarkets", async (req: Request, res: Response) => {
        GROUP BY p.supermarket`
     );
 
+    const catalog = await dataManager.db.query(
+      `SELECT supermarket, COUNT(*) AS products, MAX(catalog_updated_at) AS updated
+       FROM products WHERE in_catalog = true GROUP BY supermarket`
+    );
+
     const supermarkets = SUPERMARKETS.map((sm) => {
       const row = result.rows.find((r: any) => r.supermarket === sm.name);
+      const catalogRow = catalog.rows.find((r: any) => r.supermarket === sm.name);
       return {
         key: sm.key,
         name: sm.name,
         activeDiscounts: row ? parseInt(row.active_discounts, 10) : 0,
         lastUpdated: row?.last_updated ?? null,
         expireDate: row?.expire_date ?? null,
+        catalogProducts: catalogRow ? parseInt(catalogRow.products, 10) : 0,
+        catalogUpdated: catalogRow?.updated ?? null,
       };
     });
 
@@ -140,6 +92,7 @@ router.get("/supermarkets", async (req: Request, res: Response) => {
 router.get("/categories", async (req: Request, res: Response) => {
   try {
     const supermarkets = parseSupermarkets(req.query.supermarket);
+    const scope = parseScope(req.query.scope);
     const params: any[] = [];
     let filter = "";
     if (supermarkets.length > 0) {
@@ -150,8 +103,8 @@ router.get("/categories", async (req: Request, res: Response) => {
     const result = await dataManager.db.query(
       `SELECT p.category, COUNT(*) AS count
        FROM products p
-       INNER JOIN discounts d ON p.id = d.product_id
-       WHERE d.active = true AND d.expire_date > NOW() ${filter}
+       ${CURRENT_DISCOUNT_JOIN}
+       WHERE ${scopeFilter(scope)} ${filter}
        GROUP BY p.category
        ORDER BY p.category ASC`,
       params
@@ -167,12 +120,13 @@ router.get("/categories", async (req: Request, res: Response) => {
 });
 
 /**
- * Search active discounts.
+ * Search products.
  *
  * Query params:
  *   q            free text; every word must appear in the product name (case-insensitive)
  *   supermarket  comma separated supermarket keys (see /supermarkets)
  *   category     exact category name
+ *   scope        offers (default): only products on offer; all: also catalog products
  *   sort         relevance (default) | price | discount | expiry | name
  *   limit        page size, 1..100 (default 25)
  *   offset       page offset (default 0)
@@ -180,99 +134,24 @@ router.get("/categories", async (req: Request, res: Response) => {
 router.get("/search", async (req: Request, res: Response) => {
   try {
     const q = String(req.query.q ?? "").trim();
-    const supermarkets = parseSupermarkets(req.query.supermarket);
-    const category = String(req.query.category ?? "").trim();
-    const sortKey = String(req.query.sort ?? "relevance");
     const limit = parseIntParam(req.query.limit, DEFAULT_LIMIT, 1, MAX_LIMIT);
     const offset = parseIntParam(req.query.offset, 0, 0, Number.MAX_SAFE_INTEGER);
+    const category = String(req.query.category ?? "").trim();
 
-    const params: any[] = [];
-    const where: string[] = ["d.active = true", "d.expire_date > NOW()"];
-
-    const tokens = q
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((t) => t.length > 0)
-      .slice(0, MAX_QUERY_TOKENS);
-    for (const token of tokens) {
-      params.push(`%${escapeLike(token)}%`);
-      where.push(`p.name ILIKE $${params.length}`);
-    }
-
-    if (supermarkets.length > 0) {
-      params.push(supermarkets);
-      where.push(`p.supermarket = ANY($${params.length})`);
-    }
-
-    if (category) {
-      params.push(category);
-      where.push(`p.category = $${params.length}`);
-    }
-
-    const filterParams = [...params];
-
-    // Relevance: exact name > whole word > name starts with query > word starts with query > contains
-    let relevance = "0";
-    if (q) {
-      const lower = q.toLowerCase();
-      params.push(lower);
-      const exact = `$${params.length}`;
-      params.push(`\\m${escapeRegex(lower)}\\M`);
-      const wholeWord = `$${params.length}`;
-      params.push(`${escapeLike(lower)}%`);
-      const prefix = `$${params.length}`;
-      params.push(`% ${escapeLike(lower)}%`);
-      const wordPrefix = `$${params.length}`;
-      relevance = `(CASE
-          WHEN LOWER(p.name) = ${exact} THEN 4
-          WHEN p.name ~* ${wholeWord} THEN 3
-          WHEN LOWER(p.name) LIKE ${prefix} THEN 2
-          WHEN LOWER(p.name) LIKE ${wordPrefix} THEN 1
-          ELSE 0 END)`;
-    }
-
-    const orderBy = SORTS[sortKey] ?? SORTS.relevance;
-    const whereSql = where.join(" AND ");
-
-    const countResult = await dataManager.db.query(
-      `SELECT COUNT(*) AS total
-       FROM products p
-       INNER JOIN discounts d ON p.id = d.product_id
-       WHERE ${whereSql}`,
-      filterParams
-    );
-
-    params.push(limit);
-    const limitParam = `$${params.length}`;
-    params.push(offset);
-    const offsetParam = `$${params.length}`;
-
-    const result = await dataManager.db.query(
-      `SELECT p.id, p.name, p.category, p.supermarket, p.product_url, p.updated_at,
-              d.id AS discount_id, d.original_price, d.discount_price, d.unit_price,
-              d.special_discount, d.expire_date,
-              CASE WHEN d.original_price > 0 AND d.original_price > d.discount_price
-                   THEN ROUND((1 - d.discount_price / d.original_price) * 100)
-                   ELSE NULL END AS discount_percentage,
-              ${relevance} AS relevance
-       FROM products p
-       INNER JOIN discounts d ON p.id = d.product_id
-       WHERE ${whereSql}
-       ORDER BY ${orderBy}
-       LIMIT ${limitParam} OFFSET ${offsetParam}`,
-      params
-    );
-
-    res.status(200).json({
-      query: q,
-      total: parseInt(countResult.rows[0].total, 10),
+    const { total, rows } = await searchProducts(dataManager.db, {
+      q,
+      supermarkets: parseSupermarkets(req.query.supermarket),
+      category: category || undefined,
+      sort: String(req.query.sort ?? "relevance"),
+      scope: parseScope(req.query.scope),
       limit,
       offset,
-      items: result.rows.map(mapItem),
     });
+
+    res.status(200).json({ query: q, total, limit, offset, items: rows.map(mapSearchRow) });
   } catch (error: any) {
-    serverLogger.error(`Public API: error searching discounts: ${error.message}`);
-    res.status(500).json({ error: "Failed to search discounts" });
+    serverLogger.error(`Public API: error searching products: ${error.message}`);
+    res.status(500).json({ error: "Failed to search products" });
   }
 });
 
@@ -286,7 +165,8 @@ router.get("/products/:id", async (req: Request, res: Response) => {
 
   try {
     const productResult = await dataManager.db.query(
-      `SELECT id, name, category, supermarket, product_url, updated_at
+      `SELECT id, name, category, supermarket, product_url, updated_at,
+              brand, unit_size, image_url, regular_price, unit_price, in_catalog
        FROM products WHERE id = $1`,
       [id]
     );
@@ -316,6 +196,16 @@ router.get("/products/:id", async (req: Request, res: Response) => {
       createdAt: d.created_at,
     }));
 
+    const pricesResult = await dataManager.db.query(
+      `SELECT price, recorded_at FROM price_history
+       WHERE product_id = $1 ORDER BY recorded_at DESC LIMIT 100`,
+      [id]
+    );
+
+    const currentDiscount = history.find((d) => d.active) ?? null;
+    const regularPrice =
+      product.regular_price === null ? null : parseFloat(product.regular_price);
+
     res.status(200).json({
       id: product.id,
       name: product.name,
@@ -323,8 +213,22 @@ router.get("/products/:id", async (req: Request, res: Response) => {
       supermarket: { key: toKey(product.supermarket), name: product.supermarket },
       productUrl: product.product_url ?? null,
       updatedAt: product.updated_at,
-      currentDiscount: history.find((d) => d.active) ?? null,
+      price: currentDiscount?.discountPrice ?? regularPrice,
+      catalog: product.in_catalog
+        ? {
+            regularPrice,
+            unitPrice: product.unit_price ?? null,
+            unitSize: product.unit_size ?? null,
+            brand: product.brand ?? null,
+            imageUrl: product.image_url ?? null,
+          }
+        : null,
+      currentDiscount,
       history,
+      priceHistory: pricesResult.rows.map((r: any) => ({
+        price: parseFloat(r.price),
+        recordedAt: r.recorded_at,
+      })),
     });
   } catch (error: any) {
     serverLogger.error(`Public API: error fetching product ${id}: ${error.message}`);
