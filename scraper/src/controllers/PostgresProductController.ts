@@ -144,11 +144,12 @@ class PostgresProductController {
     }
   }
 
-  async getProductId(name: string): Promise<number> {
+  async getProductId(name: string, supermarket: string): Promise<number> {
     try {
+      // Names are only unique per supermarket (UNIQUE(name, supermarket)).
       const result = await this.db.query<{ id: number }>(
-        "SELECT id FROM products WHERE name = $1 LIMIT 1",
-        [name]
+        "SELECT id FROM products WHERE name = $1 AND supermarket = $2 LIMIT 1",
+        [name, supermarket]
       );
 
       if (result.rows.length > 0) {

@@ -126,7 +126,8 @@ export class PostgresDataManager {
     const uniqueDiscountArray = Array.from(uniqueDiscounts.values());
     for (const discount of uniqueDiscountArray) {
       const productId = await this.productController.getProductId(
-        discount.name
+        discount.name,
+        supermarket
       );
 
       if (productId === -1) {
