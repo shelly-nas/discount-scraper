@@ -61,6 +61,11 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
+/** Escapes regex metacharacters so user input is matched literally. */
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function mapItem(row: any) {
   const originalPrice = parseFloat(row.original_price);
   const discountPrice = parseFloat(row.discount_price);
@@ -206,17 +211,21 @@ router.get("/search", async (req: Request, res: Response) => {
 
     const filterParams = [...params];
 
-    // Relevance: exact name match > name starts with query > word starts with query > contains
+    // Relevance: exact name > whole word > name starts with query > word starts with query > contains
     let relevance = "0";
     if (q) {
-      params.push(q.toLowerCase());
+      const lower = q.toLowerCase();
+      params.push(lower);
       const exact = `$${params.length}`;
-      params.push(`${escapeLike(q.toLowerCase())}%`);
+      params.push(`\\m${escapeRegex(lower)}\\M`);
+      const wholeWord = `$${params.length}`;
+      params.push(`${escapeLike(lower)}%`);
       const prefix = `$${params.length}`;
-      params.push(`% ${escapeLike(q.toLowerCase())}%`);
+      params.push(`% ${escapeLike(lower)}%`);
       const wordPrefix = `$${params.length}`;
       relevance = `(CASE
-          WHEN LOWER(p.name) = ${exact} THEN 3
+          WHEN LOWER(p.name) = ${exact} THEN 4
+          WHEN p.name ~* ${wholeWord} THEN 3
           WHEN LOWER(p.name) LIKE ${prefix} THEN 2
           WHEN LOWER(p.name) LIKE ${wordPrefix} THEN 1
           ELSE 0 END)`;

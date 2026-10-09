@@ -1326,7 +1326,7 @@ Search query parameters:
 | `q` | Free text; every word must occur in the product name (case-insensitive, LIKE wildcards are escaped) |
 | `supermarket` | Comma separated supermarket keys (`albert-heijn,dirk,...`) |
 | `category` | Exact category name |
-| `sort` | `relevance` (default: exact > prefix > word prefix > contains, then price), `price`, `discount`, `expiry`, `name` |
+| `sort` | `relevance` (default: exact > whole word > prefix > word prefix > contains, then price), `price`, `discount`, `expiry`, `name` |
 | `limit` / `offset` | Page size 1-100 (default 25) and offset |
 
 ```typescript
