@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ' *)",
-      "Bash(graphify update *)"
+      "Bash(node -e ' *)"
     ],
     "deny": [
       "Read(.env)"
