@@ -669,6 +669,7 @@ flowchart TD
 | FR-004.12 | Public API SHALL support paginated text search over active discounts with supermarket/category filters and sorting | HIGH | ✅ Implemented |
 | FR-004.13 | System SHALL restrict allowed CORS origins via the `CORS_ORIGINS` environment variable (all origins when unset) | MEDIUM | ✅ Implemented |
 | FR-004.14 | Public search SHALL support `scope=all` to include catalog products at their regular price | HIGH | ✅ Implemented |
+| FR-004.15 | Public API SHALL price a shopping list at every supermarket (`POST /compare`) | HIGH | ✅ Implemented |
 
 #### FR-007: Product Catalog
 
@@ -1337,6 +1338,7 @@ carry `Cache-Control: public, max-age=60`.
 | `GET /api/public/v1/categories?supermarket=&scope=` | Categories with counts for the given scope |
 | `GET /api/public/v1/search` | Paginated search (see below) |
 | `GET /api/public/v1/products/:id` | Product with `price`, `catalog`, `currentDiscount`, up to 50 discount `history` entries and up to 100 `priceHistory` entries |
+| `POST /api/public/v1/compare` | Prices a shopping list at every supermarket (see below) |
 
 Search query parameters:
 
@@ -1379,6 +1381,39 @@ interface SearchResponse {
       imageUrl: string | null;
     } | null; // null when the product is not in the latest catalog scrape
     updatedAt: string;
+  }[];
+}
+```
+
+**Price comparison** - `POST /api/public/v1/compare`
+
+Request: `{ items: [{ id, query, count?, productId? }], supermarkets?: "dirk,albert-heijn" }`
+(1-100 items, `count` 1-99, default all supermarkets).
+
+For every item and supermarket the best matching product is chosen among
+current offers and catalog products: every word of `query` must occur in the
+name and at least one as a whole word; more whole-word matches rank higher, then
+the lowest current price, then the shortest name. When nothing matches, words
+containing digits (sizes such as `1L`, `500g`) are dropped and the match is
+retried. An item with a `productId` uses exactly that product at its own
+supermarket.
+
+```typescript
+interface CompareResponse {
+  itemCount: number;
+  // Most items found first, then the lowest total
+  supermarkets: {
+    key: string;
+    name: string;
+    total: number;      // sum of lineTotal of the found items
+    matched: number;    // items found
+    missing: string[];  // ids of items not found
+    lines: {
+      itemId: string;
+      count: number;
+      product: SearchResponse["items"][number] | null;
+      lineTotal: number | null; // product.price * count
+    }[];
   }[];
 }
 ```

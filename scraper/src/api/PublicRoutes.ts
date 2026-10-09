@@ -11,6 +11,7 @@ import {
   searchProducts,
   supermarketKey,
 } from "./ProductSearch";
+import { compareList, CompareItem, MAX_COMPARE_ITEMS } from "./PriceComparison";
 
 /**
  * Public, read-only API for consumer apps (e.g. Baskit).
@@ -152,6 +153,55 @@ router.get("/search", async (req: Request, res: Response) => {
   } catch (error: any) {
     serverLogger.error(`Public API: error searching products: ${error.message}`);
     res.status(500).json({ error: "Failed to search products" });
+  }
+});
+
+/**
+ * Prices a shopping list at every supermarket.
+ *
+ * Body: { items: [{ id, query, count?, productId? }], supermarkets?: ["dirk", ...] }
+ * Returns per supermarket the chosen product and price per item, the total
+ * and the items that could not be found, best supermarket first.
+ */
+router.post("/compare", async (req: Request, res: Response) => {
+  const body = req.body ?? {};
+  if (!Array.isArray(body.items) || body.items.length === 0) {
+    res.status(400).json({ error: "items must be a non-empty array" });
+    return;
+  }
+  if (body.items.length > MAX_COMPARE_ITEMS) {
+    res.status(400).json({ error: `At most ${MAX_COMPARE_ITEMS} items` });
+    return;
+  }
+
+  const items: CompareItem[] = [];
+  for (const raw of body.items) {
+    const query = typeof raw?.query === "string" ? raw.query.trim() : "";
+    if (!query) {
+      res.status(400).json({ error: "Every item needs a query" });
+      return;
+    }
+    const count = Number(raw.count ?? 1);
+    const productId = raw.productId === undefined || raw.productId === null ? undefined : Number(raw.productId);
+    items.push({
+      id: String(raw.id ?? items.length),
+      query: query.slice(0, 200),
+      count: Number.isFinite(count) && count > 0 ? Math.min(count, 99) : 1,
+      productId: productId !== undefined && Number.isInteger(productId) ? productId : undefined,
+    });
+  }
+
+  try {
+    const result = await compareList(
+      dataManager.db,
+      items,
+      parseSupermarkets(body.supermarkets)
+    );
+    res.set("Cache-Control", "no-store");
+    res.status(200).json(result);
+  } catch (error: any) {
+    serverLogger.error(`Public API: error comparing list: ${error.message}`);
+    res.status(500).json({ error: "Failed to compare prices" });
   }
 });
 
