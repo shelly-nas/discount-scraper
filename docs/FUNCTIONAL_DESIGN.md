@@ -78,6 +78,16 @@ The DiscountScraper system is designed to automatically collect, store, and pres
   - Dashboard metrics
   - Scheduler management
 
+- ✅ **Product Catalog**
+
+  - Weekly full assortment scrape with regular prices (Albert Heijn first)
+  - Price history and catalog run tracking; on-demand runs from the admin UI
+
+- ✅ **Public Consumer API**
+
+  - Versioned read-only API under `/api/public/v1` for the Baskit app
+  - Search, supermarkets, categories and product detail endpoints
+
 - ✅ **Web Interface**
 
   - Notion-inspired UI design
@@ -655,6 +665,24 @@ flowchart TD
 | FR-004.8  | System SHALL provide endpoint to manually cleanup expired discounts      | LOW      | ✅ Implemented |
 | FR-004.9  | System SHALL return JSON formatted responses                             | HIGH     | ✅ Implemented |
 | FR-004.10 | System SHALL handle errors gracefully with appropriate HTTP status codes | HIGH     | ✅ Implemented |
+| FR-004.11 | System SHALL provide a versioned, read-only public API (`/api/public/v1`) for consumer apps such as Baskit | HIGH | ✅ Implemented |
+| FR-004.12 | Public API SHALL support paginated text search over active discounts with supermarket/category filters and sorting | HIGH | ✅ Implemented |
+| FR-004.13 | System SHALL restrict allowed CORS origins via the `CORS_ORIGINS` environment variable (all origins when unset) | MEDIUM | ✅ Implemented |
+| FR-004.14 | Public search SHALL support `scope=all` to include catalog products at their regular price | HIGH | ✅ Implemented |
+| FR-004.15 | Public API SHALL price a shopping list at every supermarket (`POST /compare`) | HIGH | ✅ Implemented |
+
+#### FR-007: Product Catalog
+
+| ID       | Requirement                                                                                           | Priority | Status         |
+| -------- | ----------------------------------------------------------------------------------------------------- | -------- | -------------- |
+| FR-007.1 | System SHALL scrape the full assortment with regular prices for supermarkets that have a catalog client | HIGH   | ✅ Albert Heijn |
+| FR-007.2 | System SHALL store the supermarket product id, brand, pack size, unit price, image and regular price   | HIGH     | ✅ Implemented |
+| FR-007.3 | System SHALL record a price history row only when a regular price changes                             | MEDIUM   | ✅ Implemented |
+| FR-007.4 | System SHALL mark products missing from a run as not in the catalog, unless the run saw under 50% of the known products | MEDIUM | ✅ Implemented |
+| FR-007.5 | System SHALL run catalog scrapes weekly (`CATALOG_CRON`, default Monday 03:17; `CATALOG_ENABLED=false` disables) and on demand from the admin UI | MEDIUM | ✅ Implemented |
+| FR-007.6 | System SHALL track every catalog run (status, counts, duration, error) in `catalog_runs`             | MEDIUM   | ✅ Implemented |
+| FR-007.7 | System SHALL apply schema migrations from `scraper/migrations` on startup                              | HIGH     | ✅ Implemented |
+| FR-007.8 | Catalog clients for Dirk, Jumbo, PLUS, Aldi, Lidl and Hoogvliet                                        | MEDIUM   | Planned        |
 
 #### FR-005: Web Interface
 
@@ -1295,6 +1323,108 @@ interface SupermarketStatus {
   }
 ]
 ```
+
+#### Public API (`/api/public/v1`) — consumer apps
+
+Read-only endpoints used by the Baskit app. They never expose scraper triggers,
+run logs or scheduler management and use camelCase fields. Every product gets
+at most one current discount: the cheapest active, non-expired one. Responses
+carry `Cache-Control: public, max-age=60`.
+
+| Endpoint | Description |
+| -------- | ----------- |
+| `GET /api/public/v1/health` | Health check |
+| `GET /api/public/v1/supermarkets` | All supermarkets with `key`, `name`, `activeDiscounts`, `lastUpdated`, `expireDate`, `catalogProducts`, `catalogUpdated` |
+| `GET /api/public/v1/categories?supermarket=&scope=` | Categories with counts for the given scope |
+| `GET /api/public/v1/search` | Paginated search (see below) |
+| `GET /api/public/v1/products/:id` | Product with `price`, `catalog`, `currentDiscount`, up to 50 discount `history` entries and up to 100 `priceHistory` entries |
+| `POST /api/public/v1/compare` | Prices a shopping list at every supermarket (see below) |
+
+Search query parameters:
+
+| Param | Description |
+| ----- | ----------- |
+| `q` | Free text; every word must occur in the product name (case-insensitive, LIKE wildcards are escaped) |
+| `supermarket` | Comma separated supermarket keys (`albert-heijn,dirk,...`) |
+| `category` | Exact category name |
+| `scope` | `offers` (default): only products with a current discount. `all`: also catalog products at their regular price |
+| `sort` | `relevance` (default: exact > whole word > prefix > word prefix > contains, then price), `price` (effective price), `discount`, `expiry`, `name` |
+| `limit` / `offset` | Page size 1-100 (default 25) and offset |
+
+```typescript
+interface SearchResponse {
+  query: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: {
+    id: number;
+    name: string;
+    category: string;
+    supermarket: { key: string; name: string };
+    productUrl: string | null;
+    price: number | null; // offer price when on offer, otherwise the regular price
+    discount: {
+      id: number;
+      originalPrice: number | null; // falls back to the catalog price
+      discountPrice: number;
+      unitPrice: string | null;
+      specialDiscount: string | null;
+      discountPercentage: number | null;
+      expireDate: string; // ISO 8601
+    } | null; // always set with scope=offers
+    catalog: {
+      regularPrice: number | null;
+      unitPrice: string | null;
+      unitSize: string | null;
+      brand: string | null;
+      imageUrl: string | null;
+    } | null; // null when the product is not in the latest catalog scrape
+    updatedAt: string;
+  }[];
+}
+```
+
+**Price comparison** - `POST /api/public/v1/compare`
+
+Request: `{ items: [{ id, query, count?, productId? }], supermarkets?: "dirk,albert-heijn" }`
+(1-100 items, `count` 1-99, default all supermarkets).
+
+For every item and supermarket the best matching product is chosen among
+current offers and catalog products: every word of `query` must occur in the
+name and at least one as a whole word; more whole-word matches rank higher, then
+the lowest current price, then the shortest name. When nothing matches, words
+containing digits (sizes such as `1L`, `500g`) are dropped and the match is
+retried. An item with a `productId` uses exactly that product at its own
+supermarket.
+
+```typescript
+interface CompareResponse {
+  itemCount: number;
+  // Most items found first, then the lowest total
+  supermarkets: {
+    key: string;
+    name: string;
+    total: number;      // sum of lineTotal of the found items
+    matched: number;    // items found
+    missing: string[];  // ids of items not found
+    lines: {
+      itemId: string;
+      count: number;
+      product: SearchResponse["items"][number] | null;
+      lineTotal: number | null; // product.price * count
+    }[];
+  }[];
+}
+```
+
+#### Catalog admin API (`/api/catalog`)
+
+| Endpoint | Description |
+| -------- | ----------- |
+| `GET /api/catalog/status` | Per supermarket: `supported`, `running`, `productsInCatalog`, `lastUpdated`, `lastRun` |
+| `GET /api/catalog/runs?limit=` | Latest catalog runs (default 50, max 200) |
+| `POST /api/catalog/run/:supermarket` | Starts a catalog run in the background: `202 { runId }`, `409` when one is already running, `400` for supermarkets without a catalog scraper |
 
 ### 5.6 Configuration Data Structure
 

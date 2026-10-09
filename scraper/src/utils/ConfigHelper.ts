@@ -6,6 +6,8 @@ import JumboApiClient from "../clients/JumboApiClient";
 import LidlApiClient from "../clients/LidlApiClient";
 import PlusApiClient from "../clients/PlusApiClient";
 import ApiClient from "../clients/ApiClient";
+import CatalogClient from "../clients/catalog/CatalogClient";
+import AhCatalogClient from "../clients/catalog/AhCatalogClient";
 import { serverLogger } from "./Logger";
 
 export function getSupermarketClient(name: string): ApiClient {
@@ -29,5 +31,17 @@ export function getSupermarketClient(name: string): ApiClient {
         "Supermarket client not found for: " + name
       );
       process.exit(1);
+  }
+}
+
+/** Supermarkets with a full catalog scraper (see getCatalogClient). */
+export const CATALOG_SUPERMARKETS = ["Albert Heijn"];
+
+export function getCatalogClient(name: string): CatalogClient | null {
+  switch (name) {
+    case "Albert Heijn":
+      return new AhCatalogClient();
+    default:
+      return null;
   }
 }

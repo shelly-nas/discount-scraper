@@ -14,6 +14,9 @@ RUN npm ci
 # Copy source code
 COPY src ./src
 
+# Migrations are read at runtime (applied on startup), not compiled
+COPY migrations ./migrations
+
 # Build TypeScript
 RUN npm run build
 

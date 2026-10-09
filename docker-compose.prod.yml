@@ -24,6 +24,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       API_PORT: 3001
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CATALOG_ENABLED: ${CATALOG_ENABLED:-true}
+      CATALOG_CRON: ${CATALOG_CRON:-17 3 * * 1}
     ports:
       - "3001:3001"
     depends_on:
@@ -33,6 +36,11 @@ services:
     volumes:
       # Mount logs directory for persistence
       - ./logs:/app/logs
+    # Joined to shelly-network so the Baskit web container can proxy
+    # /api/discounts to http://discount-scraper-api:3001/api/public/v1
+    networks:
+      - shelly-network
+      - default
 
   web:
     image: ${REGISTRY}/discount-scraper-web:${IMAGE_TAG:-latest}

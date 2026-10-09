@@ -9,7 +9,8 @@
     "start": "npm run build && node dist/index.js",
     "dev": "npm run build && node dist/index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "discover:dirk": "node dist/scripts/discoverDirkCatalog.js"
   },
   "keywords": [],
   "author": "",

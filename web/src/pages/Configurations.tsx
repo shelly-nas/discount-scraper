@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { configurationsService } from '../services/api';
 import { ConfigurationsStats, SupermarketStatus, ScraperRun } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
+import CatalogSection from '../components/CatalogSection';
 import './Configurations.css';
 
 const Configurations: React.FC = () => {
@@ -312,6 +313,9 @@ const Configurations: React.FC = () => {
           })}
         </div>
       </div>
+
+      {/* Full catalog scrapes */}
+      <CatalogSection />
 
       {/* Scraper Run Logs */}
       <div className="logs-section">

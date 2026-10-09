@@ -4,12 +4,23 @@ import { serverLogger } from "./utils/Logger";
 import PostgresDataManager from "./data/PostgresDataManager";
 import SchedulerService from "./services/SchedulerService";
 import routes from "./api/Routes";
+import { runMigrations } from "./data/Migrations";
+import publicRoutes from "./api/PublicRoutes";
+import { createCatalogRoutes } from "./api/CatalogRoutes";
+import CatalogService from "./services/CatalogService";
+
 
 const app: Application = express();
 const PORT = process.env.API_PORT || 3001;
 
 // Middleware
-app.use(cors());
+// CORS_ORIGINS: comma separated list of allowed origins (e.g. the Baskit web app).
+// When unset every origin is allowed, which keeps local development simple.
+const corsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter((o) => o.length > 0);
+app.use(cors(corsOrigins.length > 0 ? { origin: corsOrigins } : undefined));
 app.use(express.json());
 
 // Request logging middleware
@@ -35,6 +46,7 @@ async function initializeDatabase(): Promise<boolean> {
     const connected = await dataManager.testConnection();
     if (connected) {
       serverLogger.info("Database connection established successfully");
+      await runMigrations(dataManager.db);
     } else {
       serverLogger.error("Failed to establish database connection");
     }
@@ -46,7 +58,15 @@ async function initializeDatabase(): Promise<boolean> {
   // Don't close the pool - it's a singleton that should stay open
 }
 
+// Full catalog scrapes (regular prices), shared by the admin routes and the scheduler
+const catalogService = new CatalogService(new PostgresDataManager().db);
+
 // Register API routes
+// Public read-only API for consumer apps (Baskit)
+app.use("/api/public/v1", publicRoutes);
+// Catalog admin endpoints (status, runs, manual trigger)
+app.use("/api/catalog", createCatalogRoutes(catalogService, new PostgresDataManager().db));
+// Admin API used by the management web frontend
 app.use("/api", routes);
 
 // 404 handler
@@ -68,6 +88,11 @@ async function startServer() {
     process.exit(1);
   }
 
+  const staleCatalogRuns = await catalogService.getController().failStaleRuns();
+  if (staleCatalogRuns > 0) {
+    serverLogger.warn(`Marked ${staleCatalogRuns} interrupted catalog run(s) as failed`);
+  }
+
   app.listen(PORT, () => {
     serverLogger.info(`API Server is running on port ${PORT}`);
     serverLogger.info(`Health check: http://localhost:${PORT}/health`);
@@ -79,6 +104,7 @@ async function startServer() {
     const dataManager = new PostgresDataManager();
     const scheduler = new SchedulerService(dataManager, PORT.toString());
     scheduler.start();
+    scheduler.startCatalogSchedule(catalogService);
     serverLogger.info("Automated scheduler service initialized");
   });
 }

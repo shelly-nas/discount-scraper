@@ -115,7 +115,21 @@ Access at: **http://localhost:3000**
 
 ## API Usage
 
-### Endpoints
+### Public API (for Baskit and other consumer apps)
+
+Read-only, versioned endpoints under `/api/public/v1`. See
+[docs/FUNCTIONAL_DESIGN.md](docs/FUNCTIONAL_DESIGN.md) section 5.5 for the full contract.
+
+```bash
+curl http://localhost:3001/api/public/v1/supermarkets
+curl http://localhost:3001/api/public/v1/categories
+curl "http://localhost:3001/api/public/v1/search?q=melk&supermarket=dirk,albert-heijn&sort=price&limit=20"
+curl http://localhost:3001/api/public/v1/products/1
+```
+
+Set `CORS_ORIGINS` (comma separated) in `.env` to restrict which web origins may call the API.
+
+### Admin Endpoints
 
 **Health Check**
 
