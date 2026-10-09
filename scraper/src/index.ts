@@ -4,12 +4,19 @@ import { serverLogger } from "./utils/Logger";
 import PostgresDataManager from "./data/PostgresDataManager";
 import SchedulerService from "./services/SchedulerService";
 import routes from "./api/Routes";
+import publicRoutes from "./api/PublicRoutes";
 
 const app: Application = express();
 const PORT = process.env.API_PORT || 3001;
 
 // Middleware
-app.use(cors());
+// CORS_ORIGINS: comma separated list of allowed origins (e.g. the Baskit web app).
+// When unset every origin is allowed, which keeps local development simple.
+const corsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim())
+  .filter((o) => o.length > 0);
+app.use(cors(corsOrigins.length > 0 ? { origin: corsOrigins } : undefined));
 app.use(express.json());
 
 // Request logging middleware
@@ -47,6 +54,9 @@ async function initializeDatabase(): Promise<boolean> {
 }
 
 // Register API routes
+// Public read-only API for consumer apps (Baskit)
+app.use("/api/public/v1", publicRoutes);
+// Admin API used by the management web frontend
 app.use("/api", routes);
 
 // 404 handler

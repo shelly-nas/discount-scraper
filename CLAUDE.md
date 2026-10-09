@@ -56,6 +56,7 @@ DB_NAME=discount
 DB_USER=discount_user
 DB_PASSWORD=change_this_password
 LOG_LEVEL=INFO   # DEBUG | INFO | WARN | ERROR
+CORS_ORIGINS=    # optional, comma separated allowed origins (empty = all)
 ```
 
 ## Architecture
@@ -71,11 +72,16 @@ postgres (port 5432) ← scraper-api (port 3001) ← web (port 3010→nginx→30
 Entry point: [scraper/src/index.ts](scraper/src/index.ts)
 
 **Key layers:**
-- **`api/Routes.ts`** — All Express routes under `/api`. Scraping is triggered via `POST /api/scraper/run/:supermarket`.
+- **`api/Routes.ts`** — Admin Express routes under `/api` (used by the management `web/`). Scraping is triggered via `POST /api/scraper/run/:supermarket`.
+- **`api/PublicRoutes.ts`** — Read-only, versioned consumer API under `/api/public/v1` used by the Baskit app (`/health`, `/supermarkets`, `/categories`, `/search`, `/products/:id`). camelCase responses, only active non-expired discounts, no scraper/scheduler endpoints. Holds its own `SUPERMARKETS` key/name list. CORS origins are restricted via `CORS_ORIGINS` in `index.ts`.
 - **`clients/`** — API-based discount fetchers. `ApiClient` is the abstract base with `fetchDiscounts()` returning `{ discounts: IProductDiscountDetails[], expireDate: string }`. Each discount includes a `productUrl` (direct link to the supermarket offer page, or the offers listing page when per-product URLs are unavailable). Concrete clients: `DirkApiClient` (public GraphQL), `AhApiClient` (Playwright intercepts AH GraphQL), `PlusApiClient` (Playwright intercepts OutSystems API), `LidlApiClient` (Playwright HTML scrape with lazy-load scrolling), `AldiApiClient` (Playwright reads `__NEXT_DATA__` double-encoded JSON), `HoogvlietApiClient` (Playwright fetches paginated AJAX via `GetCategoriesForPromotionPage`, parses product HTML per page), `JumboApiClient` (Playwright HTML scrape — waits for Vue hydration, scrolls to load all carousels, reads `expiration-date` attr from `[data-testid="promotion-card"]` elements). All clients set `productUrl` to the supermarket's offers listing page — none of the APIs expose stable per-product deep links.
 - **`data/PostgresDataManager`** — Facade coordinating the four controllers. `addProductDb` upserts products (deduplicates by name); `addDiscountDb` uses smart logic comparing against the previous batch's `promotion_expire_date` to avoid duplicate discount rows.
 - **`controllers/`** — One controller per table (`PostgresProductController`, `PostgresDiscountController`, `PostgresScraperRunController`, `PostgresScheduledRunController`), each receiving a `PostgresDataContext` (singleton pg pool).
 - **`services/SchedulerService`** — node-cron job (every minute) that queries `scheduled_runs` for due entries, deactivates expired discounts, and fires scraper runs by making internal `axios.post` calls to its own API.
+
+### Consumers
+
+The Baskit app (separate repo `shelly-nas/baskit`) reads discount data exclusively through `/api/public/v1` — never directly from the database. In production `scraper-api` joins `shelly-network` so the Baskit nginx container can proxy to `http://discount-scraper-api:3001/api/public/v1`. Keep the public API backwards compatible; breaking changes go into a new version prefix.
 
 ### `database/` — PostgreSQL init scripts
 
@@ -95,4 +101,4 @@ Routes: `/discounts` (default) and `/configurations`. The Configurations page sh
 
 1. Create `scraper/src/clients/<Name>ApiClient.ts` extending `ApiClient`; implement `fetchDiscounts()` returning `{ discounts: IProductDiscountDetails[], expireDate: string }`.
 2. Register the new client in `scraper/src/utils/ConfigHelper.ts` (`getSupermarketClient` switch).
-3. Add the name mappings in `scraper/src/api/Routes.ts` (all `nameMap` objects + `allSupermarkets` array) and `scraper/src/services/SchedulerService.ts` (`nameMap`).
+3. Add the name mappings in `scraper/src/api/Routes.ts` (all `nameMap` objects + `allSupermarkets` array), `scraper/src/api/PublicRoutes.ts` (`SUPERMARKETS`) and `scraper/src/services/SchedulerService.ts` (`nameMap`).

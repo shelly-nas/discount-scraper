@@ -78,6 +78,11 @@ The DiscountScraper system is designed to automatically collect, store, and pres
   - Dashboard metrics
   - Scheduler management
 
+- ✅ **Public Consumer API**
+
+  - Versioned read-only API under `/api/public/v1` for the Baskit app
+  - Search, supermarkets, categories and product detail endpoints
+
 - ✅ **Web Interface**
 
   - Notion-inspired UI design
@@ -655,6 +660,9 @@ flowchart TD
 | FR-004.8  | System SHALL provide endpoint to manually cleanup expired discounts      | LOW      | ✅ Implemented |
 | FR-004.9  | System SHALL return JSON formatted responses                             | HIGH     | ✅ Implemented |
 | FR-004.10 | System SHALL handle errors gracefully with appropriate HTTP status codes | HIGH     | ✅ Implemented |
+| FR-004.11 | System SHALL provide a versioned, read-only public API (`/api/public/v1`) for consumer apps such as Baskit | HIGH | ✅ Implemented |
+| FR-004.12 | Public API SHALL support paginated text search over active discounts with supermarket/category filters and sorting | HIGH | ✅ Implemented |
+| FR-004.13 | System SHALL restrict allowed CORS origins via the `CORS_ORIGINS` environment variable (all origins when unset) | MEDIUM | ✅ Implemented |
 
 #### FR-005: Web Interface
 
@@ -1294,6 +1302,57 @@ interface SupermarketStatus {
     "status": "pending"
   }
 ]
+```
+
+#### Public API (`/api/public/v1`) — consumer apps
+
+Read-only endpoints used by the Baskit app. They never expose scraper triggers,
+run logs or scheduler management, use camelCase fields and only return
+discounts that are `active = true` and not yet expired. Responses carry
+`Cache-Control: public, max-age=60`.
+
+| Endpoint | Description |
+| -------- | ----------- |
+| `GET /api/public/v1/health` | Health check |
+| `GET /api/public/v1/supermarkets` | All supermarkets with `key`, `name`, `activeDiscounts`, `lastUpdated`, `expireDate` |
+| `GET /api/public/v1/categories?supermarket=` | Categories of active discounts with counts |
+| `GET /api/public/v1/search` | Paginated search (see below) |
+| `GET /api/public/v1/products/:id` | Product with `currentDiscount` and up to 50 `history` entries |
+
+Search query parameters:
+
+| Param | Description |
+| ----- | ----------- |
+| `q` | Free text; every word must occur in the product name (case-insensitive, LIKE wildcards are escaped) |
+| `supermarket` | Comma separated supermarket keys (`albert-heijn,dirk,...`) |
+| `category` | Exact category name |
+| `sort` | `relevance` (default: exact > prefix > word prefix > contains, then price), `price`, `discount`, `expiry`, `name` |
+| `limit` / `offset` | Page size 1-100 (default 25) and offset |
+
+```typescript
+interface SearchResponse {
+  query: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: {
+    id: number;
+    name: string;
+    category: string;
+    supermarket: { key: string; name: string };
+    productUrl: string | null;
+    discount: {
+      id: number;
+      originalPrice: number | null; // null when the supermarket does not publish it
+      discountPrice: number;
+      unitPrice: string | null;
+      specialDiscount: string | null;
+      discountPercentage: number | null;
+      expireDate: string; // ISO 8601
+    };
+    updatedAt: string;
+  }[];
+}
 ```
 
 ### 5.6 Configuration Data Structure
