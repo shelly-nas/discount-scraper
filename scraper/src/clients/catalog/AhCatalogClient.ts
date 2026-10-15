@@ -5,8 +5,12 @@ import { scraperLogger } from "../../utils/Logger";
 
 // Albert Heijn's mobile app API. An anonymous token is enough to read the
 // product catalog; products are listed per top-level category (taxonomy).
+// Headers and client id follow the current iOS app; the API answers outdated
+// app versions with errors such as 503.
 const API_BASE = "https://api.ah.nl";
-const PAGE_SIZE = 750;
+const CLIENT_ID = "appie-ios";
+const CLIENT_VERSION = "9.28";
+const PAGE_SIZE = 200;
 const REQUEST_DELAY_MS = 300;
 const MAX_ATTEMPTS = 4;
 
@@ -41,6 +45,17 @@ interface AhSearchResponse {
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Turns an HTTP failure into an error that says which call failed and why. */
+export function describeError(step: string, error: any): Error {
+  const status = error?.response?.status;
+  if (!status) return new Error(`AH ${step}: ${error?.message ?? "request failed"}`);
+  const body = error.response.data;
+  const text = (typeof body === "string" ? body : JSON.stringify(body ?? ""))
+    .replace(/\s+/g, " ")
+    .slice(0, 200);
+  return new Error(`AH ${step}: HTTP ${status}${text && text !== '""' ? ` - ${text}` : ""}`);
+}
 
 /** Maps one AH product to the catalog shape; null when it has no usable price. */
 export function mapAhProduct(product: AhProduct, category: string): ICatalogProduct | null {
@@ -78,48 +93,60 @@ class AhCatalogClient extends CatalogClient {
         baseURL: API_BASE,
         timeout: 30000,
         headers: {
-          "User-Agent": "Appie/8.22.3",
+          "User-Agent": `Appie/${CLIENT_VERSION} (iPhone17,3; iPhone; CPU OS 26_1 like Mac OS X)`,
+          "x-client-name": CLIENT_ID,
+          "x-client-version": CLIENT_VERSION,
           "x-application": "AHWEBSHOP",
+          Accept: "application/json",
           "Content-Type": "application/json",
         },
       });
   }
 
+  /**
+   * Runs one API call. A catalog run takes a while: renew an expired token and
+   * back off on rate limiting or server errors before giving up. The final
+   * error names the step, the HTTP status and the start of the response body.
+   */
+  private async request<T>(step: string, call: () => Promise<{ data: T }>): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const response = await call();
+        return response.data;
+      } catch (error: any) {
+        const status = error?.response?.status;
+        const retryable = status === 401 || status === 429 || (status >= 500 && status < 600);
+        if (!retryable || attempt >= MAX_ATTEMPTS) throw describeError(step, error);
+        scraperLogger.warn(`AH catalog: ${step} HTTP ${status}, retry ${attempt}/${MAX_ATTEMPTS - 1}`);
+        if (status === 401 && step !== "token") await this.authenticate();
+        await sleep(REQUEST_DELAY_MS * 2 ** attempt * 5);
+      }
+    }
+  }
+
   private async authenticate(): Promise<void> {
-    const response = await this.http.post("/mobile-auth/v1/auth/token/anonymous", {
-      clientId: "appie",
-    });
-    const token = response.data?.access_token;
+    const data = await this.request<{ access_token?: string }>("token", () =>
+      this.http.post("/mobile-auth/v1/auth/token/anonymous", { clientId: CLIENT_ID })
+    );
+    const token = data?.access_token;
     if (!token) throw new Error("AH: no anonymous access token returned");
     this.http.defaults.headers.common.Authorization = `Bearer ${token}`;
   }
 
   private async fetchCategories(): Promise<AhCategory[]> {
-    const response = await this.http.get<AhCategory[]>(
-      "/mobile-services/v1/product-shelves/categories"
+    const data = await this.request<AhCategory[]>("categories", () =>
+      this.http.get("/mobile-services/v1/product-shelves/categories")
     );
-    return response.data ?? [];
+    return data ?? [];
   }
 
   private async fetchPage(categoryId: number, page: number): Promise<AhSearchResponse> {
-    // A catalog run takes a while: renew an expired token and back off on
-    // rate limiting or server errors before giving up on the run.
-    for (let attempt = 1; ; attempt++) {
-      try {
-        const response = await this.http.get<AhSearchResponse>(
-          "/mobile-services/product/search/v2",
-          { params: { taxonomyId: categoryId, page, size: PAGE_SIZE, sortOn: "RELEVANCE" } }
-        );
-        return response.data ?? {};
-      } catch (error: any) {
-        const status = error?.response?.status;
-        const retryable = status === 401 || status === 429 || (status >= 500 && status < 600);
-        if (!retryable || attempt >= MAX_ATTEMPTS) throw error;
-        scraperLogger.warn(`AH catalog: HTTP ${status}, retry ${attempt}/${MAX_ATTEMPTS - 1}`);
-        if (status === 401) await this.authenticate();
-        await sleep(REQUEST_DELAY_MS * 2 ** attempt * 5);
-      }
-    }
+    const data = await this.request<AhSearchResponse>(`search category ${categoryId} page ${page}`, () =>
+      this.http.get("/mobile-services/product/search/v2", {
+        params: { taxonomyId: categoryId, page, size: PAGE_SIZE, sortOn: "RELEVANCE" },
+      })
+    );
+    return data ?? {};
   }
 
   async fetchCatalog(onPage: (products: ICatalogProduct[]) => Promise<void>): Promise<void> {

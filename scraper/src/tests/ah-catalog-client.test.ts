@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import AhCatalogClient, { mapAhProduct } from "../clients/catalog/AhCatalogClient";
+import AhCatalogClient, { describeError, mapAhProduct } from "../clients/catalog/AhCatalogClient";
 import { ICatalogProduct } from "../interfaces/ICatalogProduct";
 
 vi.mock("../utils/Logger", () => ({
@@ -97,5 +97,24 @@ describe("AH catalog client", () => {
 
     expect(seen).toEqual(["1"]);
     expect(http.post).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries the token call on 503 and names the failing step when it keeps failing", async () => {
+    const http = fakeHttp({});
+    http.post = vi.fn().mockRejectedValue({
+      response: { status: 503, data: "<html>Service   Unavailable</html>" },
+    });
+    const client = new AhCatalogClient(http as any);
+
+    await expect(client.fetchCatalog(async () => {})).rejects.toThrow(
+      "AH token: HTTP 503 - <html>Service Unavailable</html>"
+    );
+    expect(http.post).toHaveBeenCalledTimes(4);
+  });
+
+  it("describes network errors without a status", () => {
+    expect(describeError("categories", new Error("socket hang up")).message).toBe(
+      "AH categories: socket hang up"
+    );
   });
 });
