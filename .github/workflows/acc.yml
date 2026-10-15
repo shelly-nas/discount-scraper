@@ -1,0 +1,104 @@
+name: Deploy to Acceptance
+
+# Every pull request to main is built and deployed to
+# discounts-acc.shelly-nas.nl, so the change can be tried in the running app
+# before it is merged. There is one acc environment: the last pull request
+# pushed is the one on it. "Run workflow" redeploys any branch by hand.
+#
+# Acc gets a fresh database on every deploy - schema, migrate.sql and the demo
+# offers in database/demo/seed-demo.sql - and never production data.
+# Production keeps its own persistent database; nothing here touches it.
+#
+# When the pull request is merged or closed, acc is torn down - but only if it
+# still runs that pull request.
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acc-deploy
+  cancel-in-progress: ${{ github.event.action != 'closed' }}
+
+jobs:
+  prepare:
+    name: Decide whether to deploy
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action != 'closed' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - id: tag
+        run: echo "tag=acc-${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_OUTPUT"
+
+  build-database:
+    name: Build and Push Database
+    needs: prepare
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:${{ needs.prepare.outputs.tag }}
+      context: database
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+
+  build-scraper:
+    name: Build and Push Scraper API
+    needs: prepare
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:${{ needs.prepare.outputs.tag }}
+      context: scraper
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+
+  build-web:
+    name: Build and Push Web
+    needs: prepare
+    uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:${{ needs.prepare.outputs.tag }}
+      context: web
+    secrets:
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+
+  deploy-acc:
+    name: Deploy to Acceptance
+    needs: [prepare, build-database, build-scraper, build-web]
+    uses: shelly-nas/shared-workflows/.github/workflows/deploy-acceptance.yml@main
+    with:
+      registry: ${{ vars.REGISTRY_URL }}
+      deploy_directory: /volume1/docker/discount-scraper-acc
+      compose_file: docker-compose.acc.yml
+      image_tag: ${{ needs.prepare.outputs.tag }}
+      db_service: postgres
+      demo_seed_file: database/demo/seed-demo.sql
+    secrets:
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+      env_file_content: |
+        DB_NAME=${{ vars.DB_NAME }}
+        DB_USER=${{ vars.DB_USER }}
+        DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+        LOG_LEVEL=${{ vars.LOG_LEVEL || 'INFO' }}
+
+  teardown-acc:
+    name: Tear down acc
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    uses: shelly-nas/shared-workflows/.github/workflows/teardown-acceptance.yml@main
+    with:
+      acc_directory: /volume1/docker/discount-scraper-acc
+      commit: ${{ github.event.pull_request.head.sha }}

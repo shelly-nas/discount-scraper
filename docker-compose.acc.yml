@@ -1,0 +1,75 @@
+# Acceptance stack: discounts-acc.shelly-nas.nl.
+#
+# Deployed by .github/workflows/acc.yml for every pull request, next to
+# production but separate from it: its own directory (/volume1/docker/
+# discount-scraper-acc), container names, Traefik router and database. The
+# last pull request deployed wins.
+#
+# The images are the ones production would get, tagged acc-<commit>. The
+# database is rebuilt on every deploy: an empty data directory runs schema.sql
+# and migrate.sql from the image, then the workflow loads
+# database/demo/seed-demo.sql. No production data reaches acc.
+#
+# The API joins shelly-network as discount-scraper-acc-api, so the Baskit acc
+# stack can read its public API. The weekly catalog scrape is off on acc;
+# "Run Catalog" in the admin UI still works.
+#
+# Keep this file in step with docker-compose.prod.yml; the differences are
+# names, host, the bind-mounted data directory (reset by the acc deploy) and
+# no published ports.
+services:
+  postgres:
+    image: ${REGISTRY}/discount-scraper-db:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: discount-scraper-acc-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
+      POSTGRES_USER: ${DB_USER:?DB_USER is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      # Emptied by the acc deploy on every run. Owned by uid 70.
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: always
+
+  scraper-api:
+    image: ${REGISTRY}/discount-scraper-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: discount-scraper-acc-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      API_PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CATALOG_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - shelly-network
+      - default
+
+  web:
+    image: ${REGISTRY}/discount-scraper-web:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: discount-scraper-acc-web
+    depends_on:
+      - scraper-api
+    restart: always
+    networks:
+      - shelly-network
+      - default
+    labels:
+      - "traefik.enable=true"
+      # Two networks: tell Traefik which one to use, or it may answer 504.
+      - "traefik.docker.network=shelly-network"
+      - "traefik.http.routers.discounts-acc.rule=Host(`discounts-acc.shelly-nas.nl`)"
+      - "traefik.http.routers.discounts-acc.entrypoints=web"
+      - "traefik.http.services.discounts-acc.loadbalancer.server.port=80"
+
+networks:
+  shelly-network:
+    external: true

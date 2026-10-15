@@ -771,6 +771,7 @@ flowchart TD
 | NFR-006.2 | System SHALL start all services with single command  | HIGH     | ✅ Implemented |
 | NFR-006.3 | Database SHALL initialize automatically on first run | HIGH     | ✅ Implemented |
 | NFR-006.4 | System SHALL support environment-based configuration | HIGH     | ✅ Implemented |
+| NFR-006.5 | Every pull request SHALL be deployed to an acceptance environment with a fresh database of demo data; demo data SHALL never reach production | MEDIUM | ✅ Implemented |
 
 ### 4.3 System Behavior
 

@@ -113,6 +113,12 @@ The web interface provides a clean, Notion-inspired UI for viewing and filtering
 
 Access at: **http://localhost:3000**
 
+### Acceptance environment
+
+Every pull request is deployed to `discounts-acc.shelly-nas.nl` with a fresh database filled with
+demo offers (`database/demo/seed-demo.sql`); production data never goes there and the demo data
+never goes to production. See `.github/workflows/acc.yml` and `docker-compose.acc.yml`.
+
 ## API Usage
 
 ### Public API (for Baskit and other consumer apps)
