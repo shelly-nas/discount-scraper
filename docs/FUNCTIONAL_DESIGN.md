@@ -1457,7 +1457,39 @@ interface WebIdentifiers {
 - Stored in database for runtime flexibility
 - Can be modified via database migrations
 
-### 5.7 System Architecture Diagram
+### 5.7 Schema Migrations
+
+**Purpose:** Keep the schema of long-lived deployments in sync with the code that queries it
+
+The database image copies `schema.sql` and `migrate.sql` into
+`/docker-entrypoint-initdb.d/`, but PostgreSQL only executes those scripts when the
+data directory is **empty**. A deployment whose volume already exists therefore never
+receives columns added after that volume was created, which causes runtime errors such
+as `column "product_url" of relation "products" does not exist`.
+
+To close that gap, the scraper API applies migrations itself:
+
+- Migrations are numbered SQL files in `scraper/migrations/` (`NNN_name.sql`), applied
+  in filename order by `runMigrations()` in `scraper/src/data/Migrations.ts`.
+- `runMigrations()` executes on every API startup, after the connection test succeeds
+  and before the HTTP server starts accepting requests.
+- Applied files are recorded in `schema_migrations`; each file runs in its own
+  transaction, so a failed file is retried on the next start instead of skipped.
+- Every statement must be safe to run repeatedly (`ADD COLUMN IF NOT EXISTS` and
+  similar), because fresh installs get `schema.sql` first and then run every file too.
+  New changes go in a new file; existing files are never edited or removed.
+
+**Current migrations:**
+
+| File                    | Changes                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `001_catalog.sql`       | Catalog columns on `products`, `price_history`, `catalog_runs`          |
+| `002_offer_columns.sql` | `products.product_url`, `discounts.unit_price` for pre-existing volumes |
+
+**Result:** a redeploy of the scraper API is sufficient to bring an existing database
+up to date — no manual `psql` intervention and no volume reset.
+
+### 5.8 System Architecture Diagram
 
 ```mermaid
 C4Context
