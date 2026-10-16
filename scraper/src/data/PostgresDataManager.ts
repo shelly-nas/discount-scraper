@@ -6,6 +6,10 @@ import { scraperLogger } from "../utils/Logger";
 import PostgresDataContext from "./PostgresDataContext";
 import { getDatabaseConfig } from "../config/database";
 
+/** Offers are matched on the supermarket's product id when known, else on name. */
+const productKey = (item: IProductDiscountDetails) =>
+  item.externalId ? `id:${item.externalId}` : `name:${item.name}`;
+
 export class PostgresDataManager {
   private productController: PostgresProductController;
   private discountController: PostgresDiscountController;
@@ -51,11 +55,11 @@ export class PostgresDataManager {
   ): Promise<{ created: number; updated: number }> {
     scraperLogger.debug("Add to Product database.");
 
-    // Deduplicate products by name - keep first occurrence
+    // Deduplicate products by id (or name without one) - keep first occurrence
     const uniqueProducts = new Map<string, IProductDiscountDetails>();
     for (const product of products) {
-      if (!uniqueProducts.has(product.name)) {
-        uniqueProducts.set(product.name, product);
+      if (!uniqueProducts.has(productKey(product))) {
+        uniqueProducts.set(productKey(product), product);
       } else {
         scraperLogger.debug(
           `Duplicate product '${product.name}' found in scraped data. Using first occurrence.`
@@ -68,12 +72,20 @@ export class PostgresDataManager {
 
     const uniqueProductArray = Array.from(uniqueProducts.values());
     for (const product of uniqueProductArray) {
-      const result = await this.productController.addProductWithTracking(
-        product.name,
-        product.category,
-        supermarket,
-        product.productUrl ?? null
-      );
+      const result = product.externalId
+        ? await this.productController.addProductByExternalId(
+            product.name,
+            product.category,
+            supermarket,
+            product.productUrl ?? null,
+            product.externalId
+          )
+        : await this.productController.addProductWithTracking(
+            product.name,
+            product.category,
+            supermarket,
+            product.productUrl ?? null
+          );
       if (result.wasCreated) {
         created++;
       } else {
@@ -94,11 +106,11 @@ export class PostgresDataManager {
   ): Promise<{ created: number; skipped: number }> {
     scraperLogger.debug("Add to Discount database with smart logic.");
 
-    // Deduplicate discounts by product name - keep first occurrence
+    // Deduplicate discounts by product id (or name without one) - keep first occurrence
     const uniqueDiscounts = new Map<string, IProductDiscountDetails>();
     for (const discount of discounts) {
-      if (!uniqueDiscounts.has(discount.name)) {
-        uniqueDiscounts.set(discount.name, discount);
+      if (!uniqueDiscounts.has(productKey(discount))) {
+        uniqueDiscounts.set(productKey(discount), discount);
       } else {
         scraperLogger.debug(
           `Duplicate discount for '${discount.name}' found in scraped data. Using first occurrence.`
@@ -125,9 +137,9 @@ export class PostgresDataManager {
 
     const uniqueDiscountArray = Array.from(uniqueDiscounts.values());
     for (const discount of uniqueDiscountArray) {
-      const productId = await this.productController.getProductId(
-        discount.name
-      );
+      const productId = discount.externalId
+        ? await this.productController.getProductIdByExternalId(discount.externalId, supermarket)
+        : await this.productController.getProductId(discount.name, supermarket);
 
       if (productId === -1) {
         scraperLogger.warn(

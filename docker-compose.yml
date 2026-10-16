@@ -3,7 +3,7 @@ services:
     build:
       context: database
       dockerfile: Dockerfile
-    container_name: discount-scraper-db
+    container_name: supermarket-scraper-db
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -21,7 +21,7 @@ services:
     build:
       context: scraper
       dockerfile: Dockerfile
-    container_name: discount-scraper-api
+    container_name: supermarket-scraper-api
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -30,6 +30,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       API_PORT: 3001
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CATALOG_ENABLED: ${CATALOG_ENABLED:-true}
+      CATALOG_CRON: ${CATALOG_CRON:-17 3 * * 1}
     ports:
       - "3001:3001"
     depends_on:
@@ -44,7 +47,7 @@ services:
     build:
       context: web
       dockerfile: Dockerfile
-    container_name: discount-scraper-web
+    container_name: supermarket-scraper-web
     ports:
       - "3010:80"
     depends_on:

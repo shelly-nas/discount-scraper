@@ -1,10 +1,10 @@
 # Functional Design Document
 
-## DiscountScraper System
+## Supermarket Scraper System
 
 **Version:** 1.0  
 **Date:** October 24, 2025  
-**Project:** SaleScraper  
+**Project:** supermarket-scraper (named discount-scraper until October 2026)  
 **Author:** System Analysis
 
 ---
@@ -13,7 +13,28 @@
 
 ### 1.1 System Purpose
 
-The DiscountScraper system is designed to automatically collect, store, and present discount information from multiple Dutch supermarket chains (Albert Heijn, Aldi, Dirk, Hoogvliet, Jumbo, Lidl, and PLUS) in a centralized, searchable database with a modern web interface.
+The Supermarket Scraper system automatically collects, stores, and presents the products of multiple Dutch supermarket chains (Albert Heijn, Aldi, Dirk, Hoogvliet, Jumbo, Lidl, and PLUS) in a centralized, searchable database with a modern web interface: the full assortment with regular prices and pack quantities where a catalog scraper exists, and the weekly offers of every chain. A read-only public API serves the data to the Baskit app, which compares shopping lists on price per kilo, liter or piece.
+
+#### Rename from discount-scraper
+
+Until October 2026 the project was called discount-scraper, after its first
+scope (weekly offers only). With the full catalogs it became a product
+scraper and was renamed supermarket-scraper: GitHub repository, images
+(`supermarket-scraper-db/-api/-web`), containers, NAS directories
+(`/volume1/docker/supermarket-scraper`, `-acc`) and domains
+(`supermarkets.shelly-nas.nl`, `supermarkets-acc.shelly-nas.nl`; the old
+`discounts*` domains no longer route). Kept on purpose:
+
+- The production database volume keeps its name `discount-scraper_postgres_data`
+  (pinned as an external volume), so the existing data stays in use.
+- The API keeps the old container names `discount-scraper-api` /
+  `discount-scraper-acc-api` as aliases on `shelly-network`, so Baskit keeps
+  working until it switches to the new names.
+- The database name and user (`discount`, `discount_user`) are unchanged.
+
+The first deploy after the rename stops the stacks in the old NAS directories
+before starting the new one; the old directories and their data are left in
+place.
 
 ### 1.2 Business Goals
 
@@ -78,6 +99,16 @@ The DiscountScraper system is designed to automatically collect, store, and pres
   - Dashboard metrics
   - Scheduler management
 
+- ✅ **Product Catalog**
+
+  - Weekly full assortment scrape with regular prices (Albert Heijn, Lidl food assortment)
+  - Price history and catalog run tracking; on-demand runs from the admin UI
+
+- ✅ **Public Consumer API**
+
+  - Versioned read-only API under `/api/public/v1` for the Baskit app
+  - Search, supermarkets, categories and product detail endpoints
+
 - ✅ **Web Interface**
 
   - Notion-inspired UI design
@@ -129,7 +160,7 @@ graph TB
         PLUS[PLUS Website]
     end
 
-    subgraph "DiscountScraper System"
+    subgraph "Supermarket Scraper System"
         SCRAPER[Scraper Service]
         API[REST API]
         WEB[Web Interface]
@@ -655,6 +686,97 @@ flowchart TD
 | FR-004.8  | System SHALL provide endpoint to manually cleanup expired discounts      | LOW      | ✅ Implemented |
 | FR-004.9  | System SHALL return JSON formatted responses                             | HIGH     | ✅ Implemented |
 | FR-004.10 | System SHALL handle errors gracefully with appropriate HTTP status codes | HIGH     | ✅ Implemented |
+| FR-004.11 | System SHALL provide a versioned, read-only public API (`/api/public/v1`) for consumer apps such as Baskit | HIGH | ✅ Implemented |
+| FR-004.12 | Public API SHALL support paginated text search over active discounts with supermarket/category filters and sorting | HIGH | ✅ Implemented |
+| FR-004.13 | System SHALL restrict allowed CORS origins via the `CORS_ORIGINS` environment variable (all origins when unset) | MEDIUM | ✅ Implemented |
+| FR-004.14 | Public search SHALL support `scope=all` to include catalog products at their regular price | HIGH | ✅ Implemented |
+| FR-004.15 | Public API SHALL price a shopping list at every supermarket (`POST /compare`) | HIGH | ✅ Implemented |
+
+#### FR-007: Product Catalog
+
+| ID       | Requirement                                                                                           | Priority | Status         |
+| -------- | ----------------------------------------------------------------------------------------------------- | -------- | -------------- |
+| FR-007.1 | System SHALL scrape the full assortment with regular prices for supermarkets that have a catalog client | HIGH   | ✅ Albert Heijn, Lidl |
+| FR-007.2 | System SHALL store the supermarket product id, brand, pack size, unit price, image and regular price   | HIGH     | ✅ Implemented |
+| FR-007.3 | System SHALL record a price history row only when a regular price changes                             | MEDIUM   | ✅ Implemented |
+| FR-007.4 | System SHALL mark products missing from a run as not in the catalog, unless the run saw under 50% of the known products | MEDIUM | ✅ Implemented |
+| FR-007.5 | System SHALL run catalog scrapes weekly (`CATALOG_CRON`, default Monday 03:17; `CATALOG_ENABLED=false` disables) and on demand from the admin UI | MEDIUM | ✅ Implemented |
+| FR-007.6 | System SHALL track every catalog run (status, counts, duration, error) in `catalog_runs`             | MEDIUM   | ✅ Implemented |
+| FR-007.7 | System SHALL apply schema migrations from `scraper/migrations` on startup                              | HIGH     | ✅ Implemented |
+| FR-007.8 | Catalog clients for Dirk, PLUS and Aldi                                                                | MEDIUM   | Planned        |
+| FR-007.10 | System SHALL store each catalog product's pack quantity normalised to kg, l or stuk (`quantity_value`, `quantity_unit`; supplied by the client or read from the pack size such as "500 g", "6 x 330 ml", "4 stuks") and expose `pricePerUnit` (current price / quantity) in the public API | HIGH | ✅ Implemented |
+| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Hoogvliet, Jumbo |
+
+**Jumbo catalog and offers.** Both use jumbo.com's own GraphQL API
+(`POST https://www.jumbo.com/api/graphql`) with the web client's headers
+(`apollographql-client-name` / `x-source: JUMBO_WEB-search`,
+`apollographql-client-version: master-v39.2.0-web`; without them the API
+answers "No client headers set"). `searchProducts(input: { searchType:
+category, searchTerms: "producten", offSet, limit })` lists the whole
+assortment (about 17,100 products), at most 200 per page. Prices come in
+cents; `pricePerUnit` follows the current (promotion) price. A product with a
+missing required field (no title) makes Jumbo return `data: null` for its whole
+page; the page is then split until that product is isolated and skipped.
+
+- Quantity: from the pack size (`packSizeDisplay`, e.g. "6 x 1 L"), else the
+  title, else current price / price per unit (pieces rounded to whole ones).
+- The catalog stores the regular price (`price.price`) with its quantity and a
+  unit price worked out from the regular price (on 16 October 2026: 17,126
+  products, 17,086 with a quantity).
+- The discount scraper (`JumboApiClient`) keeps products with a price
+  promotion: Jumbo's `promoPrice` when lower, else the label worked out per
+  item ("3 voor 6,00", "1+1 gratis", "25% korting", "voor 1,99"). Labels that
+  are not about the price ("Gratis bezorging", "€2,00 bezorgkorting",
+  "Vanaf € 12,00") are skipped. Promotion days come without a year and are
+  dated to their next occurrence; standing offers without dates get the folder
+  end (the most common end date), which is also the run's expiry date. On 16
+  October 2026 this gave 1,550 offers (the previous HTML scraper found 13
+  promotion cards).
+
+Offer prices per item for multi-buy labels are worked out by
+`utils/Promotion.promotionPrice`, shared by Hoogvliet and Jumbo.
+
+**Hoogvliet catalog and offers.** hoogvliet.com is a Next.js shop on Magento 2
+and exposes Magento's public GraphQL API (`https://hoogvliet.nl/graphql`,
+header `Store: hoogvliet_nl`). The top-level categories come from
+`categories(parent_id: 2)`; offer, theme-shop and seasonal categories are read
+last so products keep their regular shelf. `categoryList { products }` lists
+the SKUs per category (200 per page); `products(filter: { sku: { in } })`
+(300 per call) returns the details: regular and final price, pack size and
+price per kilo/liter/piece (`sub_title_attributes`) and the promotion
+(`promotion_meta_data`: label, valid from/to). Promotion groups
+(`GroupedProduct`, folder entries such as "Kitkat, Bros of Smarties") are
+skipped; the products they bundle carry the promotion themselves.
+
+- The catalog client stores every product at its regular price with its quantity
+  (on 16 October 2026: 8,562 products, all with price and quantity).
+- The discount scraper (`HoogvlietApiClient`) uses the same API and keeps
+  products with a current promotion. The discount price is per item, also for
+  multi-buy offers: "3 voor 6,00" is 2.00, "1 + 1 Gratis" half the regular
+  price, "25% korting" and "2e halve prijs" (0.75 of the regular price) are
+  worked out from the label. The run's expiry date is the most common end date
+  (the weekly folder), since some promotions run for months.
+| FR-007.9 | System SHALL record where a regular price comes from (`price_source`: `supermarket` or `checkjebon`) and keep catalog products without a known price (`regular_price` null; excluded from price comparison) | HIGH | ✅ Implemented |
+
+**Lidl catalog.** Lidl does not publish regular prices online. The Lidl catalog
+client crawls the food assortment pages on lidl.nl (starting at
+`/c/assortiment-producten/s10008015`, following links whose slug contains
+`assortiment` or `wijn`, at most 80 pages, meta refreshes followed) and reads
+every product tile (`data-grid-data` JSON): article number, name, brand, pack
+size, image, product URL and Lidl's taxonomy (food worlds only; the two naming
+schemes are merged, other worlds become `Overig`). Only tiles with category
+`Food` or `F+V` are kept. The regular price is, in order:
+
+1. Lidl's own `oldPrice` when the product is on offer (`supermarket`);
+2. the open [checkjebon.nl](https://github.com/supermarkt/checkjebon) dataset
+   (MIT, refreshed daily; its Lidl data comes from boodschaapje.nl), matched on
+   the Lidl article number, else on a name that occurs once in that dataset
+   with no conflicting pack size (`checkjebon`);
+3. Lidl's own price without an offer (`supermarket`);
+4. otherwise none: the product is in the catalog without a price.
+
+If the checkjebon dataset cannot be loaded the run continues without prices.
+On 15 October 2026 a run found about 2,360 food products, about half of them with a price.
 
 #### FR-005: Web Interface
 
@@ -743,6 +865,7 @@ flowchart TD
 | NFR-006.2 | System SHALL start all services with single command  | HIGH     | ✅ Implemented |
 | NFR-006.3 | Database SHALL initialize automatically on first run | HIGH     | ✅ Implemented |
 | NFR-006.4 | System SHALL support environment-based configuration | HIGH     | ✅ Implemented |
+| NFR-006.5 | Every pull request SHALL be deployed to an acceptance environment with a fresh database of demo data; demo data SHALL never reach production | MEDIUM | ✅ Implemented |
 
 ### 4.3 System Behavior
 
@@ -1296,6 +1419,117 @@ interface SupermarketStatus {
 ]
 ```
 
+#### Public API (`/api/public/v1`) — consumer apps
+
+Read-only endpoints used by the Baskit app. They never expose scraper triggers,
+run logs or scheduler management and use camelCase fields. Every product gets
+at most one current discount: the cheapest active, non-expired one. Responses
+carry `Cache-Control: public, max-age=60`.
+
+| Endpoint | Description |
+| -------- | ----------- |
+| `GET /api/public/v1/health` | Health check |
+| `GET /api/public/v1/supermarkets` | All supermarkets with `key`, `name`, `activeDiscounts`, `lastUpdated`, `expireDate`, `catalogProducts`, `catalogUpdated` |
+| `GET /api/public/v1/categories?supermarket=&scope=` | Categories with counts for the given scope |
+| `GET /api/public/v1/search` | Paginated search (see below) |
+| `GET /api/public/v1/products/:id` | Product with `price`, `catalog`, `currentDiscount`, up to 50 discount `history` entries and up to 100 `priceHistory` entries |
+| `POST /api/public/v1/compare` | Prices a shopping list at every supermarket (see below) |
+
+Search query parameters:
+
+| Param | Description |
+| ----- | ----------- |
+| `q` | Free text; every word must occur in the product name (case-insensitive, LIKE wildcards are escaped) |
+| `supermarket` | Comma separated supermarket keys (`albert-heijn,dirk,...`) |
+| `category` | Exact category name |
+| `scope` | `offers` (default): only products with a current discount. `all`: also catalog products at their regular price |
+| `sort` | `relevance` (default: exact > whole word > prefix > word prefix > contains, then price), `price` (effective price), `discount`, `expiry`, `name` |
+| `limit` / `offset` | Page size 1-100 (default 25) and offset |
+
+```typescript
+interface SearchResponse {
+  query: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: {
+    id: number;
+    name: string;
+    category: string;
+    supermarket: { key: string; name: string };
+    productUrl: string | null;
+    price: number | null; // offer price when on offer, otherwise the regular price
+    pricePerUnit: { value: number; unit: "kg" | "l" | "stuk" } | null; // price / quantity
+    discount: {
+      id: number;
+      originalPrice: number | null; // falls back to the catalog price
+      discountPrice: number;
+      unitPrice: string | null;
+      specialDiscount: string | null;
+      discountPercentage: number | null;
+      expireDate: string; // ISO 8601
+    } | null; // always set with scope=offers
+    catalog: {
+      regularPrice: number | null; // null when unknown (some Lidl products)
+      priceSource: "supermarket" | "checkjebon" | null;
+      quantity: { value: number; unit: "kg" | "l" | "stuk" } | null; // e.g. 500 g -> 0.5 kg
+      unitPrice: string | null; // as shown by the supermarket, e.g. "€5.18 per kilo"
+      unitSize: string | null;
+      brand: string | null;
+      imageUrl: string | null;
+    } | null; // null when the product is not in the latest catalog scrape
+    updatedAt: string;
+  }[];
+}
+```
+
+**Price comparison** - `POST /api/public/v1/compare`
+
+Request: `{ items: [{ id, query, count?, productId? }], supermarkets?: "dirk,albert-heijn" }`
+(1-100 items, `count` 1-99, default all supermarkets).
+
+For every item and supermarket the best matching product is chosen among
+current offers and catalog products: every word of `query` must occur in the
+name and at least one as a whole word; more whole-word matches rank higher.
+Among equally good matches, products with a known pack quantity come first and
+like is compared with like (the unit most of those matches are sold in, kg, l
+or stuk, goes first); the lowest current price per unit (offer or regular
+price over the quantity) wins, so a 500 ml pack does not beat a cheaper liter.
+Then the lowest current price, then the shortest name. Because larger packs
+are often cheaper per unit, `total` reflects the best value packs, not the
+lowest possible receipt. When nothing matches, words
+containing digits (sizes such as `1L`, `500g`) are dropped and the match is
+retried. An item with a `productId` uses exactly that product at its own
+supermarket.
+
+```typescript
+interface CompareResponse {
+  itemCount: number;
+  // Most items found first, then the lowest total
+  supermarkets: {
+    key: string;
+    name: string;
+    total: number;      // sum of lineTotal of the found items
+    matched: number;    // items found
+    missing: string[];  // ids of items not found
+    lines: {
+      itemId: string;
+      count: number;
+      product: SearchResponse["items"][number] | null;
+      lineTotal: number | null; // product.price * count
+    }[];
+  }[];
+}
+```
+
+#### Catalog admin API (`/api/catalog`)
+
+| Endpoint | Description |
+| -------- | ----------- |
+| `GET /api/catalog/status` | Per supermarket: `supported`, `running`, `productsInCatalog`, `lastUpdated`, `lastRun` |
+| `GET /api/catalog/runs?limit=` | Latest catalog runs (default 50, max 200) |
+| `POST /api/catalog/run/:supermarket` | Starts a catalog run in the background: `202 { runId }`, `409` when one is already running, `400` for supermarkets without a catalog scraper |
+
 ### 5.6 Configuration Data Structure
 
 #### Web Identifiers (JSONB)
@@ -1326,16 +1560,50 @@ interface WebIdentifiers {
 - Stored in database for runtime flexibility
 - Can be modified via database migrations
 
-### 5.7 System Architecture Diagram
+### 5.7 Schema Migrations
+
+**Purpose:** Keep the schema of long-lived deployments in sync with the code that queries it
+
+The database image copies `schema.sql` and `migrate.sql` into
+`/docker-entrypoint-initdb.d/`, but PostgreSQL only executes those scripts when the
+data directory is **empty**. A deployment whose volume already exists therefore never
+receives columns added after that volume was created, which causes runtime errors such
+as `column "product_url" of relation "products" does not exist`.
+
+To close that gap, the scraper API applies migrations itself:
+
+- Migrations are numbered SQL files in `scraper/migrations/` (`NNN_name.sql`), applied
+  in filename order by `runMigrations()` in `scraper/src/data/Migrations.ts`.
+- `runMigrations()` executes on every API startup, after the connection test succeeds
+  and before the HTTP server starts accepting requests.
+- Applied files are recorded in `schema_migrations`; each file runs in its own
+  transaction, so a failed file is retried on the next start instead of skipped.
+- Every statement must be safe to run repeatedly (`ADD COLUMN IF NOT EXISTS` and
+  similar), because fresh installs get `schema.sql` first and then run every file too.
+  New changes go in a new file; existing files are never edited or removed.
+
+**Current migrations:**
+
+| File                    | Changes                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `001_catalog.sql`       | Catalog columns on `products`, `price_history`, `catalog_runs`          |
+| `002_offer_columns.sql` | `products.product_url`, `discounts.unit_price` for pre-existing volumes |
+| `003_price_source.sql`  | `products.price_source` (origin of the catalog regular price)          |
+| `004_quantity.sql`      | `products.quantity_value`, `products.quantity_unit` (pack quantity in kg, l or stuk) |
+
+**Result:** a redeploy of the scraper API is sufficient to bring an existing database
+up to date — no manual `psql` intervention and no volume reset.
+
+### 5.8 System Architecture Diagram
 
 ```mermaid
 C4Context
-    title System Context Diagram - DiscountScraper
+    title System Context Diagram - Supermarket Scraper
 
     Person(consumer, "Consumer", "Looks for grocery discounts")
     Person(admin, "Administrator", "Manages scraper operations")
 
-    System_Boundary(ds, "DiscountScraper System") {
+    System_Boundary(ds, "Supermarket Scraper System") {
         System(web, "Web Interface", "React SPA with Vite")
         System(api, "REST API", "Express + TypeScript")
         System(scraper, "Scraper Engine", "Playwright-based scrapers")
@@ -1414,18 +1682,18 @@ sequenceDiagram
 ```mermaid
 graph TB
     subgraph "Docker Host"
-        subgraph "discount-scraper-web (Port 3000)"
+        subgraph "supermarket-scraper-web (Port 3000)"
             NGINX[Nginx Web Server]
             STATIC[Static React Files]
         end
 
-        subgraph "discount-scraper-api (Port 3001)"
+        subgraph "supermarket-scraper-api (Port 3001)"
             EXPRESS[Express Server]
             SCHEDULER[Scheduler Service]
             SCRAPERS[Scraper Clients]
         end
 
-        subgraph "discount-scraper-db (Port 5432)"
+        subgraph "supermarket-scraper-db (Port 5432)"
             POSTGRES[(PostgreSQL 15)]
             SCHEMA[Initialized Schema]
         end
@@ -1647,4 +1915,4 @@ services:
 
 **Document End**
 
-_This functional design document represents the current implementation of the DiscountScraper system as of October 24, 2025. It should be updated as the system evolves._
+_This functional design document represents the current implementation of the Supermarket Scraper system as of October 24, 2025. It should be updated as the system evolves._

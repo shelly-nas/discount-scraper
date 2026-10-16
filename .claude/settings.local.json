@@ -12,7 +12,7 @@
       "Bash(curl -s -L \"https://www.ah.nl/aanbiedingen\" -o /dev/null -w \"%{http_code}\")"
     ],
     "additionalDirectories": [
-      "/Users/jelle/Documents/GitHub/Shelly-NAS/discount-scraper/scraper/src/tests"
+      "/Users/jelle/Documents/GitHub/Shelly-NAS/supermarket-scraper/scraper/src/tests"
     ]
   }
 }

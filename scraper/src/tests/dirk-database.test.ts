@@ -100,7 +100,7 @@ vi.mock("../utils/Logger", () => ({
 
 function makeDataManager(overrides: {
   addProductWithTracking?: (name: string) => Promise<{ id: number; wasCreated: boolean }>;
-  getProductId?: (name: string) => Promise<number>;
+  getProductId?: (name: string, supermarket: string) => Promise<number>;
   hasActiveNonExpiredDiscount?: (id: number) => Promise<boolean>;
   addDiscount?: (id: number) => Promise<number>;
   getLastSuccessfulRunBySupermarket?: () => Promise<null>;
@@ -166,7 +166,12 @@ describe("Dirk → database: alle producten komen terecht", () => {
     await dm.addProductDb("Dirk", DIRK_SCRAPED_PRODUCTS);
 
     for (const product of DIRK_SCRAPED_PRODUCTS) {
-      expect(addFn).toHaveBeenCalledWith(product.name, product.category, "Dirk");
+      expect(addFn).toHaveBeenCalledWith(
+        product.name,
+        product.category,
+        "Dirk",
+        product.productUrl ?? null
+      );
     }
   });
 
@@ -242,7 +247,8 @@ describe("Dirk → database: alle producten komen terecht", () => {
 
     const calls: any[][] = discountFn.mock.calls;
     for (let i = 0; i < calls.length; i++) {
-      const expireDate = calls[i][4];
+      // (productId, originalPrice, discountPrice, unitPrice, specialDiscount, expireDate, ...)
+      const expireDate = calls[i][5];
       expect(expireDate).toBe(DIRK_SCRAPED_PRODUCTS[i].expireDate);
     }
   });

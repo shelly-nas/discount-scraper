@@ -61,3 +61,28 @@ export interface ScraperRun {
   completedAt?: string;
   durationSeconds?: number;
 }
+
+export interface CatalogRun {
+  id: number;
+  supermarket: string;
+  status: 'running' | 'success' | 'failed';
+  products_seen: number;
+  products_created: number;
+  products_updated: number;
+  prices_changed: number;
+  products_removed: number;
+  error_message: string | null;
+  started_at: string;
+  completed_at: string | null;
+  duration_seconds: number | null;
+}
+
+export interface CatalogStatus {
+  key: string;
+  name: string;
+  supported: boolean;
+  running: boolean;
+  productsInCatalog: number;
+  lastUpdated: string | null;
+  lastRun: CatalogRun | null;
+}

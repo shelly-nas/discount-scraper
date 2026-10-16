@@ -1,7 +1,7 @@
 services:
   postgres:
-    image: ${REGISTRY}/discount-scraper-db:${IMAGE_TAG:-latest}
-    container_name: discount-scraper-db
+    image: ${REGISTRY}/supermarket-scraper-db:${IMAGE_TAG:-latest}
+    container_name: supermarket-scraper-db
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -14,8 +14,8 @@ services:
     restart: always
 
   scraper-api:
-    image: ${REGISTRY}/discount-scraper-api:${IMAGE_TAG:-latest}
-    container_name: discount-scraper-api
+    image: ${REGISTRY}/supermarket-scraper-api:${IMAGE_TAG:-latest}
+    container_name: supermarket-scraper-api
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -24,6 +24,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       API_PORT: 3001
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      CATALOG_ENABLED: ${CATALOG_ENABLED:-true}
+      CATALOG_CRON: ${CATALOG_CRON:-17 3 * * 1}
     ports:
       - "3001:3001"
     depends_on:
@@ -33,10 +36,19 @@ services:
     volumes:
       # Mount logs directory for persistence
       - ./logs:/app/logs
+    # Joined to shelly-network so the Baskit web container can proxy
+    # /api/discounts to the public API. Baskit uses the name from before the
+    # rename to supermarket-scraper (http://discount-scraper-api:3001), kept
+    # as an alias until Baskit moves to supermarket-scraper-api.
+    networks:
+      shelly-network:
+        aliases:
+          - discount-scraper-api
+      default:
 
   web:
-    image: ${REGISTRY}/discount-scraper-web:${IMAGE_TAG:-latest}
-    container_name: discount-scraper-web
+    image: ${REGISTRY}/supermarket-scraper-web:${IMAGE_TAG:-latest}
+    container_name: supermarket-scraper-web
     ports:
       - "8090:80"
     depends_on:
@@ -47,13 +59,20 @@ services:
       - default
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.discounts.rule=Host(`discounts.shelly-nas.nl`)"
-      - "traefik.http.routers.discounts.entrypoints=web"
-      - "traefik.http.services.discounts.loadbalancer.server.port=80"
+      # Two networks: tell Traefik which one to use, or it may answer 504.
+      - "traefik.docker.network=shelly-network"
+      - "traefik.http.routers.supermarkets.rule=Host(`supermarkets.shelly-nas.nl`)"
+      - "traefik.http.routers.supermarkets.entrypoints=web"
+      - "traefik.http.services.supermarkets.loadbalancer.server.port=80"
 
 volumes:
+  # The production data lives in the volume compose created when the stack was
+  # deployed from /volume1/docker/discount-scraper. Its name is pinned so the
+  # stack keeps that data after the rename to supermarket-scraper; the deploy
+  # checks it exists first (github-pipeline.yaml).
   postgres_data:
-    driver: local
+    external: true
+    name: discount-scraper_postgres_data
 
 networks:
   shelly-network:

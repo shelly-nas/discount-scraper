@@ -1,6 +1,8 @@
-# DiscountScraper
+# Supermarket Scraper
 
-A containerized web scraper with REST API that fetches discount information from Dutch supermarket websites (Albert Heijn, Dirk, Plus) and stores them in a PostgreSQL database with optimized indexing for fast searching and querying.
+A containerized scraper with REST API that collects the products of Dutch supermarkets (Albert Heijn, Aldi, Dirk, Hoogvliet, Jumbo, Lidl, PLUS): the full assortment with regular prices and pack quantities where a catalog scraper exists, and the weekly offers of every supermarket. Everything is stored in PostgreSQL and served to the admin UI and, through a read-only public API, to the Baskit app for comparing prices per kilo, liter or piece.
+
+Until October 2026 this project was called `discount-scraper`; see "Rename from discount-scraper" in [docs/FUNCTIONAL_DESIGN.md](docs/FUNCTIONAL_DESIGN.md).
 
 ## Features
 
@@ -96,9 +98,9 @@ curl -X POST http://localhost:3001/scraper/run/plus
 
 The application consists of three Docker services:
 
-- **postgres** (`discount-scraper-db`) - Port 5432
-- **scraper-api** (`discount-scraper-api`) - Port 3001
-- **web** (`discount-scraper-web`) - Port 3000
+- **postgres** (`supermarket-scraper-db`) - Port 5432
+- **scraper-api** (`supermarket-scraper-api`) - Port 3001
+- **web** (`supermarket-scraper-web`) - Port 3000
 
 ## Web Interface
 
@@ -113,9 +115,29 @@ The web interface provides a clean, Notion-inspired UI for viewing and filtering
 
 Access at: **http://localhost:3000**
 
+### Acceptance environment
+
+Every pull request is deployed to `supermarkets-acc.shelly-nas.nl` with a fresh database filled with
+demo offers (`database/demo/seed-demo.sql`); production data never goes there and the demo data
+never goes to production. See `.github/workflows/acc.yml` and `docker-compose.acc.yml`.
+
 ## API Usage
 
-### Endpoints
+### Public API (for Baskit and other consumer apps)
+
+Read-only, versioned endpoints under `/api/public/v1`. See
+[docs/FUNCTIONAL_DESIGN.md](docs/FUNCTIONAL_DESIGN.md) section 5.5 for the full contract.
+
+```bash
+curl http://localhost:3001/api/public/v1/supermarkets
+curl http://localhost:3001/api/public/v1/categories
+curl "http://localhost:3001/api/public/v1/search?q=melk&supermarket=dirk,albert-heijn&sort=price&limit=20"
+curl http://localhost:3001/api/public/v1/products/1
+```
+
+Set `CORS_ORIGINS` (comma separated) in `.env` to restrict which web origins may call the API.
+
+### Admin Endpoints
 
 **Health Check**
 
@@ -175,7 +197,7 @@ Where `:supermarket` is one of: `albert-heijn`, `ah`, `dirk`, or `plus`
 
 ```bash
 # Access database directly
-docker exec -it discount-scraper-db psql -U discount_user -d discount
+docker exec -it supermarket-scraper-db psql -U discount_user -d discount
 
 # Example queries
 SELECT * FROM products WHERE supermarket = 'Albert Heijn' LIMIT 10;
@@ -250,7 +272,7 @@ docker compose restart postgres
 **API not responding**
 
 ```bash
-docker logs discount-scraper-api
+docker logs supermarket-scraper-api
 docker compose restart scraper-api
 ```
 

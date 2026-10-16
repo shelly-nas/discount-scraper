@@ -1,4 +1,4 @@
-name: Discount Scraper Build, Push & Deploy
+name: Supermarket Scraper Build, Push & Deploy
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
     uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:latest
+      image_tag: ${{ vars.REGISTRY_URL }}/supermarket-scraper-db:latest
       context: database
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
@@ -22,7 +22,7 @@ jobs:
     uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:latest
+      image_tag: ${{ vars.REGISTRY_URL }}/supermarket-scraper-api:latest
       context: scraper
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
@@ -32,21 +32,56 @@ jobs:
     uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:latest
+      image_tag: ${{ vars.REGISTRY_URL }}/supermarket-scraper-web:latest
       context: web
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
+  # The app was deployed as discount-scraper until October 2026. Its stacks in
+  # the old directories hold the same ports, so they are stopped before the
+  # supermarket-scraper stack starts. Nothing is deleted: the old directories
+  # stay, and the production database volume (discount-scraper_postgres_data,
+  # pinned in docker-compose.prod.yml) is checked to exist so the new stack
+  # can never start on an empty database. Safe to run again: stopping a
+  # stopped stack does nothing.
+  retire-discount-scraper:
+    name: Stop the stack deployed as discount-scraper
+    needs: [build-database, build-scraper, build-web]
+    runs-on: shelly
+    steps:
+      - name: Check the production database volume
+        run: |
+          docker volume inspect discount-scraper_postgres_data > /dev/null \
+            || { echo "::error::Volume discount-scraper_postgres_data not found; not deploying on an empty database"; exit 1; }
+      # By compose project label (the old directory names), so the old compose
+      # files and their .env are not needed. Only containers are removed;
+      # volumes, among them the production data, and the directories stay.
+      - name: Stop the old stacks
+        run: |
+          for project in discount-scraper discount-scraper-acc; do
+            ids=$(docker ps -aq --filter "label=com.docker.compose.project=$project")
+            if [ -z "$ids" ]; then echo "Compose project $project has no containers"; fi
+            for id in $ids; do
+              echo "Stopping $(docker inspect --format '{{.Name}}' "$id")"
+              docker stop "$id" > /dev/null
+              docker rm "$id" > /dev/null
+            done
+          done
+
   deploy:
     name: Deploy from Registry
-    needs: [build-database, build-scraper, build-web]
+    needs: [build-database, build-scraper, build-web, retire-discount-scraper]
     if: ${{ success() }}
     uses: shelly-nas/shared-workflows/.github/workflows/deploy-production.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      deploy_directory: /volume1/docker/discount-scraper
+      deploy_directory: /volume1/docker/supermarket-scraper
       compose_file: docker-compose.prod.yml
       image_tag: latest
+      # Pinned in docker-compose.prod.yml; created when missing, never removed.
+      persistent_volumes: discount-scraper_postgres_data
+      # Fallback teardown of acc once what runs there is in production.
+      acc_directory: /volume1/docker/supermarket-scraper-acc
     secrets:
       registry_username: ${{ vars.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}

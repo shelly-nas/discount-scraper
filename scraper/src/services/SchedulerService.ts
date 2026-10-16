@@ -2,9 +2,14 @@ import cron from "node-cron";
 import { serverLogger } from "../utils/Logger";
 import PostgresDataManager from "../data/PostgresDataManager";
 import axios from "axios";
+import CatalogService from "./CatalogService";
+
+// Weekly by default: Monday 03:17, outside the discount scrape peaks.
+const DEFAULT_CATALOG_CRON = "17 3 * * 1";
 
 class SchedulerService {
   private cronJob: cron.ScheduledTask | null = null;
+  private catalogJob: cron.ScheduledTask | null = null;
   private dataManager: PostgresDataManager;
   private apiPort: string;
   private isRunning = false;
@@ -34,6 +39,29 @@ class SchedulerService {
   }
 
   /**
+   * Schedule the full catalog scrape. CATALOG_CRON overrides the schedule;
+   * CATALOG_ENABLED=false turns it off (manual runs keep working).
+   */
+  public startCatalogSchedule(catalogService: CatalogService): void {
+    if (process.env.CATALOG_ENABLED === "false") {
+      serverLogger.info("Catalog schedule disabled (CATALOG_ENABLED=false)");
+      return;
+    }
+    const expression = process.env.CATALOG_CRON || DEFAULT_CATALOG_CRON;
+    if (!cron.validate(expression)) {
+      serverLogger.error(`Invalid CATALOG_CRON '${expression}', catalog schedule not started`);
+      return;
+    }
+    this.catalogJob = cron.schedule(expression, () => {
+      serverLogger.info("Scheduled catalog scrape starting");
+      catalogService.runAll().catch((error) =>
+        serverLogger.error("Scheduled catalog scrape failed", error)
+      );
+    });
+    serverLogger.info(`Catalog schedule started (${expression})`);
+  }
+
+  /**
    * Stop the scheduler
    */
   public stop(): void {
@@ -42,6 +70,8 @@ class SchedulerService {
       this.cronJob = null;
       serverLogger.info("Scheduler service stopped");
     }
+    this.catalogJob?.stop();
+    this.catalogJob = null;
   }
 
   /**
