@@ -5,9 +5,9 @@ import { mapDirkOffer, mapDirkOfferProduct } from "../clients/DirkApiClient";
 import { PlusProduct, plusUnitSize } from "../clients/plus/PlusSite";
 import { mapPlusProduct } from "../clients/catalog/PlusCatalogClient";
 import { mapPlusDiscount } from "../clients/PlusApiClient";
-import { AldiProduct, aldiCategory, aldiName } from "../clients/aldi/AldiAlgolia";
+import { AldiProduct, aldiCategory, aldiName, parseAldiFolder } from "../clients/aldi/AldiAlgolia";
 import { mapAldiProduct } from "../clients/catalog/AldiCatalogClient";
-import { mapAldiDiscount } from "../clients/AldiApiClient";
+import { aldiLinkedId, mapAldiDiscount } from "../clients/AldiApiClient";
 import { parseQuantity } from "../utils/Quantity";
 
 vi.mock("../utils/Logger", () => ({
@@ -209,27 +209,58 @@ describe("Aldi", () => {
       objectID: "91243839",
       categoryIDs: ["offer"],
       mainCategoryID: "offer",
-      currentPrice: { priceValue: 0.99, validFrom: 1792015200, validUntil: 1792360799 },
+      currentPrice: { priceValue: 0.99, validFrom: 1792015200, validUntil: 1793401199 },
       ...extra,
     });
 
-  it("links an offer that reuses a regular id with a leading 9", () => {
+  it("links an offer to the regular article: same id, or the id after a leading 9", () => {
     const regular = new Map([["1243839", aldiProduct()]]);
-    expect(mapAldiDiscount(offer(), regular, NOW)).toMatchObject({
+    expect(aldiLinkedId("1243839", regular)).toBe("1243839");
+    expect(aldiLinkedId("91243839", regular)).toBe("1243839");
+    expect(aldiLinkedId("91245290", regular)).toBeNull();
+  });
+
+  it("is valid until the end of its folder category, not the offer object's own date", () => {
+    const regular = new Map([["1243839", aldiProduct()]]);
+    const discount = mapAldiDiscount(offer(), regular, "2026-10-18", NOW)!;
+    expect(discount).toMatchObject({
       externalId: "1243839",
       originalPrice: 1.49,
       discountPrice: 0.99,
       category: "Zuivel, eieren en boter",
     });
-    expect(mapAldiDiscount(offer(), new Map(), NOW)).toMatchObject({ externalId: "91243839", originalPrice: 0 });
+    expect(discount.expireDate.startsWith("2026-10-18T23:59:59")).toBe(true);
+    expect(mapAldiDiscount(offer(), new Map(), "2026-10-18", NOW)).toMatchObject({ externalId: "91243839", originalPrice: 0 });
+    expect(mapAldiDiscount(offer(), regular, "2026-10-11", NOW)).toBeNull();
   });
 
-  it("prices '2 VOOR' per item and skips ended offers", () => {
-    const two = offer({
-      currentPrice: { priceValue: 2, validFrom: 1792015200, validUntil: 1792360799, priceTagLabels: { promoText1: "2 VOOR" } },
+  it("takes the struck-through price as regular price and prices '2 VOOR' per item", () => {
+    const strike = offer({
+      currentPrice: { priceValue: 1.19, validFrom: 1, validUntil: 2, strikePrice: { strikePriceValue: 2.39 } },
     });
-    expect(mapAldiDiscount(two, new Map(), NOW)!.discountPrice).toBe(1);
-    const ended = offer({ currentPrice: { priceValue: 2, validFrom: 1, validUntil: 1791000000 } });
-    expect(mapAldiDiscount(ended, new Map(), NOW)).toBeNull();
+    expect(mapAldiDiscount(strike, new Map(), "2026-10-18", NOW)).toMatchObject({ originalPrice: 2.39, discountPrice: 1.19 });
+    const two = offer({
+      currentPrice: { priceValue: 2, validFrom: 1, validUntil: 2, priceTagLabels: { promoText1: "2 VOOR" } },
+    });
+    expect(mapAldiDiscount(two, new Map(), "2026-10-18", NOW)!.discountPrice).toBe(1);
+  });
+
+  it("reads the folder categories and products from the offers page", () => {
+    const apiData = JSON.stringify([
+      ["OFFER_GET", { res: {
+        categories: [
+          { title: "Vanaf maandag", startDate: "2026-10-12", endDate: "2026-10-18",
+            content: [{ productIds: ["1243839"] }, { productIds: ["91245290"] }] },
+        ],
+        algoliaDataMap: { "1243839": { name: "Protein melk drink" }, "91245290": { name: "Toiletblok" } },
+      } }],
+    ]);
+    const html = `<html><script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: { apiData } } })}</script></html>`;
+    const folder = parseAldiFolder(html)!;
+    expect(folder.categories).toEqual([
+      { title: "Vanaf maandag", startDate: "2026-10-12", endDate: "2026-10-18", productIds: ["1243839", "91245290"] },
+    ]);
+    expect(folder.products.get("91245290")).toMatchObject({ objectID: "91245290", name: "Toiletblok" });
+    expect(parseAldiFolder("<html></html>")).toBeNull();
   });
 });

@@ -14,46 +14,68 @@ import AldiAlgolia, {
 } from "./aldi/AldiAlgolia";
 
 /**
- * Maps a week offer to a discount. An offer that reuses a regular article id
- * with a leading 9 is linked to that product (and gets its regular price);
- * other offers are articles of their own, linked by their own id. "2 VOOR"
- * with price 2.00 is 1.00 per item.
+ * The regular product an offer belongs to: the same article id, or the id
+ * without the leading 9 that some offer articles carry; null for offer
+ * articles of their own (e.g. a week-only multipack).
+ */
+export function aldiLinkedId(offerId: string, regular: Map<string, AldiProduct>): string | null {
+  if (regular.has(offerId)) return offerId;
+  if (offerId.startsWith("9") && regular.has(offerId.slice(1))) return offerId.slice(1);
+  return null;
+}
+
+/**
+ * Maps a product of the current folder to a discount, valid until the end of
+ * its folder category ("Vanaf woensdag" 14-10 to 18-10). The regular price is
+ * the struck-through price, else the linked product's price when higher.
+ * "2 VOOR" with price 2.00 is 1.00 per item.
  */
 export function mapAldiDiscount(
   offer: AldiProduct,
   regular: Map<string, AldiProduct>,
+  endDate: string,
   now: Date = new Date()
 ): IProductDiscountDetails | null {
   const name = aldiName(offer);
   const price = offer.currentPrice;
   if (!name || !price || typeof price.priceValue !== "number" || price.priceValue <= 0) return null;
-  if (offer.isAvailable === false || price.validUntil * 1000 < now.getTime()) return null;
+  if (offer.isAvailable === false) return null;
 
-  const linkedId = offer.objectID.startsWith("9") && regular.has(offer.objectID.slice(1))
-    ? offer.objectID.slice(1)
-    : null;
-  const regularPrice = linkedId ? regular.get(linkedId)!.currentPrice?.priceValue ?? 0 : 0;
+  const end = moment(endDate, "YYYY-MM-DD", true);
+  if (!end.isValid()) return null;
+  const expireDate = end.endOf("day").toISOString(true);
+  if (new Date(expireDate) < now) return null;
+
+  const linkedId = aldiLinkedId(offer.objectID, regular);
+  const linked = linkedId ? regular.get(linkedId)! : null;
 
   const label = [price.priceTagLabels?.promoText1, price.priceTagLabels?.promoText2]
     .map((t) => t?.trim())
     .filter(Boolean)
     .join(" ");
   const multiBuy = /^\d+\s*voor$/i.test(label)
-    ? promotionPrice(`${label} ${price.priceValue}`, regularPrice || price.priceValue)
+    ? promotionPrice(`${label} ${price.priceValue}`, price.priceValue)
     : null;
   const discountPrice = multiBuy ?? price.priceValue;
+  const strike = price.strikePrice?.strikePriceValue;
+  const linkedPrice = linked?.currentPrice?.priceValue;
+  const regularPrice = typeof strike === "number" && strike > discountPrice
+    ? strike
+    : typeof linkedPrice === "number" && linkedPrice > discountPrice
+      ? linkedPrice
+      : 0;
   const quantity = aldiQuantity(offer);
 
   return {
     name,
-    originalPrice: regularPrice > discountPrice ? regularPrice : 0,
+    originalPrice: regularPrice,
     discountPrice,
     unitPrice: unitPriceText(discountPrice, quantity),
     quantity,
     specialDiscount: label,
-    category: aldiCategory(linkedId ? regular.get(linkedId)! : offer),
+    category: aldiCategory(linked ?? offer),
     supermarket: "Aldi",
-    expireDate: moment.unix(price.validUntil).endOf("day").toISOString(true),
+    expireDate,
     productUrl: aldiProductUrl(offer),
     externalId: linkedId ?? offer.objectID,
   };
@@ -64,9 +86,9 @@ class AldiApiClient extends ApiClient {
 
   private api: AldiAlgolia;
 
-  constructor(http?: AxiosInstance) {
+  constructor(http?: AxiosInstance, web?: AxiosInstance) {
     super();
-    this.api = new AldiAlgolia(http);
+    this.api = new AldiAlgolia(http, web);
     scraperLogger.debug(`Created a '${this.name}' API Client instance.`);
   }
 
@@ -74,21 +96,29 @@ class AldiApiClient extends ApiClient {
     discounts: IProductDiscountDetails[];
     expireDate: string;
   }> {
-    scraperLogger.info(`Fetching Aldi discounts via the aldi.nl product index`);
+    scraperLogger.info(`Fetching Aldi discounts via the aldi.nl offers page`);
 
-    const all = await this.api.all();
-    const regular = new Map(all.filter((p) => !isAldiOffer(p)).map((p) => [p.objectID, p]));
-    const offers = all.filter(isAldiOffer);
+    const folder = await this.api.folder();
+    const regular = new Map((await this.api.all()).filter((p) => !isAldiOffer(p)).map((p) => [p.objectID, p]));
 
     const now = new Date();
-    const discounts = offers
-      .map((offer) => mapAldiDiscount(offer, regular, now))
-      .filter((d): d is IProductDiscountDetails => d !== null);
+    const discounts: IProductDiscountDetails[] = [];
+    const seen = new Set<string>();
+    for (const category of folder.categories) {
+      for (const id of category.productIds) {
+        const product = folder.products.get(id);
+        if (!product || seen.has(id)) continue;
+        const discount = mapAldiDiscount(product, regular, category.endDate, now);
+        if (!discount) continue;
+        seen.add(id);
+        discounts.push(discount);
+      }
+    }
     if (discounts.length === 0) throw new Error("Aldi: no current offers found");
 
     const expireDate = folderExpireDate(discounts);
     scraperLogger.info(
-      `Total Aldi discounts: ${discounts.length} of ${offers.length} offers, folder expires: ${expireDate}`
+      `Total Aldi discounts: ${discounts.length} in ${folder.categories.length} folder categories, folder expires: ${expireDate}`
     );
     return { discounts, expireDate };
   }

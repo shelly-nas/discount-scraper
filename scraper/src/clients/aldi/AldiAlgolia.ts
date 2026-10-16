@@ -7,8 +7,13 @@ import { parseQuantity, Quantity } from "../../utils/Quantity";
 // without a search term returns the whole index (about 4,000 objects, at most
 // 1,000 per page): the regular assortment plus the week offers, which are
 // separate objects in category "offer" (often a different article, e.g. a
-// multipack; some reuse the article id with a leading 9).
+// multipack; some reuse the article id with a leading 9). The validity of
+// those offer objects is not the folder's (most run until weeks later), so
+// the current folder comes from the offers page instead: its server-rendered
+// __NEXT_DATA__ holds OFFER_GET with the folder categories ("Vanaf
+// maandag", ...), their start and end date and the products in each.
 export const ALDI_BASE = "https://www.aldi.nl";
+const OFFERS_PAGE = `${ALDI_BASE}/aanbiedingen.html`;
 const APP_ID = "2HU29PF6BH";
 const SEARCH_KEY = "686cf0c8ddcf740223d420d1115c94c1";
 const INDEX = "an_prd_nl_nl_products2";
@@ -23,6 +28,8 @@ export interface AldiPrice {
   validFrom: number;
   validUntil: number;
   priceTagLabels?: { promoText1?: string; promoText2?: string };
+  /** The regular price shown struck through next to an offer price. */
+  strikePrice?: { strikePriceValue?: number } | null;
 }
 
 export interface AldiProduct {
@@ -37,6 +44,43 @@ export interface AldiProduct {
   assets?: { type: string; url: string }[] | null;
   currentPrice?: AldiPrice | null;
   isAvailable?: boolean;
+}
+
+/** One folder category of the offers page and the products it holds. */
+export interface AldiFolderCategory {
+  title: string;
+  /** "2026-10-12" */
+  startDate: string;
+  endDate: string;
+  productIds: string[];
+}
+
+export interface AldiFolder {
+  categories: AldiFolderCategory[];
+  products: Map<string, AldiProduct>;
+}
+
+/** The current folder from the offers page HTML; null when the page has none. */
+export function parseAldiFolder(html: string): AldiFolder | null {
+  const script = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!script) return null;
+  // apiData is a JSON string inside the page JSON: a list of [key, value] pairs.
+  const apiDataRaw = JSON.parse(script[1])?.props?.pageProps?.apiData;
+  if (typeof apiDataRaw !== "string") return null;
+  const apiData: [string, any][] = JSON.parse(apiDataRaw);
+  const offer = apiData.find((entry) => entry[0] === "OFFER_GET")?.[1]?.res;
+  if (!offer?.categories) return null;
+
+  const categories: AldiFolderCategory[] = (offer.categories as any[]).map((category) => ({
+    title: String(category.title ?? ""),
+    startDate: String(category.startDate ?? ""),
+    endDate: String(category.endDate ?? ""),
+    productIds: (category.content ?? []).flatMap((block: any) => (block.productIds ?? []).map(String)),
+  }));
+  const products = new Map<string, AldiProduct>(
+    Object.entries(offer.algoliaDataMap ?? {}).map(([id, product]) => [id, { ...(product as AldiProduct), objectID: id }])
+  );
+  return { categories, products };
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -83,8 +127,19 @@ export function aldiImageUrl(product: AldiProduct): string | null {
 
 class AldiAlgolia {
   private http: AxiosInstance;
+  private web: AxiosInstance;
 
-  constructor(http?: AxiosInstance) {
+  constructor(http?: AxiosInstance, web?: AxiosInstance) {
+    this.web =
+      web ??
+      axios.create({
+        timeout: 60000,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36",
+          "Accept-Language": "nl-NL,nl;q=0.9",
+        },
+      });
     this.http =
       http ??
       axios.create({
@@ -124,6 +179,26 @@ class AldiAlgolia {
           throw new Error(`Aldi ${step}: ${status ? `HTTP ${status} ` : ""}${detail}`);
         }
         scraperLogger.warn(`Aldi: ${step} ${status ?? error?.message}, retry ${attempt}/${MAX_ATTEMPTS - 1}`);
+        await sleep(REQUEST_DELAY_MS * 2 ** attempt * 5);
+      }
+    }
+  }
+
+  /** The current folder of the offers page. */
+  async folder(): Promise<AldiFolder> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const response = await this.web.get<string>(OFFERS_PAGE, { responseType: "text" });
+        const folder = parseAldiFolder(response.data);
+        if (!folder || folder.categories.length === 0) throw new Error("Aldi offers page: no folder found");
+        return folder;
+      } catch (error: any) {
+        const status = error?.response?.status;
+        const retryable = status === undefined ? !/no folder/.test(error?.message ?? "") : status === 429 || status >= 500;
+        if (!retryable || attempt >= MAX_ATTEMPTS) {
+          throw new Error(`Aldi offers page: ${status ? `HTTP ${status}` : error?.message ?? "request failed"}`);
+        }
+        scraperLogger.warn(`Aldi: offers page ${status ?? error?.message}, retry ${attempt}/${MAX_ATTEMPTS - 1}`);
         await sleep(REQUEST_DELAY_MS * 2 ** attempt * 5);
       }
     }

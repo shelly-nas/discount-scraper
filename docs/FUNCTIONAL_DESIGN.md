@@ -801,10 +801,17 @@ objects in category `offer`.
 - The catalog client stores every regular product with a price (2,335 on
   16 October 2026), with its pack size (`salesUnit`) and its shelf (the
   top-level category of its main category).
-- The discount scraper (`AldiApiClient`) keeps the offers that are still valid.
-  Most are week articles of their own ("OP=OP"), linked by their own id; an
-  offer that reuses a regular article id with a leading 9 is linked to that
-  product. "2 VOOR" with price 2.00 is 1.00 per item.
+- The discount scraper (`AldiApiClient`) reads the current folder from the
+  offers page (`aanbiedingen.html`, plain HTTP): its `__NEXT_DATA__` holds
+  `OFFER_GET` with the folder categories ("Vanaf maandag", "Vanaf woensdag",
+  ...), each with a start and end date and its products (215 products, all
+  ending 18 October, on 16 October 2026). Each offer is valid until the end of
+  its category; the offer objects' own validity in the index is not used, as
+  most of them run weeks past the folder. An offer is linked to the regular
+  product with the same id, or with its id after a leading 9; other offers are
+  week articles of their own ("OP=OP"), linked by their own id. The regular
+  price is the struck-through price (`strikePrice`), else the linked product's
+  price. "2 VOOR" with price 2.00 is 1.00 per item.
 
 | FR-007.9 | System SHALL record where a regular price comes from (`price_source`: `supermarket` or `checkjebon`) and keep catalog products without a known price (`regular_price` null; excluded from price comparison) | HIGH | ✅ Implemented |
 
