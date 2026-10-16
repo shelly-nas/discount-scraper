@@ -4,7 +4,7 @@
  *
  * The sandbox this was written in could not reach dirk.nl, so run it where
  * the scraper runs:
- *   docker exec discount-scraper-api node dist/scripts/discoverDirkCatalog.js
+ *   docker exec supermarket-scraper-api node dist/scripts/discoverDirkCatalog.js
  */
 import axios from "axios";
 

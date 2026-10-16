@@ -1,10 +1,10 @@
 # Functional Design Document
 
-## DiscountScraper System
+## Supermarket Scraper System
 
 **Version:** 1.0  
 **Date:** October 24, 2025  
-**Project:** SaleScraper  
+**Project:** supermarket-scraper (named discount-scraper until October 2026)  
 **Author:** System Analysis
 
 ---
@@ -13,7 +13,28 @@
 
 ### 1.1 System Purpose
 
-The DiscountScraper system is designed to automatically collect, store, and present discount information from multiple Dutch supermarket chains (Albert Heijn, Aldi, Dirk, Hoogvliet, Jumbo, Lidl, and PLUS) in a centralized, searchable database with a modern web interface.
+The Supermarket Scraper system automatically collects, stores, and presents the products of multiple Dutch supermarket chains (Albert Heijn, Aldi, Dirk, Hoogvliet, Jumbo, Lidl, and PLUS) in a centralized, searchable database with a modern web interface: the full assortment with regular prices and pack quantities where a catalog scraper exists, and the weekly offers of every chain. A read-only public API serves the data to the Baskit app, which compares shopping lists on price per kilo, liter or piece.
+
+#### Rename from discount-scraper
+
+Until October 2026 the project was called discount-scraper, after its first
+scope (weekly offers only). With the full catalogs it became a product
+scraper and was renamed supermarket-scraper: GitHub repository, images
+(`supermarket-scraper-db/-api/-web`), containers, NAS directories
+(`/volume1/docker/supermarket-scraper`, `-acc`) and domains
+(`supermarkets.shelly-nas.nl`, `supermarkets-acc.shelly-nas.nl`; the old
+`discounts*` domains no longer route). Kept on purpose:
+
+- The production database volume keeps its name `discount-scraper_postgres_data`
+  (pinned as an external volume), so the existing data stays in use.
+- The API keeps the old container names `discount-scraper-api` /
+  `discount-scraper-acc-api` as aliases on `shelly-network`, so Baskit keeps
+  working until it switches to the new names.
+- The database name and user (`discount`, `discount_user`) are unchanged.
+
+The first deploy after the rename stops the stacks in the old NAS directories
+before starting the new one; the old directories and their data are left in
+place.
 
 ### 1.2 Business Goals
 
@@ -139,7 +160,7 @@ graph TB
         PLUS[PLUS Website]
     end
 
-    subgraph "DiscountScraper System"
+    subgraph "Supermarket Scraper System"
         SCRAPER[Scraper Service]
         API[REST API]
         WEB[Web Interface]
@@ -1577,12 +1598,12 @@ up to date — no manual `psql` intervention and no volume reset.
 
 ```mermaid
 C4Context
-    title System Context Diagram - DiscountScraper
+    title System Context Diagram - Supermarket Scraper
 
     Person(consumer, "Consumer", "Looks for grocery discounts")
     Person(admin, "Administrator", "Manages scraper operations")
 
-    System_Boundary(ds, "DiscountScraper System") {
+    System_Boundary(ds, "Supermarket Scraper System") {
         System(web, "Web Interface", "React SPA with Vite")
         System(api, "REST API", "Express + TypeScript")
         System(scraper, "Scraper Engine", "Playwright-based scrapers")
@@ -1661,18 +1682,18 @@ sequenceDiagram
 ```mermaid
 graph TB
     subgraph "Docker Host"
-        subgraph "discount-scraper-web (Port 3000)"
+        subgraph "supermarket-scraper-web (Port 3000)"
             NGINX[Nginx Web Server]
             STATIC[Static React Files]
         end
 
-        subgraph "discount-scraper-api (Port 3001)"
+        subgraph "supermarket-scraper-api (Port 3001)"
             EXPRESS[Express Server]
             SCHEDULER[Scheduler Service]
             SCRAPERS[Scraper Clients]
         end
 
-        subgraph "discount-scraper-db (Port 5432)"
+        subgraph "supermarket-scraper-db (Port 5432)"
             POSTGRES[(PostgreSQL 15)]
             SCHEMA[Initialized Schema]
         end
@@ -1894,4 +1915,4 @@ services:
 
 **Document End**
 
-_This functional design document represents the current implementation of the DiscountScraper system as of October 24, 2025. It should be updated as the system evolves._
+_This functional design document represents the current implementation of the Supermarket Scraper system as of October 24, 2025. It should be updated as the system evolves._

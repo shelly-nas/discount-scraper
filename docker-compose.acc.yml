@@ -1,8 +1,8 @@
-# Acceptance stack: discounts-acc.shelly-nas.nl.
+# Acceptance stack: supermarkets-acc.shelly-nas.nl.
 #
 # Deployed by .github/workflows/acc.yml for every pull request, next to
 # production but separate from it: its own directory (/volume1/docker/
-# discount-scraper-acc), container names, Traefik router and database. The
+# supermarket-scraper-acc), container names, Traefik router and database. The
 # last pull request deployed wins.
 #
 # The images are the ones production would get, tagged acc-<commit>. The
@@ -10,8 +10,9 @@
 # and migrate.sql from the image, then the workflow loads
 # database/demo/seed-demo.sql. No production data reaches acc.
 #
-# The API joins shelly-network as discount-scraper-acc-api, so the Baskit acc
-# stack can read its public API. The weekly catalog scrape is off on acc;
+# The API joins shelly-network as supermarket-scraper-acc-api (and under its
+# old name discount-scraper-acc-api, which the Baskit acc stack still uses), so
+# the Baskit acc stack can read its public API. The weekly catalog scrape is off on acc;
 # "Run Catalog" in the admin UI still works.
 #
 # Keep this file in step with docker-compose.prod.yml; the differences are
@@ -19,8 +20,8 @@
 # no published ports.
 services:
   postgres:
-    image: ${REGISTRY}/discount-scraper-db:${IMAGE_TAG:?IMAGE_TAG is required}
-    container_name: discount-scraper-acc-db
+    image: ${REGISTRY}/supermarket-scraper-db:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: supermarket-scraper-acc-db
     environment:
       POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
       POSTGRES_USER: ${DB_USER:?DB_USER is required}
@@ -31,8 +32,8 @@ services:
     restart: always
 
   scraper-api:
-    image: ${REGISTRY}/discount-scraper-api:${IMAGE_TAG:?IMAGE_TAG is required}
-    container_name: discount-scraper-acc-api
+    image: ${REGISTRY}/supermarket-scraper-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: supermarket-scraper-acc-api
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -50,12 +51,15 @@ services:
     volumes:
       - ./logs:/app/logs
     networks:
-      - shelly-network
-      - default
+      shelly-network:
+        # Name from before the rename to supermarket-scraper; Baskit acc proxies to it.
+        aliases:
+          - discount-scraper-acc-api
+      default:
 
   web:
-    image: ${REGISTRY}/discount-scraper-web:${IMAGE_TAG:?IMAGE_TAG is required}
-    container_name: discount-scraper-acc-web
+    image: ${REGISTRY}/supermarket-scraper-web:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: supermarket-scraper-acc-web
     depends_on:
       - scraper-api
     restart: always
@@ -66,9 +70,9 @@ services:
       - "traefik.enable=true"
       # Two networks: tell Traefik which one to use, or it may answer 504.
       - "traefik.docker.network=shelly-network"
-      - "traefik.http.routers.discounts-acc.rule=Host(`discounts-acc.shelly-nas.nl`)"
-      - "traefik.http.routers.discounts-acc.entrypoints=web"
-      - "traefik.http.services.discounts-acc.loadbalancer.server.port=80"
+      - "traefik.http.routers.supermarkets-acc.rule=Host(`supermarkets-acc.shelly-nas.nl`)"
+      - "traefik.http.routers.supermarkets-acc.entrypoints=web"
+      - "traefik.http.services.supermarkets-acc.loadbalancer.server.port=80"
 
 networks:
   shelly-network:

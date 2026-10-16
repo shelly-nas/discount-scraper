@@ -1,7 +1,7 @@
 name: Deploy to Acceptance
 
 # Every pull request to main is built and deployed to
-# discounts-acc.shelly-nas.nl, so the change can be tried in the running app
+# supermarkets-acc.shelly-nas.nl, so the change can be tried in the running app
 # before it is merged. There is one acc environment: the last pull request
 # pushed is the one on it. "Run workflow" redeploys any branch by hand.
 #
@@ -46,7 +46,7 @@ jobs:
     uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-db:${{ needs.prepare.outputs.tag }}
+      image_tag: ${{ vars.REGISTRY_URL }}/supermarket-scraper-db:${{ needs.prepare.outputs.tag }}
       context: database
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
@@ -57,7 +57,7 @@ jobs:
     uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-api:${{ needs.prepare.outputs.tag }}
+      image_tag: ${{ vars.REGISTRY_URL }}/supermarket-scraper-api:${{ needs.prepare.outputs.tag }}
       context: scraper
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
@@ -68,18 +68,34 @@ jobs:
     uses: shelly-nas/shared-workflows/.github/workflows/build-push-image.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      image_tag: ${{ vars.REGISTRY_URL }}/discount-scraper-web:${{ needs.prepare.outputs.tag }}
+      image_tag: ${{ vars.REGISTRY_URL }}/supermarket-scraper-web:${{ needs.prepare.outputs.tag }}
       context: web
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
+  # Until October 2026 acc ran as discount-scraper-acc. That stack is stopped
+  # (not deleted) so its container name, which the new stack keeps as an alias
+  # for Baskit acc, exists only once on shelly-network.
+  retire-discount-scraper-acc:
+    name: Stop the acc stack deployed as discount-scraper-acc
+    needs: [prepare, build-database, build-scraper, build-web]
+    runs-on: shelly
+    steps:
+      - name: Stop the old acc stack
+        run: |
+          dir=/volume1/docker/discount-scraper-acc
+          if [ -f "$dir/docker-compose.yaml" ]; then
+            echo "Stopping the stack in $dir"
+            (cd "$dir" && docker compose down --remove-orphans)
+          fi
+
   deploy-acc:
     name: Deploy to Acceptance
-    needs: [prepare, build-database, build-scraper, build-web]
+    needs: [prepare, build-database, build-scraper, build-web, retire-discount-scraper-acc]
     uses: shelly-nas/shared-workflows/.github/workflows/deploy-acceptance.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
-      deploy_directory: /volume1/docker/discount-scraper-acc
+      deploy_directory: /volume1/docker/supermarket-scraper-acc
       compose_file: docker-compose.acc.yml
       image_tag: ${{ needs.prepare.outputs.tag }}
       db_service: postgres
@@ -100,5 +116,5 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository
     uses: shelly-nas/shared-workflows/.github/workflows/teardown-acceptance.yml@main
     with:
-      acc_directory: /volume1/docker/discount-scraper-acc
+      acc_directory: /volume1/docker/supermarket-scraper-acc
       commit: ${{ github.event.pull_request.head.sha }}
