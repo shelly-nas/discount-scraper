@@ -95,6 +95,8 @@ export function mapLidlOffer(tile: LidlOfferTile): IProductDiscountDetails | nul
     expireDate: tile.storeEndDate ? moment.unix(tile.storeEndDate).toISOString(true) : "",
     externalId,
     quantity: lidlOfferQuantity(tile),
+    imageUrl: tile.image ?? null,
+    brand: tile.brand?.showBrand && tile.brand.name ? tile.brand.name.trim() : null,
   };
 }
 

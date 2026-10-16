@@ -5,6 +5,8 @@ import { scraperLogger } from "../utils/Logger";
 import { folderExpireDate, promotionPrice } from "../utils/Promotion";
 import HoogvlietGraphql, {
   HoogvlietListedProduct,
+  hoogvlietBrand,
+  hoogvlietEan,
   hoogvlietQuantity,
   hoogvlietUnitPrice,
   productUrl,
@@ -41,6 +43,9 @@ export function mapHoogvlietDiscount(
     expireDate: validTo.toISOString(true),
     productUrl: productUrl(product),
     externalId: product.sku,
+    imageUrl: product.small_image?.url ?? null,
+    brand: hoogvlietBrand(product),
+    ean: hoogvlietEan(product),
   };
 }
 

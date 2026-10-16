@@ -3,6 +3,38 @@ import { ProductWithDiscount } from '../types';
 import { format, isValid, parseISO } from 'date-fns';
 import './DatabaseTable.css';
 
+// Product images come through the scraper API's image proxy (cached there).
+const imageUrl = (productId: number) => `/api/public/v1/images/${productId}`;
+
+const ProductThumbnail: React.FC<{ productId: number; hasImage: boolean; name: string }> = ({
+  productId,
+  hasImage,
+  name,
+}) => {
+  const [failed, setFailed] = useState(false);
+  if (!hasImage || failed) {
+    return (
+      <span className="product-thumb product-thumb-empty" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M2.5 11.5l3.5-3.5 2.5 2.5 2-2 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+        </svg>
+      </span>
+    );
+  }
+  return (
+    <img
+      className="product-thumb"
+      src={imageUrl(productId)}
+      alt={name}
+      loading="lazy"
+      width={36}
+      height={36}
+      onError={() => setFailed(true)}
+    />
+  );
+};
+
 interface DatabaseTableProps {
   data: ProductWithDiscount[];
   columnFilters: Record<string, string>;
@@ -56,9 +88,11 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
     } else if (columnKey === 'category') {
       return item.category;
     } else if (columnKey === 'name') {
+      const thumbnail = <ProductThumbnail productId={item.id} hasImage={!!item.image_url} name={item.name} />;
       if (item.product_url) {
         return (
           <span className="product-name-cell">
+            {thumbnail}
             {item.name}
             <a
               href={item.product_url}
@@ -81,7 +115,12 @@ const DatabaseTable: React.FC<DatabaseTableProps> = ({
           </span>
         );
       }
-      return item.name;
+      return (
+        <span className="product-name-cell">
+          {thumbnail}
+          {item.name}
+        </span>
+      );
     } else if (columnKey === 'supermarket') {
       return item.supermarket;
     } else if (columnKey === 'discount.discount_price') {

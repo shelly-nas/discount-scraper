@@ -60,6 +60,9 @@ export function mapJumboDiscount(
       expireDate,
       productUrl: jumboProductUrl(product),
       externalId: product.sku,
+      imageUrl: product.image ?? null,
+      brand: product.brand?.trim() || null,
+      ean: product.ean ?? null,
     };
   }
   return null;

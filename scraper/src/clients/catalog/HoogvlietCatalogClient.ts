@@ -3,6 +3,8 @@ import CatalogClient from "./CatalogClient";
 import { ICatalogProduct } from "../../interfaces/ICatalogProduct";
 import HoogvlietGraphql, {
   HoogvlietListedProduct,
+  hoogvlietBrand,
+  hoogvlietEan,
   hoogvlietQuantity,
   hoogvlietUnitPrice,
   hoogvlietUnitSize,
@@ -18,7 +20,7 @@ export function mapHoogvlietProduct(product: HoogvlietListedProduct): ICatalogPr
   return {
     externalId: product.sku,
     name: product.name.trim(),
-    brand: null,
+    brand: hoogvlietBrand(product),
     category: product.category,
     unitSize: hoogvlietUnitSize(sub),
     quantity: hoogvlietQuantity(sub),
@@ -27,6 +29,7 @@ export function mapHoogvlietProduct(product: HoogvlietListedProduct): ICatalogPr
     unitPrice: hoogvlietUnitPrice(sub),
     imageUrl: product.small_image?.url ?? null,
     productUrl: productUrl(product),
+    ean: hoogvlietEan(product),
   };
 }
 

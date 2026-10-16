@@ -79,6 +79,7 @@ describe("Jumbo product fields", () => {
       unitPrice: "€9.48 per kilo",
       imageUrl: "https://img/746550DS.png",
       productUrl: "https://www.jumbo.com/producten/product-746550DS",
+      ean: null,
     });
     expect(mapJumboProduct(product("1", { inAssortment: false }))).toBeNull();
   });

@@ -19,4 +19,10 @@ interface IProductDiscountDetails {
    * read from the name ("Spekreepjes 2x190 g"); null means unknown.
    */
   quantity?: import("../utils/Quantity").Quantity | null;
+  /** Product image at the supermarket; fills in the product's image when it has none yet. */
+  imageUrl?: string | null;
+  /** Brand, when the offer data has it; used to match the product across supermarkets. */
+  brand?: string | null;
+  /** Barcode (EAN), when the supermarket publishes it. */
+  ean?: string | null;
 }

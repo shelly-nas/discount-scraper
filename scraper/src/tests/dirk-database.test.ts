@@ -123,7 +123,7 @@ function makeDataManager(overrides: {
     getProductId: overrides.getProductId
       ? overrides.getProductId
       : vi.fn().mockImplementation(async (name: string) => idMap.get(name) ?? -1),
-    setOfferQuantity: vi.fn().mockResolvedValue(undefined),
+    setOfferDetails: vi.fn().mockResolvedValue(undefined),
   };
 
   (dm as any).discountController = {
@@ -202,10 +202,27 @@ describe("Dirk → database: alle producten komen terecht", () => {
       { ...base, name: "Kipfilet", quantity: { value: 0.5, unit: "kg" } },
       { ...base, name: "Bananen", quantity: null },
     ]);
-    const setFn = (dm as any).productController.setOfferQuantity;
-    expect(setFn).toHaveBeenCalledTimes(2);
-    expect(setFn).toHaveBeenCalledWith(expect.any(Number), { value: 1, unit: "l" });
-    expect(setFn).toHaveBeenCalledWith(expect.any(Number), { value: 0.5, unit: "kg" });
+    const setFn = (dm as any).productController.setOfferDetails;
+    expect(setFn).toHaveBeenCalledTimes(3);
+    const quantities = setFn.mock.calls.map((call: any[]) => call[1].quantity);
+    expect(quantities).toEqual([{ value: 1, unit: "l" }, { value: 0.5, unit: "kg" }, null]);
+  });
+
+  it("slaat afbeelding, barcode en matchvelden op", async () => {
+    const base = DIRK_SCRAPED_PRODUCTS[0];
+    await dm.addProductDb("Dirk", [
+      { ...base, name: "Chocomel Chocolademelk vol", imageUrl: "https://img/1.png", ean: "8718452968855" },
+      { ...base, name: "Kipfilet", ean: "12345" },
+    ]);
+    const calls = (dm as any).productController.setOfferDetails.mock.calls;
+    expect(calls[0][1]).toMatchObject({
+      imageUrl: "https://img/1.png",
+      ean: "8718452968855",
+      matchBrand: "chocomel",
+      matchTokens: "chocolademelk vol",
+    });
+    // An invalid barcode is dropped; no image stays null.
+    expect(calls[1][1]).toMatchObject({ imageUrl: null, ean: null });
   });
 
   it("voegt een discount toe voor elk product", async () => {

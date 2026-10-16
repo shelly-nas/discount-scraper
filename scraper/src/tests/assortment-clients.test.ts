@@ -72,7 +72,7 @@ describe("Dirk", () => {
       price: 1.85,
       priceSource: "supermarket",
       unitPrice: "€5.44 per kilo",
-      imageUrl: "https://web-fileserver.dirk.nl/artikelen/248509_1.png",
+      imageUrl: "https://web-fileserver.dirk.nl/artikelen/248509_1.png?width=400",
     });
     expect(product.productUrl).toBe(
       "https://www.dirk.nl/boodschappen/aardappelen-groente-fruit/groenteconserven/hak-sperziebonen-fijn-gebroken/5526"

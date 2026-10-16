@@ -158,6 +158,24 @@
   gap: 6px;
 }
 
+.product-thumb {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid var(--notion-border);
+}
+
+.product-thumb-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--notion-surface);
+  color: var(--notion-text-secondary);
+}
+
 .product-link {
   display: inline-flex;
   align-items: center;

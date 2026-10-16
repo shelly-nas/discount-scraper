@@ -47,6 +47,8 @@ async function initializeDatabase(): Promise<boolean> {
     if (connected) {
       serverLogger.info("Database connection established successfully");
       await runMigrations(dataManager.db);
+      const filled = await dataManager.getProductController().backfillMatchFields();
+      if (filled > 0) serverLogger.info(`Filled match fields of ${filled} existing products`);
     } else {
       serverLogger.error("Failed to establish database connection");
     }

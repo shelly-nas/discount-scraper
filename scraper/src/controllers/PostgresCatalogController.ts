@@ -3,6 +3,7 @@ import PostgresDataContext from "../data/PostgresDataContext";
 import { ICatalogProduct } from "../interfaces/ICatalogProduct";
 import { scraperLogger } from "../utils/Logger";
 import { parseQuantity } from "../utils/Quantity";
+import { matchFields, normalizeEan } from "../utils/ProductMatch";
 
 export interface CatalogBatchMetrics {
   created: number;
@@ -104,15 +105,18 @@ class PostgresCatalogController {
     ];
     const quantity = product.quantity !== undefined ? product.quantity : parseQuantity(product.unitSize);
     values.push(quantity?.value ?? null, quantity?.unit ?? null);
+    const match = matchFields(product.name, product.brand);
+    values.push(normalizeEan(product.ean), match.matchBrand, match.matchTokens);
 
     if (existing) {
       await client.query(
         `UPDATE products SET
-           external_id = $2, brand = $3, unit_size = $4, image_url = $5,
+           external_id = $2, brand = $3, unit_size = $4, image_url = COALESCE($5, image_url),
            regular_price = $6, unit_price = $7,
            product_url = COALESCE($8, product_url), price_source = $9,
            quantity_value = $10, quantity_unit = $11,
-           category = $12, in_catalog = true, catalog_updated_at = NOW()
+           ean = COALESCE($12, ean), match_brand = $13, match_tokens = $14,
+           category = $15, in_catalog = true, catalog_updated_at = NOW()
          WHERE id = $1`,
         [existing.id, ...values, product.category]
       );
@@ -133,8 +137,8 @@ class PostgresCatalogController {
       `INSERT INTO products
          (name, category, supermarket, external_id, brand, unit_size, image_url,
           regular_price, unit_price, product_url, price_source, quantity_value, quantity_unit,
-          in_catalog, catalog_updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true, NOW())
+          ean, match_brand, match_tokens, in_catalog, catalog_updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, true, NOW())
        RETURNING id`,
       [name, product.category, supermarket, ...values]
     );
