@@ -8,6 +8,7 @@ import PlusApiClient from "../clients/PlusApiClient";
 import ApiClient from "../clients/ApiClient";
 import CatalogClient from "../clients/catalog/CatalogClient";
 import AhCatalogClient from "../clients/catalog/AhCatalogClient";
+import LidlCatalogClient from "../clients/catalog/LidlCatalogClient";
 import { serverLogger } from "./Logger";
 
 export function getSupermarketClient(name: string): ApiClient {
@@ -35,12 +36,14 @@ export function getSupermarketClient(name: string): ApiClient {
 }
 
 /** Supermarkets with a full catalog scraper (see getCatalogClient). */
-export const CATALOG_SUPERMARKETS = ["Albert Heijn"];
+export const CATALOG_SUPERMARKETS = ["Albert Heijn", "Lidl"];
 
 export function getCatalogClient(name: string): CatalogClient | null {
   switch (name) {
     case "Albert Heijn":
       return new AhCatalogClient();
+    case "Lidl":
+      return new LidlCatalogClient();
     default:
       return null;
   }

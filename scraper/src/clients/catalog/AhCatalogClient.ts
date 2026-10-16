@@ -74,6 +74,7 @@ export function mapAhProduct(product: AhProduct, category: string): ICatalogProd
     category: product.mainCategory?.trim() || category,
     unitSize: product.salesUnitSize?.trim() || null,
     price,
+    priceSource: "supermarket",
     unitPrice: product.unitPriceDescription?.trim() || null,
     imageUrl: image?.url ?? null,
     productUrl: `https://www.ah.nl/producten/product/wi${product.webshopId}`,

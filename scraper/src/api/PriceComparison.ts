@@ -47,7 +47,7 @@ function tokenize(query: string): string[] {
 
 const SELECT_COLUMNS = `
   p.id, p.name, p.category, p.supermarket, p.product_url, p.updated_at,
-  p.brand, p.unit_size, p.image_url, p.regular_price,
+  p.brand, p.unit_size, p.image_url, p.regular_price, p.price_source,
   p.unit_price AS catalog_unit_price, p.in_catalog,
   d.id AS discount_id, d.original_price, d.discount_price, d.unit_price,
   d.special_discount, d.expire_date,

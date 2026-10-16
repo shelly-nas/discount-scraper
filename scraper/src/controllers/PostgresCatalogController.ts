@@ -99,6 +99,7 @@ class PostgresCatalogController {
       product.price,
       product.unitPrice,
       product.productUrl,
+      product.price === null ? null : product.priceSource,
     ];
 
     if (existing) {
@@ -106,29 +107,33 @@ class PostgresCatalogController {
         `UPDATE products SET
            external_id = $2, brand = $3, unit_size = $4, image_url = $5,
            regular_price = $6, unit_price = $7,
-           product_url = COALESCE($8, product_url),
-           category = $9, in_catalog = true, catalog_updated_at = NOW()
+           product_url = COALESCE($8, product_url), price_source = $9,
+           category = $10, in_catalog = true, catalog_updated_at = NOW()
          WHERE id = $1`,
         [existing.id, ...values, product.category]
       );
+      // Without a price (the supermarket does not publish it) there is nothing
+      // to record; the product is still in the catalog.
+      if (product.price === null) return { created: false, priceChanged: false };
       const previous = existing.regular_price === null ? null : parseFloat(existing.regular_price);
+      const changed = previous !== null && Math.abs(previous - product.price) >= 0.005;
       // A first price (offer-only product joining the catalog) is recorded but
       // is not a change.
-      if (previous === null || Math.abs(previous - product.price) >= 0.005) {
+      if (previous === null || changed) {
         await this.recordPrice(client, existing.id, product.price);
       }
-      return { created: false, priceChanged: previous !== null && Math.abs(previous - product.price) >= 0.005 };
+      return { created: false, priceChanged: changed };
     }
 
     const inserted = await client.query<{ id: number }>(
       `INSERT INTO products
          (name, category, supermarket, external_id, brand, unit_size, image_url,
-          regular_price, unit_price, product_url, in_catalog, catalog_updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW())
+          regular_price, unit_price, product_url, price_source, in_catalog, catalog_updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, NOW())
        RETURNING id`,
       [name, product.category, supermarket, ...values]
     );
-    await this.recordPrice(client, inserted.rows[0].id, product.price);
+    if (product.price !== null) await this.recordPrice(client, inserted.rows[0].id, product.price);
     return { created: true, priceChanged: false };
   }
 

@@ -216,7 +216,7 @@ router.get("/products/:id", async (req: Request, res: Response) => {
   try {
     const productResult = await dataManager.db.query(
       `SELECT id, name, category, supermarket, product_url, updated_at,
-              brand, unit_size, image_url, regular_price, unit_price, in_catalog
+              brand, unit_size, image_url, regular_price, price_source, unit_price, in_catalog
        FROM products WHERE id = $1`,
       [id]
     );
@@ -267,6 +267,7 @@ router.get("/products/:id", async (req: Request, res: Response) => {
       catalog: product.in_catalog
         ? {
             regularPrice,
+            priceSource: product.price_source ?? null,
             unitPrice: product.unit_price ?? null,
             unitSize: product.unit_size ?? null,
             brand: product.brand ?? null,

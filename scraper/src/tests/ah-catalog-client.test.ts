@@ -60,6 +60,7 @@ describe("AH catalog client", () => {
       category: "Zuivel, eieren",
       unitSize: "1 l",
       price: 1.19,
+      priceSource: "supermarket",
       unitPrice: "prijs per lt €1.19",
       imageUrl: "https://img/200.jpg",
       productUrl: "https://www.ah.nl/producten/product/wi42",

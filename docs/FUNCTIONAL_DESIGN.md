@@ -80,7 +80,7 @@ The DiscountScraper system is designed to automatically collect, store, and pres
 
 - ✅ **Product Catalog**
 
-  - Weekly full assortment scrape with regular prices (Albert Heijn first)
+  - Weekly full assortment scrape with regular prices (Albert Heijn, Lidl food assortment)
   - Price history and catalog run tracking; on-demand runs from the admin UI
 
 - ✅ **Public Consumer API**
@@ -675,14 +675,35 @@ flowchart TD
 
 | ID       | Requirement                                                                                           | Priority | Status         |
 | -------- | ----------------------------------------------------------------------------------------------------- | -------- | -------------- |
-| FR-007.1 | System SHALL scrape the full assortment with regular prices for supermarkets that have a catalog client | HIGH   | ✅ Albert Heijn |
+| FR-007.1 | System SHALL scrape the full assortment with regular prices for supermarkets that have a catalog client | HIGH   | ✅ Albert Heijn, Lidl |
 | FR-007.2 | System SHALL store the supermarket product id, brand, pack size, unit price, image and regular price   | HIGH     | ✅ Implemented |
 | FR-007.3 | System SHALL record a price history row only when a regular price changes                             | MEDIUM   | ✅ Implemented |
 | FR-007.4 | System SHALL mark products missing from a run as not in the catalog, unless the run saw under 50% of the known products | MEDIUM | ✅ Implemented |
 | FR-007.5 | System SHALL run catalog scrapes weekly (`CATALOG_CRON`, default Monday 03:17; `CATALOG_ENABLED=false` disables) and on demand from the admin UI | MEDIUM | ✅ Implemented |
 | FR-007.6 | System SHALL track every catalog run (status, counts, duration, error) in `catalog_runs`             | MEDIUM   | ✅ Implemented |
 | FR-007.7 | System SHALL apply schema migrations from `scraper/migrations` on startup                              | HIGH     | ✅ Implemented |
-| FR-007.8 | Catalog clients for Dirk, Jumbo, PLUS, Aldi, Lidl and Hoogvliet                                        | MEDIUM   | Planned        |
+| FR-007.8 | Catalog clients for Dirk, Jumbo, PLUS, Aldi and Hoogvliet                                              | MEDIUM   | Planned        |
+| FR-007.9 | System SHALL record where a regular price comes from (`price_source`: `supermarket` or `checkjebon`) and keep catalog products without a known price (`regular_price` null; excluded from price comparison) | HIGH | ✅ Implemented |
+
+**Lidl catalog.** Lidl does not publish regular prices online. The Lidl catalog
+client crawls the food assortment pages on lidl.nl (starting at
+`/c/assortiment-producten/s10008015`, following links whose slug contains
+`assortiment` or `wijn`, at most 80 pages, meta refreshes followed) and reads
+every product tile (`data-grid-data` JSON): article number, name, brand, pack
+size, image, product URL and Lidl's taxonomy (food worlds only; the two naming
+schemes are merged, other worlds become `Overig`). Only tiles with category
+`Food` or `F+V` are kept. The regular price is, in order:
+
+1. Lidl's own `oldPrice` when the product is on offer (`supermarket`);
+2. the open [checkjebon.nl](https://github.com/supermarkt/checkjebon) dataset
+   (MIT, refreshed daily; its Lidl data comes from boodschaapje.nl), matched on
+   the Lidl article number, else on a name that occurs once in that dataset
+   with no conflicting pack size (`checkjebon`);
+3. Lidl's own price without an offer (`supermarket`);
+4. otherwise none: the product is in the catalog without a price.
+
+If the checkjebon dataset cannot be loaded the run continues without prices.
+On 15 October 2026 a run found about 2,360 food products, about half of them with a price.
 
 #### FR-005: Web Interface
 
@@ -1375,7 +1396,8 @@ interface SearchResponse {
       expireDate: string; // ISO 8601
     } | null; // always set with scope=offers
     catalog: {
-      regularPrice: number | null;
+      regularPrice: number | null; // null when unknown (some Lidl products)
+      priceSource: "supermarket" | "checkjebon" | null;
       unitPrice: string | null;
       unitSize: string | null;
       brand: string | null;
@@ -1485,6 +1507,7 @@ To close that gap, the scraper API applies migrations itself:
 | ----------------------- | ----------------------------------------------------------------------- |
 | `001_catalog.sql`       | Catalog columns on `products`, `price_history`, `catalog_runs`          |
 | `002_offer_columns.sql` | `products.product_url`, `discounts.unit_price` for pre-existing volumes |
+| `003_price_source.sql`  | `products.price_source` (origin of the catalog regular price)          |
 
 **Result:** a redeploy of the scraper API is sufficient to bring an existing database
 up to date — no manual `psql` intervention and no volume reset.
