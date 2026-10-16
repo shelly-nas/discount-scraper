@@ -81,13 +81,19 @@ jobs:
     needs: [prepare, build-database, build-scraper, build-web]
     runs-on: shelly
     steps:
+      # By compose project label (the old directory name), so the old compose
+      # file and its .env are not needed. Only containers are removed; volumes
+      # and the old directory stay.
       - name: Stop the old acc stack
         run: |
-          dir=/volume1/docker/discount-scraper-acc
-          if [ -f "$dir/docker-compose.yaml" ]; then
-            echo "Stopping the stack in $dir"
-            (cd "$dir" && docker compose down --remove-orphans)
-          fi
+          project=discount-scraper-acc
+          ids=$(docker ps -aq --filter "label=com.docker.compose.project=$project")
+          if [ -z "$ids" ]; then echo "Compose project $project has no containers"; fi
+          for id in $ids; do
+            echo "Stopping $(docker inspect --format '{{.Name}}' "$id")"
+            docker stop "$id" > /dev/null
+            docker rm "$id" > /dev/null
+          done
 
   deploy-acc:
     name: Deploy to Acceptance

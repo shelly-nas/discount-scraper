@@ -53,13 +53,19 @@ jobs:
         run: |
           docker volume inspect discount-scraper_postgres_data > /dev/null \
             || { echo "::error::Volume discount-scraper_postgres_data not found; not deploying on an empty database"; exit 1; }
+      # By compose project label (the old directory names), so the old compose
+      # files and their .env are not needed. Only containers are removed;
+      # volumes, among them the production data, and the directories stay.
       - name: Stop the old stacks
         run: |
-          for dir in /volume1/docker/discount-scraper /volume1/docker/discount-scraper-acc; do
-            if [ -f "$dir/docker-compose.yaml" ]; then
-              echo "Stopping the stack in $dir"
-              (cd "$dir" && docker compose down --remove-orphans)
-            fi
+          for project in discount-scraper discount-scraper-acc; do
+            ids=$(docker ps -aq --filter "label=com.docker.compose.project=$project")
+            if [ -z "$ids" ]; then echo "Compose project $project has no containers"; fi
+            for id in $ids; do
+              echo "Stopping $(docker inspect --format '{{.Name}}' "$id")"
+              docker stop "$id" > /dev/null
+              docker rm "$id" > /dev/null
+            done
           done
 
   deploy:
