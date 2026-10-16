@@ -47,13 +47,13 @@ docker compose up --build -d scraper-api  # or: web
 docker compose logs -f scraper-api
 
 # Direct DB access
-docker exec -it supermarket-scraper-db psql -U discount_user -d discount
+docker exec -it supermarket-scraper-db psql -U supermarket_user -d supermarket
 ```
 
 ### Environment variables (`.env` in project root)
 ```
-DB_NAME=discount
-DB_USER=discount_user
+DB_NAME=supermarket
+DB_USER=supermarket_user
 DB_PASSWORD=change_this_password
 LOG_LEVEL=INFO   # DEBUG | INFO | WARN | ERROR
 CORS_ORIGINS=    # optional, comma separated allowed origins (empty = all)
@@ -89,11 +89,11 @@ Entry point: [scraper/src/index.ts](scraper/src/index.ts)
 
 ### Consumers
 
-The Baskit app (separate repo `shelly-nas/baskit`) reads discount data exclusively through `/api/public/v1` — never directly from the database. In production `scraper-api` joins `shelly-network` so the Baskit nginx container can proxy to the public API. Baskit still uses the pre-rename hostname `http://discount-scraper-api:3001/api/public/v1`, which `docker-compose.prod.yml` keeps as a network alias (acc: `discount-scraper-acc-api`); drop the aliases once Baskit points at `supermarket-scraper-api`. Keep the public API backwards compatible; breaking changes go into a new version prefix.
+The Baskit app (separate repo `shelly-nas/baskit`) reads discount data exclusively through `/api/public/v1` — never directly from the database. In production `scraper-api` joins `shelly-network` so the Baskit nginx container can proxy to `http://supermarket-scraper-api:3001/api/public/v1` (acc: `supermarket-scraper-acc-api`). Keep the public API backwards compatible; breaking changes go into a new version prefix.
 
 ### Environments and pipelines
 
-- `.github/workflows/github-pipeline.yaml` — every push to `main` builds the three images (`latest`) and deploys `docker-compose.prod.yml` to `/volume1/docker/supermarket-scraper` (production). The database volume is external and pinned to its pre-rename name `discount-scraper_postgres_data` (passed as `persistent_volumes`); the `retire-discount-scraper` job first checks that volume exists and stops the stacks still in `/volume1/docker/discount-scraper(-acc)` (nothing is deleted). Also tears down acc once its commit is in production.
+- `.github/workflows/github-pipeline.yaml` — every push to `main` builds the three images (`latest`) and deploys `docker-compose.prod.yml` to `/volume1/docker/supermarket-scraper` (production, persistent named volume). Also tears down acc once its commit is in production.
 - `.github/workflows/acc.yml` — every pull request is built (tag `acc-<commit>`) and deployed to acceptance `supermarkets-acc.shelly-nas.nl` (`docker-compose.acc.yml`, `/volume1/docker/supermarket-scraper-acc`) via the shared `deploy-acceptance.yml`; torn down when the PR closes (`teardown-acceptance.yml`). The acc database is rebuilt on every deploy: `schema.sql` + `migrate.sql` from the image, then `database/demo/seed-demo.sql` (demo offers for all 7 supermarkets with expiry relative to the deploy, expired offers as history, run logs). The demo seed is never in the database image, so never in production. Acc runs with `CATALOG_ENABLED=false`; its API joins `shelly-network` as `supermarket-scraper-acc-api` for the Baskit acc stack.
 
 ### `database/` — PostgreSQL init scripts

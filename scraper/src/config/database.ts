@@ -20,8 +20,8 @@ export function getDatabaseConfig(): DatabaseConfig {
   const config: DatabaseConfig = {
     host: process.env.DB_HOST || "localhost",
     port: parseInt(process.env.DB_PORT || "5432", 10),
-    database: process.env.DB_NAME || "discount",
-    user: process.env.DB_USER || "discount_user",
+    database: process.env.DB_NAME || "supermarket",
+    user: process.env.DB_USER || "supermarket_user",
     password: process.env.DB_PASSWORD || "",
     max: parseInt("20"),
     idleTimeoutMillis: parseInt("30000"),
