@@ -682,9 +682,38 @@ flowchart TD
 | FR-007.5 | System SHALL run catalog scrapes weekly (`CATALOG_CRON`, default Monday 03:17; `CATALOG_ENABLED=false` disables) and on demand from the admin UI | MEDIUM | ✅ Implemented |
 | FR-007.6 | System SHALL track every catalog run (status, counts, duration, error) in `catalog_runs`             | MEDIUM   | ✅ Implemented |
 | FR-007.7 | System SHALL apply schema migrations from `scraper/migrations` on startup                              | HIGH     | ✅ Implemented |
-| FR-007.8 | Catalog clients for Dirk, Jumbo, PLUS and Aldi                                                         | MEDIUM   | Planned        |
+| FR-007.8 | Catalog clients for Dirk, PLUS and Aldi                                                                | MEDIUM   | Planned        |
 | FR-007.10 | System SHALL store each catalog product's pack quantity normalised to kg, l or stuk (`quantity_value`, `quantity_unit`; supplied by the client or read from the pack size such as "500 g", "6 x 330 ml", "4 stuks") and expose `pricePerUnit` (current price / quantity) in the public API | HIGH | ✅ Implemented |
-| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Hoogvliet |
+| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Hoogvliet, Jumbo |
+
+**Jumbo catalog and offers.** Both use jumbo.com's own GraphQL API
+(`POST https://www.jumbo.com/api/graphql`) with the web client's headers
+(`apollographql-client-name` / `x-source: JUMBO_WEB-search`,
+`apollographql-client-version: master-v39.2.0-web`; without them the API
+answers "No client headers set"). `searchProducts(input: { searchType:
+category, searchTerms: "producten", offSet, limit })` lists the whole
+assortment (about 17,100 products), at most 200 per page. Prices come in
+cents; `pricePerUnit` follows the current (promotion) price. A product with a
+missing required field (no title) makes Jumbo return `data: null` for its whole
+page; the page is then split until that product is isolated and skipped.
+
+- Quantity: from the pack size (`packSizeDisplay`, e.g. "6 x 1 L"), else the
+  title, else current price / price per unit (pieces rounded to whole ones).
+- The catalog stores the regular price (`price.price`) with its quantity and a
+  unit price worked out from the regular price (on 16 October 2026: 17,126
+  products, 17,086 with a quantity).
+- The discount scraper (`JumboApiClient`) keeps products with a price
+  promotion: Jumbo's `promoPrice` when lower, else the label worked out per
+  item ("3 voor 6,00", "1+1 gratis", "25% korting", "voor 1,99"). Labels that
+  are not about the price ("Gratis bezorging", "€2,00 bezorgkorting",
+  "Vanaf € 12,00") are skipped. Promotion days come without a year and are
+  dated to their next occurrence; standing offers without dates get the folder
+  end (the most common end date), which is also the run's expiry date. On 16
+  October 2026 this gave 1,550 offers (the previous HTML scraper found 13
+  promotion cards).
+
+Offer prices per item for multi-buy labels are worked out by
+`utils/Promotion.promotionPrice`, shared by Hoogvliet and Jumbo.
 
 **Hoogvliet catalog and offers.** hoogvliet.com is a Next.js shop on Magento 2
 and exposes Magento's public GraphQL API (`https://hoogvliet.nl/graphql`,

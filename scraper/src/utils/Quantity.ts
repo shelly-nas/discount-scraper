@@ -78,5 +78,6 @@ export function pricePerUnit(
   quantity: Quantity | null | undefined
 ): { value: number; unit: QuantityUnit } | null {
   if (price === null || price === undefined || !quantity || quantity.value <= 0) return null;
-  return { value: Math.round((price / quantity.value) * 100) / 100, unit: quantity.unit };
+  // In whole cents, so 3.79 for 0.4 kg is 9.48 (not 9.47 from 9.4749999...).
+  return { value: Math.round(Math.round(price * 100) / quantity.value) / 100, unit: quantity.unit };
 }

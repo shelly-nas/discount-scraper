@@ -2,11 +2,11 @@ import { AxiosInstance } from "axios";
 import moment from "moment";
 import ApiClient from "./ApiClient";
 import { scraperLogger } from "../utils/Logger";
+import { folderExpireDate, promotionPrice } from "../utils/Promotion";
 import HoogvlietGraphql, {
   HoogvlietListedProduct,
   hoogvlietUnitPrice,
   productUrl,
-  promotionPrice,
 } from "./hoogvliet/HoogvlietGraphql";
 
 /**
@@ -30,7 +30,8 @@ export function mapHoogvlietDiscount(
   return {
     name: product.name.trim(),
     originalPrice: regular,
-    discountPrice: promotionPrice(promotion.korting_label, regular, final),
+    // Labels that are not a price promotion ("Op = op") keep the final price.
+    discountPrice: promotionPrice(promotion.korting_label, regular, final) ?? Math.round(final * 100) / 100,
     unitPrice: hoogvlietUnitPrice(product.sub_title_attributes),
     specialDiscount: promotion.korting_label?.trim() ?? "",
     category: product.category,
@@ -41,23 +42,7 @@ export function mapHoogvlietDiscount(
   };
 }
 
-/**
- * The end of the weekly folder: the most common end date. Some promotions run
- * for months; the latest date would postpone the next scheduled run until then.
- */
-export function folderExpireDate(discounts: IProductDiscountDetails[]): string {
-  const counts = new Map<string, number>();
-  for (const d of discounts) counts.set(d.expireDate, (counts.get(d.expireDate) ?? 0) + 1);
-  let best = "";
-  let bestCount = 0;
-  for (const [date, count] of counts) {
-    if (count > bestCount || (count === bestCount && date < best)) {
-      best = date;
-      bestCount = count;
-    }
-  }
-  return best || moment().endOf("isoWeek").toISOString(true);
-}
+export { folderExpireDate };
 
 class HoogvlietApiClient extends ApiClient {
   public name = "Hoogvliet";

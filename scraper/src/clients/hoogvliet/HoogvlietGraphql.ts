@@ -69,8 +69,6 @@ const DETAIL_FIELDS = `sku name url_key small_image { url }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const round2 = (value: number) => Math.round(value * 100) / 100;
-
 /** Pack quantity from e.g. { volume: "500", unit: "Gram" }. */
 export function hoogvlietQuantity(sub: HoogvlietSubTitle | null): Quantity | null {
   if (!sub?.volume || !sub.unit) return null;
@@ -89,36 +87,6 @@ export function hoogvlietUnitPrice(sub: HoogvlietSubTitle | null): string | null
   if (!Number.isFinite(value) || value <= 0) return null;
   const per = (sub?.qty_unit ?? "").replace(/^prijs\s+/i, "").trim().toLowerCase() || "per stuk";
   return `€${value.toFixed(2)} ${per}`;
-}
-
-/**
- * Price per item during a promotion. The final price already holds plain
- * price cuts; multi-buy offers ("3 voor 6,00", "1 + 1 Gratis", "25% korting",
- * "2e halve prijs") keep the regular price there, so they are worked out from
- * the label.
- */
-export function promotionPrice(label: string | null, regular: number, final: number): number {
-  if (final < regular - 0.001) return round2(final);
-  const text = (label ?? "").toLowerCase().replace(/,/g, ".");
-
-  const forAmount = text.match(/(\d+)\s*voor\s*(\d+(?:\.\d+)?)/);
-  if (forAmount) return round2(parseFloat(forAmount[2]) / parseInt(forAmount[1], 10));
-
-  const free = text.match(/(\d+)\s*\+\s*(\d+)\s*gratis/);
-  if (free) {
-    const paid = parseInt(free[1], 10);
-    return round2((regular * paid) / (paid + parseInt(free[2], 10)));
-  }
-
-  const percent = text.match(/(\d+(?:\.\d+)?)\s*%\s*korting/);
-  if (percent) return round2(regular * (1 - parseFloat(percent[1]) / 100));
-
-  if (/2e\s*halve\s*prijs/.test(text)) return round2(regular * 0.75);
-
-  const perPack = text.match(/per\s+[a-z]+\s+(\d+(?:\.\d+)?)/);
-  if (perPack && parseFloat(perPack[1]) < regular) return round2(parseFloat(perPack[1]));
-
-  return round2(final);
 }
 
 export function productUrl(product: HoogvlietProduct): string | null {

@@ -3,8 +3,8 @@ import HoogvlietGraphql, {
   HoogvlietListedProduct,
   hoogvlietQuantity,
   hoogvlietUnitPrice,
-  promotionPrice,
 } from "../clients/hoogvliet/HoogvlietGraphql";
+import { promotionPrice } from "../utils/Promotion";
 import HoogvlietCatalogClient, { mapHoogvlietProduct } from "../clients/catalog/HoogvlietCatalogClient";
 import { folderExpireDate, mapHoogvlietDiscount } from "../clients/HoogvlietApiClient";
 import { ICatalogProduct } from "../interfaces/ICatalogProduct";
@@ -77,7 +77,10 @@ describe("Hoogvliet promotions", () => {
     ["2 + 1 Gratis", 3, 3, 2],
     ["25% korting", 4, 4, 3],
     ["2e halve prijs", 2, 2, 1.5],
-    ["Op = op", 2, 2, 2],
+    ["voor 1,99", 2.19, 2.19, 1.99],
+    ["Op = op", 2, 2, null],
+    ["Gratis bezorging", 2, 2, null],
+    ["€2,00 bezorgkorting", 5, 5, null],
   ])("prices '%s' per item", (label, regular, final, expected) => {
     expect(promotionPrice(label, regular, final)).toBe(expected);
   });
