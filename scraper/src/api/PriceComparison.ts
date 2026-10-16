@@ -12,9 +12,10 @@ import {
  *
  * For each list item and supermarket the best matching product is picked:
  * every word of the item must be in the product name, the most relevant name
- * wins and among equally relevant names the cheapest current price (offer or
- * regular catalog price). When nothing matches, size tokens such as "1L" or
- * "500g" are dropped and the match is retried.
+ * wins and among equally relevant names the cheapest current price per kilo,
+ * liter or piece (offer or regular catalog price over the pack quantity);
+ * products without a known quantity follow by price. When nothing matches,
+ * size tokens such as "1L" or "500g" are dropped and the match is retried.
  */
 
 export interface CompareItem {
@@ -85,15 +86,27 @@ async function bestMatches(
   // in "Melkchocolade") is a different product.
   where.push(`${wordScore} >= 1`);
 
+  // Among the best name matches the cheapest per kilo, liter or piece wins,
+  // so a 500 ml pack does not beat a liter that is cheaper per liter. Only
+  // like is compared with like: the unit most of those matches are sold in
+  // goes first. Products without a known quantity come after, by price.
   const result = await db.query(
-    `SELECT DISTINCT ON (p.supermarket) ${SELECT_COLUMNS}
-     FROM products p
-     ${CURRENT_DISCOUNT_JOIN}
-     WHERE ${where.join(" AND ")}
-     ORDER BY p.supermarket,
-              ${wordScore} DESC,
-              COALESCE(d.discount_price, p.regular_price) ASC,
-              LENGTH(p.name) ASC`,
+    `SELECT DISTINCT ON (c.supermarket) c.*
+     FROM (
+       SELECT ${SELECT_COLUMNS},
+              ${wordScore} AS word_score,
+              COUNT(*) OVER (PARTITION BY p.supermarket, ${wordScore}, p.quantity_unit) AS unit_count
+       FROM products p
+       ${CURRENT_DISCOUNT_JOIN}
+       WHERE ${where.join(" AND ")}
+     ) c
+     ORDER BY c.supermarket,
+              c.word_score DESC,
+              (c.quantity_value IS NULL) ASC,
+              c.unit_count DESC,
+              COALESCE(c.discount_price, c.regular_price) / NULLIF(c.quantity_value, 0) ASC NULLS LAST,
+              COALESCE(c.discount_price, c.regular_price) ASC,
+              LENGTH(c.name) ASC`,
     params
   );
   return result.rows;

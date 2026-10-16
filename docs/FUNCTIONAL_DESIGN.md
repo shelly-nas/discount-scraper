@@ -1469,8 +1469,14 @@ Request: `{ items: [{ id, query, count?, productId? }], supermarkets?: "dirk,alb
 
 For every item and supermarket the best matching product is chosen among
 current offers and catalog products: every word of `query` must occur in the
-name and at least one as a whole word; more whole-word matches rank higher, then
-the lowest current price, then the shortest name. When nothing matches, words
+name and at least one as a whole word; more whole-word matches rank higher.
+Among equally good matches, products with a known pack quantity come first and
+like is compared with like (the unit most of those matches are sold in, kg, l
+or stuk, goes first); the lowest current price per unit (offer or regular
+price over the quantity) wins, so a 500 ml pack does not beat a cheaper liter.
+Then the lowest current price, then the shortest name. Because larger packs
+are often cheaper per unit, `total` reflects the best value packs, not the
+lowest possible receipt. When nothing matches, words
 containing digits (sizes such as `1L`, `500g`) are dropped and the match is
 retried. An item with a `productId` uses exactly that product at its own
 supermarket.
