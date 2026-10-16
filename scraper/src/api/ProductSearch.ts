@@ -1,4 +1,5 @@
 import PostgresDataContext from "../data/PostgresDataContext";
+import { pricePerUnit, Quantity, QuantityUnit } from "../utils/Quantity";
 
 /**
  * Product search shared by the public API endpoints.
@@ -151,6 +152,7 @@ export async function searchProducts(
   const result = await db.query(
     `SELECT p.id, p.name, p.category, p.supermarket, p.product_url, p.updated_at,
             p.brand, p.unit_size, p.image_url, p.regular_price, p.price_source,
+            p.quantity_value, p.quantity_unit,
             p.unit_price AS catalog_unit_price, p.in_catalog,
             d.id AS discount_id, d.original_price, d.discount_price, d.unit_price,
             d.special_discount, d.expire_date,
@@ -175,6 +177,13 @@ function toNumber(value: unknown): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+/** The stored pack quantity of a row (quantity_value / quantity_unit), if any. */
+export function rowQuantity(row: any): Quantity | null {
+  const value = toNumber(row.quantity_value);
+  if (value === null || value <= 0 || !row.quantity_unit) return null;
+  return { value, unit: row.quantity_unit as QuantityUnit };
+}
+
 /** Maps a search row to the public API item shape. */
 export function mapSearchRow(row: any) {
   const originalPrice = toNumber(row.original_price);
@@ -194,11 +203,15 @@ export function mapSearchRow(row: any) {
           expireDate: row.expire_date,
         };
 
+  const quantity = rowQuantity(row);
+  const price = discount?.discountPrice ?? regularPrice;
+
   const catalog = row.in_catalog
     ? {
         regularPrice,
         /** "supermarket", or an outside dataset such as "checkjebon" (Lidl). */
         priceSource: row.price_source ?? null,
+        quantity,
         unitPrice: row.catalog_unit_price ?? null,
         unitSize: row.unit_size ?? null,
         brand: row.brand ?? null,
@@ -213,7 +226,9 @@ export function mapSearchRow(row: any) {
     supermarket: { key: supermarketKey(row.supermarket), name: row.supermarket },
     productUrl: row.product_url ?? null,
     /** What the product costs right now: the offer price, else the regular price. */
-    price: discount?.discountPrice ?? regularPrice,
+    price,
+    /** The current price per kg, l or stuk, for comparing pack sizes; null without a quantity. */
+    pricePerUnit: pricePerUnit(price, quantity),
     discount,
     catalog,
     updatedAt: row.updated_at,

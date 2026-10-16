@@ -7,10 +7,12 @@ import {
   mapSearchRow,
   parseScope,
   parseSupermarkets,
+  rowQuantity,
   scopeFilter,
   searchProducts,
   supermarketKey,
 } from "./ProductSearch";
+import { pricePerUnit } from "../utils/Quantity";
 import { compareList, CompareItem, MAX_COMPARE_ITEMS } from "./PriceComparison";
 
 /**
@@ -216,7 +218,8 @@ router.get("/products/:id", async (req: Request, res: Response) => {
   try {
     const productResult = await dataManager.db.query(
       `SELECT id, name, category, supermarket, product_url, updated_at,
-              brand, unit_size, image_url, regular_price, price_source, unit_price, in_catalog
+              brand, unit_size, image_url, regular_price, price_source, unit_price, in_catalog,
+              quantity_value, quantity_unit
        FROM products WHERE id = $1`,
       [id]
     );
@@ -264,9 +267,11 @@ router.get("/products/:id", async (req: Request, res: Response) => {
       productUrl: product.product_url ?? null,
       updatedAt: product.updated_at,
       price: currentDiscount?.discountPrice ?? regularPrice,
+      pricePerUnit: pricePerUnit(currentDiscount?.discountPrice ?? regularPrice, rowQuantity(product)),
       catalog: product.in_catalog
         ? {
             regularPrice,
+            quantity: rowQuantity(product),
             priceSource: product.price_source ?? null,
             unitPrice: product.unit_price ?? null,
             unitSize: product.unit_size ?? null,

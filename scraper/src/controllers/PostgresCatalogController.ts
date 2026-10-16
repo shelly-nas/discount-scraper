@@ -2,6 +2,7 @@ import { PoolClient } from "pg";
 import PostgresDataContext from "../data/PostgresDataContext";
 import { ICatalogProduct } from "../interfaces/ICatalogProduct";
 import { scraperLogger } from "../utils/Logger";
+import { parseQuantity } from "../utils/Quantity";
 
 export interface CatalogBatchMetrics {
   created: number;
@@ -101,6 +102,8 @@ class PostgresCatalogController {
       product.productUrl,
       product.price === null ? null : product.priceSource,
     ];
+    const quantity = product.quantity !== undefined ? product.quantity : parseQuantity(product.unitSize);
+    values.push(quantity?.value ?? null, quantity?.unit ?? null);
 
     if (existing) {
       await client.query(
@@ -108,7 +111,8 @@ class PostgresCatalogController {
            external_id = $2, brand = $3, unit_size = $4, image_url = $5,
            regular_price = $6, unit_price = $7,
            product_url = COALESCE($8, product_url), price_source = $9,
-           category = $10, in_catalog = true, catalog_updated_at = NOW()
+           quantity_value = $10, quantity_unit = $11,
+           category = $12, in_catalog = true, catalog_updated_at = NOW()
          WHERE id = $1`,
         [existing.id, ...values, product.category]
       );
@@ -128,8 +132,9 @@ class PostgresCatalogController {
     const inserted = await client.query<{ id: number }>(
       `INSERT INTO products
          (name, category, supermarket, external_id, brand, unit_size, image_url,
-          regular_price, unit_price, product_url, price_source, in_catalog, catalog_updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true, NOW())
+          regular_price, unit_price, product_url, price_source, quantity_value, quantity_unit,
+          in_catalog, catalog_updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true, NOW())
        RETURNING id`,
       [name, product.category, supermarket, ...values]
     );

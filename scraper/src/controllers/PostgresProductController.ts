@@ -144,6 +144,65 @@ class PostgresProductController {
     }
   }
 
+  /**
+   * Upserts an offer's product by the supermarket's own product id. An
+   * existing row with that id wins; else an id-less row with the same name is
+   * adopted (an offer-only product from before ids were stored); else a new
+   * row is created, with the id appended to the name when another product
+   * already has that name (the catalog does the same).
+   */
+  async addProductByExternalId(
+    name: string,
+    category: string,
+    supermarket: string,
+    productUrl: string | null,
+    externalId: string
+  ): Promise<{ id: number; wasCreated: boolean }> {
+    const byId = await this.db.query<{ id: number }>(
+      "SELECT id FROM products WHERE supermarket = $1 AND external_id = $2",
+      [supermarket, externalId]
+    );
+    if (byId.rows.length > 0) {
+      await this.db.query(
+        `UPDATE products SET category = $2, product_url = COALESCE($3, product_url),
+           updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+        [byId.rows[0].id, category, productUrl]
+      );
+      return { id: byId.rows[0].id, wasCreated: false };
+    }
+
+    const byName = await this.db.query<{ id: number; external_id: string | null }>(
+      "SELECT id, external_id FROM products WHERE supermarket = $1 AND name = $2",
+      [supermarket, name]
+    );
+    const sameName = byName.rows[0];
+    if (sameName && sameName.external_id === null) {
+      await this.db.query(
+        `UPDATE products SET external_id = $2, category = $3,
+           product_url = COALESCE($4, product_url), updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1`,
+        [sameName.id, externalId, category, productUrl]
+      );
+      return { id: sameName.id, wasCreated: false };
+    }
+
+    const inserted = await this.db.query<{ id: number }>(
+      `INSERT INTO products (name, category, supermarket, product_url, external_id)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [sameName ? `${name} (${externalId})` : name, category, supermarket, productUrl, externalId]
+    );
+    return { id: inserted.rows[0].id, wasCreated: true };
+  }
+
+  async getProductIdByExternalId(externalId: string, supermarket: string): Promise<number> {
+    const result = await this.db.query<{ id: number }>(
+      "SELECT id FROM products WHERE supermarket = $1 AND external_id = $2",
+      [supermarket, externalId]
+    );
+    return result.rows[0]?.id ?? -1;
+  }
+
   async getProductId(name: string, supermarket: string): Promise<number> {
     try {
       // Names are only unique per supermarket (UNIQUE(name, supermarket)).

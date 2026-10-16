@@ -682,7 +682,30 @@ flowchart TD
 | FR-007.5 | System SHALL run catalog scrapes weekly (`CATALOG_CRON`, default Monday 03:17; `CATALOG_ENABLED=false` disables) and on demand from the admin UI | MEDIUM | ✅ Implemented |
 | FR-007.6 | System SHALL track every catalog run (status, counts, duration, error) in `catalog_runs`             | MEDIUM   | ✅ Implemented |
 | FR-007.7 | System SHALL apply schema migrations from `scraper/migrations` on startup                              | HIGH     | ✅ Implemented |
-| FR-007.8 | Catalog clients for Dirk, Jumbo, PLUS, Aldi and Hoogvliet                                              | MEDIUM   | Planned        |
+| FR-007.8 | Catalog clients for Dirk, Jumbo, PLUS and Aldi                                                         | MEDIUM   | Planned        |
+| FR-007.10 | System SHALL store each catalog product's pack quantity normalised to kg, l or stuk (`quantity_value`, `quantity_unit`; supplied by the client or read from the pack size such as "500 g", "6 x 330 ml", "4 stuks") and expose `pricePerUnit` (current price / quantity) in the public API | HIGH | ✅ Implemented |
+| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Hoogvliet |
+
+**Hoogvliet catalog and offers.** hoogvliet.com is a Next.js shop on Magento 2
+and exposes Magento's public GraphQL API (`https://hoogvliet.nl/graphql`,
+header `Store: hoogvliet_nl`). The top-level categories come from
+`categories(parent_id: 2)`; offer, theme-shop and seasonal categories are read
+last so products keep their regular shelf. `categoryList { products }` lists
+the SKUs per category (200 per page); `products(filter: { sku: { in } })`
+(300 per call) returns the details: regular and final price, pack size and
+price per kilo/liter/piece (`sub_title_attributes`) and the promotion
+(`promotion_meta_data`: label, valid from/to). Promotion groups
+(`GroupedProduct`, folder entries such as "Kitkat, Bros of Smarties") are
+skipped; the products they bundle carry the promotion themselves.
+
+- The catalog client stores every product at its regular price with its quantity
+  (on 16 October 2026: 8,562 products, all with price and quantity).
+- The discount scraper (`HoogvlietApiClient`) uses the same API and keeps
+  products with a current promotion. The discount price is per item, also for
+  multi-buy offers: "3 voor 6,00" is 2.00, "1 + 1 Gratis" half the regular
+  price, "25% korting" and "2e halve prijs" (0.75 of the regular price) are
+  worked out from the label. The run's expiry date is the most common end date
+  (the weekly folder), since some promotions run for months.
 | FR-007.9 | System SHALL record where a regular price comes from (`price_source`: `supermarket` or `checkjebon`) and keep catalog products without a known price (`regular_price` null; excluded from price comparison) | HIGH | ✅ Implemented |
 
 **Lidl catalog.** Lidl does not publish regular prices online. The Lidl catalog
@@ -1386,6 +1409,7 @@ interface SearchResponse {
     supermarket: { key: string; name: string };
     productUrl: string | null;
     price: number | null; // offer price when on offer, otherwise the regular price
+    pricePerUnit: { value: number; unit: "kg" | "l" | "stuk" } | null; // price / quantity
     discount: {
       id: number;
       originalPrice: number | null; // falls back to the catalog price
@@ -1398,7 +1422,8 @@ interface SearchResponse {
     catalog: {
       regularPrice: number | null; // null when unknown (some Lidl products)
       priceSource: "supermarket" | "checkjebon" | null;
-      unitPrice: string | null;
+      quantity: { value: number; unit: "kg" | "l" | "stuk" } | null; // e.g. 500 g -> 0.5 kg
+      unitPrice: string | null; // as shown by the supermarket, e.g. "€5.18 per kilo"
       unitSize: string | null;
       brand: string | null;
       imageUrl: string | null;
@@ -1508,6 +1533,7 @@ To close that gap, the scraper API applies migrations itself:
 | `001_catalog.sql`       | Catalog columns on `products`, `price_history`, `catalog_runs`          |
 | `002_offer_columns.sql` | `products.product_url`, `discounts.unit_price` for pre-existing volumes |
 | `003_price_source.sql`  | `products.price_source` (origin of the catalog regular price)          |
+| `004_quantity.sql`      | `products.quantity_value`, `products.quantity_unit` (pack quantity in kg, l or stuk) |
 
 **Result:** a redeploy of the scraper API is sufficient to bring an existing database
 up to date — no manual `psql` intervention and no volume reset.
