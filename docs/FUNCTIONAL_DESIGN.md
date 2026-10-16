@@ -23,18 +23,10 @@ scraper and was renamed supermarket-scraper: GitHub repository, images
 (`supermarket-scraper-db/-api/-web`), containers, NAS directories
 (`/volume1/docker/supermarket-scraper`, `-acc`) and domains
 (`supermarkets.shelly-nas.nl`, `supermarkets-acc.shelly-nas.nl`; the old
-`discounts*` domains no longer route). Kept on purpose:
-
-- The production database volume keeps its name `discount-scraper_postgres_data`
-  (pinned as an external volume), so the existing data stays in use.
-- The API keeps the old container names `discount-scraper-api` /
-  `discount-scraper-acc-api` as aliases on `shelly-network`, so Baskit keeps
-  working until it switches to the new names.
-- The database name and user (`discount`, `discount_user`) are unchanged.
-
-The first deploy after the rename stops the stacks in the old NAS directories
-before starting the new one; the old directories and their data are left in
-place.
+`discounts*` domains no longer route), database and user (`supermarket`,
+`supermarket_user`) and the database volume. Nothing ran in production yet, so
+nothing was migrated: production starts on a new, empty database, and Baskit
+reads the API as `supermarket-scraper-api` (acc: `supermarket-scraper-acc-api`).
 
 ### 1.2 Business Goals
 
@@ -1882,8 +1874,8 @@ LIMIT 10;
 # Database Configuration
 DB_HOST=postgres
 DB_PORT=5432
-DB_NAME=discount
-DB_USER=discount_user
+DB_NAME=supermarket
+DB_USER=supermarket_user
 DB_PASSWORD=discount_pass
 
 # API Configuration
