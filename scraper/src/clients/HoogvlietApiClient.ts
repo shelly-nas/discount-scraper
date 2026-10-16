@@ -5,6 +5,7 @@ import { scraperLogger } from "../utils/Logger";
 import { folderExpireDate, promotionPrice } from "../utils/Promotion";
 import HoogvlietGraphql, {
   HoogvlietListedProduct,
+  hoogvlietQuantity,
   hoogvlietUnitPrice,
   productUrl,
 } from "./hoogvliet/HoogvlietGraphql";
@@ -33,6 +34,7 @@ export function mapHoogvlietDiscount(
     // Labels that are not a price promotion ("Op = op") keep the final price.
     discountPrice: promotionPrice(promotion.korting_label, regular, final) ?? Math.round(final * 100) / 100,
     unitPrice: hoogvlietUnitPrice(product.sub_title_attributes),
+    quantity: hoogvlietQuantity(product.sub_title_attributes),
     specialDiscount: promotion.korting_label?.trim() ?? "",
     category: product.category,
     supermarket: "Hoogvliet",

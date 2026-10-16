@@ -3,6 +3,7 @@ import PostgresProductController from "../controllers/PostgresProductController"
 import PostgresScraperRunController from "../controllers/PostgresScraperRunController";
 import PostgresScheduledRunController from "../controllers/PostgresScheduledRunController";
 import { scraperLogger } from "../utils/Logger";
+import { parseQuantity } from "../utils/Quantity";
 import PostgresDataContext from "./PostgresDataContext";
 import { getDatabaseConfig } from "../config/database";
 
@@ -86,6 +87,8 @@ export class PostgresDataManager {
             supermarket,
             product.productUrl ?? null
           );
+      const quantity = product.quantity !== undefined ? product.quantity : parseQuantity(product.name);
+      if (quantity) await this.productController.setOfferQuantity(result.id, quantity);
       if (result.wasCreated) {
         created++;
       } else {

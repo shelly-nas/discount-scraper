@@ -123,6 +123,7 @@ function makeDataManager(overrides: {
     getProductId: overrides.getProductId
       ? overrides.getProductId
       : vi.fn().mockImplementation(async (name: string) => idMap.get(name) ?? -1),
+    setOfferQuantity: vi.fn().mockResolvedValue(undefined),
   };
 
   (dm as any).discountController = {
@@ -192,6 +193,19 @@ describe("Dirk → database: alle producten komen terecht", () => {
     // 6 items ingevoerd, maar 1 duplicaat → 5 unieke producten
     expect(addFn).toHaveBeenCalledTimes(DIRK_SCRAPED_PRODUCTS.length);
     expect(result.created + result.updated).toBe(DIRK_SCRAPED_PRODUCTS.length);
+  });
+
+  it("slaat de hoeveelheid op uit quantity of anders uit de naam", async () => {
+    const base = DIRK_SCRAPED_PRODUCTS[0];
+    await dm.addProductDb("Dirk", [
+      { ...base, name: "Halfvolle melk Pak 1 liter." },
+      { ...base, name: "Kipfilet", quantity: { value: 0.5, unit: "kg" } },
+      { ...base, name: "Bananen", quantity: null },
+    ]);
+    const setFn = (dm as any).productController.setOfferQuantity;
+    expect(setFn).toHaveBeenCalledTimes(2);
+    expect(setFn).toHaveBeenCalledWith(expect.any(Number), { value: 1, unit: "l" });
+    expect(setFn).toHaveBeenCalledWith(expect.any(Number), { value: 0.5, unit: "kg" });
   });
 
   it("voegt een discount toe voor elk product", async () => {
