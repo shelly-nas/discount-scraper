@@ -46,6 +46,8 @@ const NUMBER = "(\\d+(?:[.,]\\d+)?)";
 const MULTIPACK = new RegExp(`(\\d+)\\s*(?:x|×)\\s*${NUMBER}\\s*(${UNIT_PATTERN})\\b`, "i");
 const SINGLE = new RegExp(`${NUMBER}\\s*(${UNIT_PATTERN})\\b`, "i");
 const PER_PIECE = /\bper\s+(stuk|st)\b/i;
+// Loose produce sold by weight: the whole pack size is "Per kilo".
+const PER_BASE_UNIT = /^\s*per\s+(kilo|kg|liter|l)\s*$/i;
 
 const toNumber = (text: string) => parseFloat(text.replace(",", "."));
 
@@ -58,7 +60,7 @@ function build(amount: number, unitWord: string): Quantity | null {
 
 /**
  * Reads a pack size such as "500 g", "1,5 liter", "6 x 330 ml", "ca. 1 kg",
- * "4 stuks" or "per stuk". Returns null when no quantity can be read.
+ * "4 stuks", "per stuk" or "per kilo". Returns null when no quantity can be read.
  */
 export function parseQuantity(text: string | null | undefined): Quantity | null {
   if (!text) return null;
@@ -69,6 +71,8 @@ export function parseQuantity(text: string | null | undefined): Quantity | null 
   const single = text.match(SINGLE);
   if (single) return build(toNumber(single[1]), single[2]);
   if (PER_PIECE.test(text)) return { value: 1, unit: "stuk" };
+  const perBase = text.match(PER_BASE_UNIT);
+  if (perBase) return build(1, perBase[1]);
   return null;
 }
 
@@ -80,4 +84,12 @@ export function pricePerUnit(
   if (price === null || price === undefined || !quantity || quantity.value <= 0) return null;
   // In whole cents, so 3.79 for 0.4 kg is 9.48 (not 9.47 from 9.4749999...).
   return { value: Math.round(Math.round(price * 100) / quantity.value) / 100, unit: quantity.unit };
+}
+
+const UNIT_LABELS: Record<QuantityUnit, string> = { kg: "per kilo", l: "per liter", stuk: "per stuk" };
+
+/** "€5.18 per kilo" for a price (euro) and quantity. */
+export function unitPriceText(price: number | null, quantity: Quantity | null): string | null {
+  const perUnit = pricePerUnit(price, quantity);
+  return perUnit ? `€${perUnit.value.toFixed(2)} ${UNIT_LABELS[perUnit.unit]}` : null;
 }

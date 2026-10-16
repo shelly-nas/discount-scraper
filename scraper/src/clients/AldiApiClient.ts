@@ -1,162 +1,95 @@
-import { Browser, BrowserContext, Page } from "playwright";
-import { chromium } from "playwright-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { AxiosInstance } from "axios";
+import moment from "moment";
 import ApiClient from "./ApiClient";
 import { scraperLogger } from "../utils/Logger";
-import moment from "moment";
+import { folderExpireDate, promotionPrice } from "../utils/Promotion";
+import { unitPriceText } from "../utils/Quantity";
+import AldiAlgolia, {
+  AldiProduct,
+  aldiCategory,
+  aldiName,
+  aldiProductUrl,
+  aldiQuantity,
+  isAldiOffer,
+} from "./aldi/AldiAlgolia";
 
-chromium.use(StealthPlugin());
+/**
+ * Maps a week offer to a discount. An offer that reuses a regular article id
+ * with a leading 9 is linked to that product (and gets its regular price);
+ * other offers are articles of their own, linked by their own id. "2 VOOR"
+ * with price 2.00 is 1.00 per item.
+ */
+export function mapAldiDiscount(
+  offer: AldiProduct,
+  regular: Map<string, AldiProduct>,
+  now: Date = new Date()
+): IProductDiscountDetails | null {
+  const name = aldiName(offer);
+  const price = offer.currentPrice;
+  if (!name || !price || typeof price.priceValue !== "number" || price.priceValue <= 0) return null;
+  if (offer.isAvailable === false || price.validUntil * 1000 < now.getTime()) return null;
 
-const ALDI_URL = "https://www.aldi.nl/aanbiedingen.html";
+  const linkedId = offer.objectID.startsWith("9") && regular.has(offer.objectID.slice(1))
+    ? offer.objectID.slice(1)
+    : null;
+  const regularPrice = linkedId ? regular.get(linkedId)!.currentPrice?.priceValue ?? 0 : 0;
 
-interface AldiCurrentPrice {
-  priceValue: number;
-  validFrom: number;
-  validUntil: number;
-  priceTagLabels?: { promoText1?: string; promoText2?: string };
-}
+  const label = [price.priceTagLabels?.promoText1, price.priceTagLabels?.promoText2]
+    .map((t) => t?.trim())
+    .filter(Boolean)
+    .join(" ");
+  const multiBuy = /^\d+\s*voor$/i.test(label)
+    ? promotionPrice(`${label} ${price.priceValue}`, regularPrice || price.priceValue)
+    : null;
+  const discountPrice = multiBuy ?? price.priceValue;
+  const quantity = aldiQuantity(offer);
 
-interface AldiProduct {
-  name: string;
-  brandName?: string;
-  salesUnit?: string;
-  mainCategoryID?: string;
-  currentPrice?: AldiCurrentPrice;
-  isAvailable?: boolean;
-}
-
-interface AldiAlgoliaDataMap {
-  [productId: string]: AldiProduct;
+  return {
+    name,
+    originalPrice: regularPrice > discountPrice ? regularPrice : 0,
+    discountPrice,
+    unitPrice: unitPriceText(discountPrice, quantity),
+    quantity,
+    specialDiscount: label,
+    category: aldiCategory(linkedId ? regular.get(linkedId)! : offer),
+    supermarket: "Aldi",
+    expireDate: moment.unix(price.validUntil).endOf("day").toISOString(true),
+    productUrl: aldiProductUrl(offer),
+    externalId: linkedId ?? offer.objectID,
+  };
 }
 
 class AldiApiClient extends ApiClient {
   public name = "Aldi";
 
-  private browser: Browser | null = null;
-  private context: BrowserContext | null = null;
-  private page: Page | null = null;
+  private api: AldiAlgolia;
 
-  constructor() {
+  constructor(http?: AxiosInstance) {
     super();
+    this.api = new AldiAlgolia(http);
     scraperLogger.debug(`Created a '${this.name}' API Client instance.`);
-  }
-
-  private async init(): Promise<void> {
-    this.browser = await chromium.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
-    this.context = await this.browser.newContext({
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      locale: "nl-NL",
-      timezoneId: "Europe/Amsterdam",
-      extraHTTPHeaders: { "Accept-Language": "nl-NL,nl;q=0.9" },
-    });
-    this.page = await this.context.newPage();
-  }
-
-  private async close(): Promise<void> {
-    await this.browser?.close();
   }
 
   public async fetchDiscounts(): Promise<{
     discounts: IProductDiscountDetails[];
     expireDate: string;
   }> {
-    scraperLogger.info(`Fetching Aldi discounts via __NEXT_DATA__`);
+    scraperLogger.info(`Fetching Aldi discounts via the aldi.nl product index`);
 
-    await this.init();
-    if (!this.page) throw new Error("Page not initialized");
+    const all = await this.api.all();
+    const regular = new Map(all.filter((p) => !isAldiOffer(p)).map((p) => [p.objectID, p]));
+    const offers = all.filter(isAldiOffer);
 
-    scraperLogger.info(`Navigating to ${ALDI_URL}`);
-    await this.page.goto(ALDI_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+    const now = new Date();
+    const discounts = offers
+      .map((offer) => mapAldiDiscount(offer, regular, now))
+      .filter((d): d is IProductDiscountDetails => d !== null);
+    if (discounts.length === 0) throw new Error("Aldi: no current offers found");
 
-    const algoliaDataMap = await this.extractAlgoliaDataMap(this.page);
-
-    await this.close();
-
-    if (!algoliaDataMap || Object.keys(algoliaDataMap).length === 0) {
-      throw new Error("Aldi: no products found in __NEXT_DATA__");
-    }
-
-    return this.parseProducts(algoliaDataMap);
-  }
-
-  private async extractAlgoliaDataMap(page: Page): Promise<AldiAlgoliaDataMap> {
-    return page.evaluate(() => {
-      const raw = document.getElementById("__NEXT_DATA__")?.textContent;
-      if (!raw) return {};
-      const nextData = JSON.parse(raw);
-      // apiData is a double-encoded JSON string containing an array of [key, value] tuples
-      const apiDataRaw = nextData?.props?.pageProps?.apiData;
-      if (!apiDataRaw) return {};
-      const apiData: Array<[string, { res?: { algoliaDataMap?: Record<string, unknown> } }]> =
-        JSON.parse(apiDataRaw);
-      const offerEntry = apiData.find((entry) => entry[0] === "OFFER_GET");
-      return (offerEntry?.[1]?.res?.algoliaDataMap ?? {}) as Record<string, unknown>;
-    }) as Promise<AldiAlgoliaDataMap>;
-  }
-
-  private parseProducts(algoliaDataMap: AldiAlgoliaDataMap): {
-    discounts: IProductDiscountDetails[];
-    expireDate: string;
-  } {
-    const discounts: IProductDiscountDetails[] = [];
-    let latestValidUntil = 0;
-
-    for (const product of Object.values(algoliaDataMap)) {
-      if (!product.name || !product.currentPrice) continue;
-      if (product.isAvailable === false) continue;
-
-      const { priceValue, validUntil, priceTagLabels } = product.currentPrice;
-
-      const name = [product.brandName, product.name, product.salesUnit]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-
-      const specialDiscount = [
-        priceTagLabels?.promoText1,
-        priceTagLabels?.promoText2,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
-
-      // validUntil is a Unix timestamp (seconds)
-      const expireDate = moment.unix(validUntil).endOf("day").toISOString(true);
-
-      discounts.push({
-        name,
-        originalPrice: 0,
-        discountPrice: priceValue ?? 0,
-        unitPrice: null,
-        specialDiscount,
-        category: product.mainCategoryID ?? "Overig",
-        supermarket: this.name,
-        expireDate,
-        productUrl: ALDI_URL,
-      });
-
-      if (validUntil > latestValidUntil) {
-        latestValidUntil = validUntil;
-      }
-    }
-
-    const expireDate = latestValidUntil > 0
-      ? moment.unix(latestValidUntil).endOf("day").toISOString(true)
-      : moment().endOf("isoWeek").endOf("day").toISOString(true);
-
+    const expireDate = folderExpireDate(discounts);
     scraperLogger.info(
-      `Total Aldi discounts: ${discounts.length}, expire: ${expireDate}`
+      `Total Aldi discounts: ${discounts.length} of ${offers.length} offers, folder expires: ${expireDate}`
     );
-
     return { discounts, expireDate };
   }
 }

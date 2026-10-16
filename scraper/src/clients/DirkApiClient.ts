@@ -1,88 +1,73 @@
-import axios from "axios";
+import { AxiosInstance } from "axios";
 import ApiClient from "./ApiClient";
 import { scraperLogger } from "../utils/Logger";
+import { folderExpireDate, promotionPrice } from "../utils/Promotion";
+import { unitPriceText } from "../utils/Quantity";
+import DirkGraphql, { DirkOffer, DirkProduct, dirkProductUrl, dirkQuantity } from "./dirk/DirkGraphql";
 
-const GRAPHQL_URL = "https://web-gateway.dirk.nl/graphql";
 const DIRK_OFFERS_URL = "https://www.dirk.nl/aanbiedingen";
-const GRAPHQL_HEADERS = {
-  "Content-Type": "application/json",
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-  Origin: "https://www.dirk.nl",
-  Referer: "https://www.dirk.nl/",
-};
 
-interface DirkDepartment {
-  id: number;
-  description: string;
+const offerLabel = (offer: DirkOffer) =>
+  [offer.subText, offer.promotionText].filter(Boolean).join(" ").trim();
+
+/**
+ * One discount per product an offer covers ("Hak groente of appelmoes" covers
+ * 29 jars), linked by Dirk's product id. The offer price is per item; a
+ * multi-buy label is worked out per item from the product's regular price.
+ */
+export function mapDirkOfferProduct(
+  offer: DirkOffer,
+  product: DirkProduct,
+  category: string
+): IProductDiscountDetails | null {
+  const name = product.productInformation?.headerText?.trim();
+  if (!name) return null;
+  const regular = product.normalPrice && product.normalPrice > 0 ? product.normalPrice : offer.normalPrice;
+  const offered = product.offerPrice && product.offerPrice > 0 ? product.offerPrice : offer.offerPrice;
+  if (!offered || offered <= 0) return null;
+
+  const label = offerLabel(offer);
+  const quantity = dirkQuantity(product);
+  const discountPrice = regular > 0 ? promotionPrice(label, regular, offered) ?? offered : offered;
+  return {
+    name,
+    originalPrice: regular > 0 ? regular : 0,
+    discountPrice,
+    unitPrice: unitPriceText(discountPrice, quantity),
+    quantity,
+    specialDiscount: label,
+    category: product.productInformation?.department?.trim() || category,
+    supermarket: "Dirk",
+    expireDate: offer.endDate,
+    productUrl: dirkProductUrl(product),
+    externalId: String(product.productId),
+  };
 }
 
-interface DirkOffer {
-  offerId: number;
-  headerText: string;
-  subText: string | null;
-  promotionText: string | null;
-  normalPrice: number;
-  offerPrice: number;
-  startDate: string;
-  endDate: string;
-  type: string;
-  packaging: string | null;
-}
-
-const OFFERS_QUERY = `
-  query listOffersByDepartment($department: Int!) {
-    listOffers(department: $department) {
-      currentOffers {
-        offerId
-        headerText
-        subText
-        promotionText
-        normalPrice
-        offerPrice
-        startDate
-        endDate
-        type
-        packaging
-      }
-    }
-  }
-`;
-
-async function gql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-  const response = await axios.post(
-    GRAPHQL_URL,
-    { query, variables },
-    { headers: GRAPHQL_HEADERS }
-  );
-  if (response.data.errors) {
-    throw new Error(
-      `GraphQL error: ${response.data.errors.map((e: { message: string }) => e.message).join(", ")}`
-    );
-  }
-  return response.data.data as T;
+/** An offer none of whose products could be looked up, as one discount by name. */
+export function mapDirkOffer(offer: DirkOffer, category: string): IProductDiscountDetails {
+  return {
+    name: [offer.headerText, offer.packaging].filter(Boolean).join(" ").trim(),
+    originalPrice: offer.normalPrice,
+    discountPrice: offer.offerPrice,
+    unitPrice: null,
+    specialDiscount: offerLabel(offer),
+    productUrl: DIRK_OFFERS_URL,
+    category,
+    supermarket: "Dirk",
+    expireDate: offer.endDate,
+  };
 }
 
 class DirkApiClient extends ApiClient {
   public name = "Dirk";
 
-  constructor() {
+  private api: DirkGraphql;
+
+  constructor(http?: AxiosInstance) {
     super();
+    this.api = new DirkGraphql(http);
     scraperLogger.debug(`Created a '${this.name}' API Client instance.`);
-  }
-
-  private async fetchDepartments(): Promise<DirkDepartment[]> {
-    const data = await gql<{ listDepartments: { departments: DirkDepartment[] } }>(
-      "{ listDepartments { departments { id description } } }"
-    );
-    return data.listDepartments.departments;
-  }
-
-  private async fetchOffersByDepartment(departmentId: number): Promise<DirkOffer[]> {
-    const data = await gql<{
-      listOffers: { currentOffers: DirkOffer[] };
-    }>(OFFERS_QUERY, { department: departmentId });
-    return data.listOffers?.currentOffers ?? [];
   }
 
   public async fetchDiscounts(): Promise<{
@@ -91,55 +76,45 @@ class DirkApiClient extends ApiClient {
   }> {
     scraperLogger.info(`Fetching Dirk discounts via GraphQL API`);
 
-    const departments = await this.fetchDepartments();
+    const departments = await this.api.departments();
     scraperLogger.info(`Found ${departments.length} departments`);
 
-    const discounts: IProductDiscountDetails[] = [];
-    let latestExpireDate = "";
-
+    const offers: { offer: DirkOffer; category: string }[] = [];
     for (const dept of departments) {
-      const offers = await this.fetchOffersByDepartment(dept.id);
-      if (offers.length === 0) continue;
+      const found = await this.api.offers(dept.id);
+      if (found.length === 0) continue;
+      scraperLogger.info(`Department '${dept.description}': ${found.length} offers`);
+      offers.push(...found.map((offer) => ({ offer, category: dept.description })));
+    }
 
-      scraperLogger.info(
-        `Department '${dept.description}': ${offers.length} offers`
-      );
+    const productIds = [...new Set(offers.flatMap(({ offer }) => offer.productIds ?? []))];
+    const products = new Map((await this.api.products(productIds)).map((p) => [p.productId, p]));
 
-      for (const offer of offers) {
-        const specialDiscount = [offer.subText, offer.promotionText]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
+    const discounts: IProductDiscountDetails[] = [];
+    const seen = new Set<string>();
+    for (const { offer, category } of offers) {
+      const covered = (offer.productIds ?? [])
+        .map((id) => products.get(id))
+        .map((product) => (product ? mapDirkOfferProduct(offer, product, category) : null))
+        .filter((d): d is IProductDiscountDetails => d !== null);
 
-        const productName = [offer.headerText, offer.packaging]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-
-        discounts.push({
-          name: productName,
-          originalPrice: offer.normalPrice,
-          discountPrice: offer.offerPrice,
-          unitPrice: null,
-          specialDiscount,
-          productUrl: DIRK_OFFERS_URL,
-          category: dept.description,
-          supermarket: this.name,
-          expireDate: offer.endDate,
-        });
-
-        // Track latest expire date across all offers
-        if (!latestExpireDate || offer.endDate > latestExpireDate) {
-          latestExpireDate = offer.endDate;
-        }
+      if (covered.length === 0) {
+        discounts.push(mapDirkOffer(offer, category));
+        continue;
+      }
+      // A product in two offers (e.g. listed in two departments) is kept once.
+      for (const discount of covered) {
+        if (seen.has(discount.externalId!)) continue;
+        seen.add(discount.externalId!);
+        discounts.push(discount);
       }
     }
 
+    const expireDate = folderExpireDate(discounts);
     scraperLogger.info(
-      `Total Dirk discounts fetched: ${discounts.length}, expire: ${latestExpireDate}`
+      `Total Dirk discounts: ${discounts.length} for ${offers.length} offers, folder expires: ${expireDate}`
     );
-
-    return { discounts, expireDate: latestExpireDate };
+    return { discounts, expireDate };
   }
 }
 
