@@ -108,7 +108,7 @@ Schema: [database/src/schema.sql](database/src/schema.sql). Tables:
 
 ### `web/` — React + Vite frontend (TypeScript)
 
-Routes: `/discounts` (default) and `/configurations`. The Configurations page shows supermarket statuses, dashboard stats, scraper run history, and lets you trigger manual runs or toggle scheduled runs. Its "Product Catalog" section (`components/CatalogSection.tsx`) shows catalog status per supported supermarket and starts catalog runs. All data fetched from the scraper API via [web/src/services/api.ts](web/src/services/api.ts). Served by nginx in production (see [web/nginx.conf](web/nginx.conf)).
+Routes: `/discounts` (default) and `/configurations`. The Configurations page shows supermarket statuses, dashboard stats, scraper run history, and lets you trigger manual runs or toggle scheduled runs. Its "Weekly Offers" section starts discount scrapes and toggles their auto re-scrape; its "Full Assortment" section (`components/CatalogSection.tsx`) shows catalog status per supported supermarket and starts catalog runs. All data fetched from the scraper API via [web/src/services/api.ts](web/src/services/api.ts). Served by nginx in production (see [web/nginx.conf](web/nginx.conf)).
 
 **Theme system:** `web/src/context/ThemeContext.tsx` provides a `ThemeProvider` and `useTheme` hook. Mode is `system | light | dark`, persisted in `localStorage`. The resolved theme (`light` or `dark`) is applied as `data-theme` on `<html>`. CSS variables in `index.css` are scoped with `:root` (light) and `[data-theme="dark"]`. The toggle button in `TabBar` cycles through all three modes.
 

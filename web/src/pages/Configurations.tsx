@@ -241,9 +241,10 @@ const Configurations: React.FC = () => {
         </div>
       )}
 
-      {/* Supermarket Controls */}
+      {/* Weekly offers */}
       <div className="supermarket-section">
-        <h2 className="section-title">Supermarket Controls</h2>
+        <h2 className="section-title">Weekly Offers</h2>
+        <p className="section-subtitle">Current discounts, re-scraped when they expire</p>
         <div className="supermarket-grid">
           {statuses.map((status) => {
             const isRunning = runningScrapers.has(status.key);
@@ -288,7 +289,7 @@ const Configurations: React.FC = () => {
                         Running...
                       </>
                     ) : (
-                      'Run Scraper'
+                      'Run Offers'
                     )}
                   </button>
                   {status.promotionExpireDate != null && (
@@ -415,9 +416,9 @@ const Configurations: React.FC = () => {
 
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
-        title="Confirm Scraper Run"
-        message={`Are you sure you want to run the scraper for ${confirmDialog.supermarket}? This will fetch fresh discount data.`}
-        confirmText="Run Scraper"
+        title="Confirm Offers Run"
+        message={`Are you sure you want to fetch the current offers for ${confirmDialog.supermarket}?`}
+        confirmText="Run Offers"
         cancelText="Cancel"
         onConfirm={confirmRunScraper}
         onCancel={cancelRunScraper}
