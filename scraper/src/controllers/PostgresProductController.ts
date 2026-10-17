@@ -1,8 +1,32 @@
 import PostgresDataContext from "../data/PostgresDataContext";
 import ProductModel from "../models/ProductModel";
 import { scraperLogger } from "../utils/Logger";
-import { Quantity } from "../utils/Quantity";
-import { matchFields } from "../utils/ProductMatch";
+import { Quantity, QuantityUnit } from "../utils/Quantity";
+import { matchFields, sameQuantity } from "../utils/ProductMatch";
+
+/** Permanent article numbers and pack quantity of an offer, to find its catalog row. */
+export interface ArticleLink {
+  articleNumbers: string[];
+  quantity: Quantity | null;
+}
+
+/**
+ * Picks the catalog row for an offer among rows sharing its article number.
+ * Variants (another pack size) can share one, so a row with the offer's
+ * quantity wins; a single row is taken when one side does not know its
+ * quantity. Two equal candidates, or only other pack sizes, link nothing.
+ */
+export function pickByQuantity(
+  candidates: { id: number; quantity: Quantity | null }[],
+  quantity: Quantity | null
+): number | null {
+  if (quantity) {
+    const same = candidates.filter((c) => sameQuantity(c.quantity, quantity));
+    if (same.length > 0) return same.length === 1 ? same[0].id : null;
+  }
+  if (candidates.length !== 1) return null;
+  return quantity && candidates[0].quantity ? null : candidates[0].id;
+}
 
 export interface OfferDetails {
   quantity: Quantity | null;
@@ -156,8 +180,9 @@ class PostgresProductController {
   }
 
   /**
-   * Upserts an offer's product by the supermarket's own product id. An
-   * existing row with that id wins; else an id-less row with the same name is
+   * Upserts an offer's product by the supermarket's own product id. With a
+   * `link`, the catalog row with the offer's article number wins (Lidl offers
+   * have their own id); then an existing row with that id; else an id-less row with the same name is
    * adopted (an offer-only product from before ids were stored); else a new
    * row is created, with the id appended to the name when another product
    * already has that name (the catalog does the same).
@@ -167,8 +192,26 @@ class PostgresProductController {
     category: string,
     supermarket: string,
     productUrl: string | null,
-    externalId: string
+    externalId: string,
+    link?: ArticleLink
   ): Promise<{ id: number; wasCreated: boolean }> {
+    // An offer with its own article number lands on its catalog row, which
+    // keeps its own id, category and product page.
+    const catalogId = link ? await this.findCatalogProductByArticle(supermarket, link) : null;
+    if (catalogId !== null) {
+      await this.db.query("UPDATE products SET updated_at = CURRENT_TIMESTAMP WHERE id = $1", [catalogId]);
+      // An offer-only row stored under the offer's own id before it was linked
+      // keeps no active offer next to the catalog row's.
+      await this.db.query(
+        `UPDATE discounts SET active = false
+         WHERE active = true AND product_id IN (
+           SELECT id FROM products
+           WHERE supermarket = $1 AND external_id = $2 AND id <> $3 AND catalog_updated_at IS NULL)`,
+        [supermarket, externalId, catalogId]
+      );
+      return { id: catalogId, wasCreated: false };
+    }
+
     const byId = await this.db.query<{ id: number }>(
       "SELECT id FROM products WHERE supermarket = $1 AND external_id = $2",
       [supermarket, externalId]
@@ -264,7 +307,58 @@ class PostgresProductController {
     );
   }
 
-  async getProductIdByExternalId(externalId: string, supermarket: string): Promise<number> {
+  /**
+   * The catalog row of an offer that has its own article number: a catalog
+   * product with one of the offer's permanent article numbers and the same
+   * pack quantity (see pickByQuantity); null when there is none.
+   */
+  async findCatalogProductByArticle(supermarket: string, link: ArticleLink): Promise<number | null> {
+    if (link.articleNumbers.length === 0) return null;
+    const result = await this.db.query<{ id: number; quantity_value: string | null; quantity_unit: string | null }>(
+      `SELECT id, quantity_value, quantity_unit FROM products
+       WHERE supermarket = $1 AND article_number = ANY($2::text[]) AND catalog_updated_at IS NOT NULL`,
+      [supermarket, link.articleNumbers]
+    );
+    return pickByQuantity(
+      result.rows.map((row) => ({
+        id: row.id,
+        quantity:
+          row.quantity_value === null || row.quantity_unit === null
+            ? null
+            : { value: parseFloat(row.quantity_value), unit: row.quantity_unit as QuantityUnit },
+      })),
+      link.quantity
+    );
+  }
+
+  /**
+   * Stores the regular price shown next to an offer as the product's regular
+   * price, observed now. Price history gets a row for a first or changed price.
+   */
+  async setRegularPriceFromOffer(id: number, price: number): Promise<boolean> {
+    return this.db.transaction(async (client) => {
+      const current = await client.query<{ regular_price: string | null }>(
+        "SELECT regular_price FROM products WHERE id = $1 FOR UPDATE",
+        [id]
+      );
+      if (current.rows.length === 0) return false;
+      await client.query(
+        `UPDATE products SET regular_price = $2, price_source = 'supermarket',
+           price_observed_at = NOW() WHERE id = $1`,
+        [id, price]
+      );
+      const previous = current.rows[0].regular_price;
+      const changed = previous === null || Math.abs(parseFloat(previous) - price) >= 0.005;
+      if (changed) {
+        await client.query("INSERT INTO price_history (product_id, price) VALUES ($1, $2)", [id, price]);
+      }
+      return changed;
+    });
+  }
+
+  async getProductIdByExternalId(externalId: string, supermarket: string, link?: ArticleLink): Promise<number> {
+    const catalogId = link ? await this.findCatalogProductByArticle(supermarket, link) : null;
+    if (catalogId !== null) return catalogId;
     const result = await this.db.query<{ id: number }>(
       "SELECT id FROM products WHERE supermarket = $1 AND external_id = $2",
       [supermarket, externalId]

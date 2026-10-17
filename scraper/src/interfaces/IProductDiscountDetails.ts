@@ -25,4 +25,16 @@ interface IProductDiscountDetails {
   brand?: string | null;
   /** Barcode (EAN), when the supermarket publishes it. */
   ean?: string | null;
+  /**
+   * Permanent article numbers of the product when the offer has its own
+   * externalId (Lidl). The offer then lands on the catalog row with one of
+   * these article numbers and the same pack quantity.
+   */
+  articleNumbers?: string[];
+  /**
+   * The regular shelf price the supermarket shows next to the offer, for a
+   * supermarket whose catalog does not publish regular prices (Lidl). Stored
+   * as the product's regular price.
+   */
+  regularPrice?: number | null;
 }

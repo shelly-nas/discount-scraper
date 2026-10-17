@@ -699,7 +699,7 @@ flowchart TD
 | FR-007.10 | System SHALL store each catalog product's pack quantity normalised to kg, l or stuk (`quantity_value`, `quantity_unit`; supplied by the client or read from the pack size such as "500 g", "6 x 330 ml", "4 stuks") and expose `pricePerUnit` (current price / quantity) in the public API | HIGH | ✅ Implemented |
 | FR-007.12 | System SHALL store an offer's pack quantity (kg, l or stuk) on its product when the catalog does not keep that product, so offers get a `pricePerUnit` too: from the client (`quantity`: Jumbo pack size, Hoogvliet sub title, Lidl's pack size under the price such as "400 g" or "6x500 ml", else its key facts or title) or else read from the offer name ("Spekreepjes 2x190 g"). A catalog product keeps the catalog's quantity | HIGH | ✅ Implemented |
 | FR-007.13 | System SHALL store only food and drink from Aldi: no clothing, home goods, tools, plants, toys, drugstore, household or pet products, in the catalog and in the offers | HIGH | ✅ Implemented |
-| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Aldi, Dirk, Hoogvliet, Jumbo, PLUS (AH and Lidl offers still by name) |
+| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Aldi, Dirk, Hoogvliet, Jumbo, PLUS, Lidl (by the permanent article number, FR-007.14; AH offers still by name) |
 
 **Jumbo catalog and offers.** Both use jumbo.com's own GraphQL API
 (`POST https://www.jumbo.com/api/graphql`) with the web client's headers
@@ -834,15 +834,40 @@ schemes are merged, other worlds become `Overig`). Only tiles with category
 `Food` or `F+V` are kept. The regular price is, in order:
 
 1. Lidl's own `oldPrice` when the product is on offer (`supermarket`);
-2. the open [checkjebon.nl](https://github.com/supermarkt/checkjebon) dataset
+2. a regular price Lidl itself showed in the last 180 days, next to an offer
+   (FR-007.14); kept instead of the next two (`supermarket`);
+3. the open [checkjebon.nl](https://github.com/supermarkt/checkjebon) dataset
    (MIT, refreshed daily; its Lidl data comes from boodschaapje.nl), matched on
-   the Lidl article number, else on a name that occurs once in that dataset
-   with no conflicting pack size (`checkjebon`);
-3. Lidl's own price without an offer (`supermarket`);
-4. otherwise none: the product is in the catalog without a price.
+   the tile's article number (`erpNumber`), else on the permanent article
+   number (`nat`/`ians`, which checkjebon mostly uses), else on a name that
+   occurs once in that dataset; the last two only with no conflicting pack
+   size ("500 g" and "0,5 kg" agree) (`checkjebon`);
+4. Lidl's own price without an offer (`supermarket`);
+5. otherwise none: the product is in the catalog without a price.
 
 If the checkjebon dataset cannot be loaded the run continues without prices.
 On 15 October 2026 a run found about 2,360 food products, about half of them with a price.
+Matching checkjebon on the permanent article number as well (17 October 2026)
+left 421 of the 2,363 products without a price, down from 1,127.
+
+| FR-007.14 | System SHALL store the regular price Lidl shows next to an offer as the catalog product's regular price (`price_source` `supermarket`, `price_observed_at` now, a `price_history` row when it is new or changed) and keep it over an outside dataset for 180 days | HIGH | ✅ Implemented |
+
+**Lidl regular prices from offers.** Lidl gives an offer its own article
+number (`erpNumber`, e.g. 11305717 for Yakult); the assortment tile has
+another (6611698), but both tiles carry the permanent number in `nat`/`ians`.
+The catalog stores it as `products.article_number`; an offer with
+`articleNumbers` lands on the catalog row with one of those numbers. Variants
+can share a permanent number, so the row with the offer's pack quantity wins
+(within 2%); a single row is taken when one side does not know its quantity;
+two equal candidates or only other pack sizes link nothing, and the offer is
+stored under its own id as before. When an offer is linked, an active offer on
+an older offer-only row with the same own id is deactivated, so the offer is
+not listed twice. The offer's regular price (the struck-through price, which
+under EU price indication rules is the lowest price of the past 30 days) is
+stored on the product it lands on, so the catalog gains and corrects Lidl
+prices week by week. In the week of 17 October 2026, 33 of the 75 offers with
+a struck-through price landed on a catalog row; 7 of those corrected an
+outdated checkjebon price (e.g. plums 2.49 to 1.89).
 
 #### FR-008: Same Product Across Supermarkets and Product Images
 
@@ -1716,6 +1741,7 @@ To close that gap, the scraper API applies migrations itself:
 | `003_price_source.sql`  | `products.price_source` (origin of the catalog regular price)          |
 | `004_quantity.sql`      | `products.quantity_value`, `products.quantity_unit` (pack quantity in kg, l or stuk) |
 | `005_product_matching.sql` | `products.ean`, `products.match_brand`, `products.match_tokens` and their indexes (same product across supermarkets, FR-008) |
+| `007_article_number.sql` | `products.article_number` (Lidl permanent article number) and `products.price_observed_at` (when the supermarket itself last showed the regular price, FR-007.14) |
 
 **Result:** a redeploy of the scraper API is sufficient to bring an existing database
 up to date — no manual `psql` intervention and no volume reset.

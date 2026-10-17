@@ -5,6 +5,7 @@ import LidlCatalogClient, {
   extractUnitSize,
   findAssortmentLinks,
   findPrice,
+  lidlArticleNumbers,
   lidlCategory,
   mapLidlProduct,
   metaRefreshTarget,
@@ -125,7 +126,26 @@ describe("Lidl price matching", () => {
       unitPrice: null,
       imageUrl: "https://img/100.jpg",
       productUrl: "https://www.lidl.nl/p/product-100/p100",
+      articleNumber: null,
     });
+  });
+
+  it("reads the permanent article number from nat and ians", () => {
+    expect(lidlArticleNumbers({ nat: "0080846", ians: ["80846", "80847"] })).toEqual(["80846", "80847"]);
+    expect(lidlArticleNumbers({ ians: ["6611698"] })).toEqual(["6611698"]);
+    expect(lidlArticleNumbers({})).toEqual([]);
+    expect(mapLidlProduct(tile("11305717", { nat: "6611698" }), prices)?.articleNumber).toBe("6611698");
+  });
+
+  it("matches checkjebon on the permanent article number when the pack size agrees", () => {
+    const index = buildPriceIndex([
+      { n: "Yakult", l: "6611698", p: 3.97, s: "8 x 65 ml" },
+      { n: "Penne", l: "19089", p: 0.89, s: "500 g" },
+    ]);
+    expect(findPrice(index, "11305717", "Yakult", "8 x 65 ml", ["6611698"])?.p).toBe(3.97);
+    expect(findPrice(index, "819089", "Penne", "0,5 kg", ["19089"])?.p).toBe(0.89);
+    // Another pack under the same permanent number is not this product.
+    expect(findPrice(index, "819089", "Penne", "1 kg", ["19089"])).toBeNull();
   });
 
   it("prefers Lidl's own regular price next to an offer, and keeps products without a price", () => {

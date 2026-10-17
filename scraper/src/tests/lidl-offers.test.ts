@@ -55,7 +55,16 @@ describe("mapLidlOffer", () => {
 
   it("leaves the end date empty without one and ignores an old price at or below the price", () => {
     const discount = mapLidlOffer(tile({ storeEndDate: undefined, price: { price: 1.19, oldPrice: 1.19 } }));
-    expect(discount).toMatchObject({ originalPrice: 0, expireDate: "" });
+    expect(discount).toMatchObject({ originalPrice: 0, regularPrice: null, expireDate: "" });
+  });
+
+  it("passes the regular price and the permanent article numbers for the catalog row", () => {
+    const discount = mapLidlOffer(tile({ erpNumber: "11305717", nat: "6611698", ians: ["6611698"] }));
+    expect(discount).toMatchObject({
+      externalId: "11305717",
+      regularPrice: 1.59,
+      articleNumbers: ["6611698"],
+    });
   });
 
   it("reads a Lidl Plus offer from lidlPlus and the region prices", () => {

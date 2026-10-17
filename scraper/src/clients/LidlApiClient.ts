@@ -9,6 +9,7 @@ import {
   extractGridData,
   extractUnitSize,
   LidlGridData,
+  lidlArticleNumbers,
   lidlCategory,
 } from "./catalog/LidlCatalogClient";
 
@@ -72,10 +73,11 @@ export function lidlOfferQuantity(tile: LidlOfferTile): Quantity | null {
 }
 
 /**
- * Maps one offer tile to a discount; null without a name or price. The
- * article number is the catalog's externalId, so the offer lands on the
- * catalog row. A tile without an end date gets an empty expireDate, filled in
- * with the folder's end date by the caller.
+ * Maps one offer tile to a discount; null without a name or price. An offer
+ * has its own article number (externalId); the permanent one (nat/ians)
+ * links it to the catalog row, which also gets the regular price shown next
+ * to the offer. A tile without an end date gets an empty expireDate, filled
+ * in with the folder's end date by the caller.
  */
 export function mapLidlOffer(tile: LidlOfferTile): IProductDiscountDetails | null {
   const name = (tile.fullTitle ?? tile.title)?.trim();
@@ -83,9 +85,12 @@ export function mapLidlOffer(tile: LidlOfferTile): IProductDiscountDetails | nul
   if (!name || price === null) return null;
 
   const externalId = tile.erpNumber ?? (tile.productId ? String(tile.productId) : null);
+  const regularPrice = oldPrice !== null && oldPrice > price ? oldPrice : null;
   return {
     name,
-    originalPrice: oldPrice !== null && oldPrice > price ? oldPrice : 0,
+    originalPrice: regularPrice ?? 0,
+    regularPrice,
+    articleNumbers: lidlArticleNumbers(tile),
     discountPrice: price,
     unitPrice: null,
     specialDiscount: label,

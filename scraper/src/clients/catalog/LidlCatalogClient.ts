@@ -2,13 +2,18 @@ import axios, { AxiosInstance } from "axios";
 import CatalogClient from "./CatalogClient";
 import { ICatalogProduct } from "../../interfaces/ICatalogProduct";
 import { scraperLogger } from "../../utils/Logger";
+import { parseQuantity } from "../../utils/Quantity";
+import { sameQuantity } from "../../utils/ProductMatch";
 
 // Lidl publishes its food assortment on lidl.nl as server-rendered pages under
 // "Assortiment > Producten", one page per shelf (kaas, vleeswaren, ...). Every
 // product tile carries its data as JSON in a data-grid-data attribute. Lidl
 // does not publish regular prices online (only current offers have one), so
 // prices come from the open checkjebon.nl dataset (MIT), matched on the Lidl
-// article number and, failing that, on a unique product name.
+// article number and, failing that, on a unique product name. The regular
+// price Lidl shows next to an offer is stored on the catalog row by the offer
+// scraper (linked by the permanent article number) and is kept over the
+// checkjebon price for a while (PostgresCatalogController.keepsObservedPrice).
 const LIDL_BASE = "https://www.lidl.nl";
 const START_PATH = "/c/assortiment-producten/s10008015";
 const CHECKJEBON_URL =
@@ -47,6 +52,20 @@ export interface LidlGridData {
   brand?: { name?: string; showBrand?: boolean };
   price?: { price?: number; oldPrice?: number };
   keyfacts?: { description?: string; wonCategoryPrimary?: string };
+  /**
+   * The permanent article number. erpNumber changes per listing (an offer
+   * gets its own); the assortment tile and the offer tile share nat/ians.
+   */
+  nat?: string;
+  ians?: string[];
+}
+
+/** The tile's permanent article numbers (nat first, then ians), without leading zeros. */
+export function lidlArticleNumbers(tile: Pick<LidlGridData, "nat" | "ians">): string[] {
+  const numbers = [tile.nat, ...(tile.ians ?? [])]
+    .map((n) => (typeof n === "string" ? n.trim().replace(/^0+/, "") : ""))
+    .filter((n) => n !== "");
+  return [...new Set(numbers)];
 }
 
 /** One Lidl product in the checkjebon dataset: name, article number, price, size. */
@@ -132,26 +151,42 @@ export function buildPriceIndex(products: CheckjebonProduct[]): PriceIndex {
   return { byId, byName };
 }
 
+/** Both sides know the pack size and it differs ("500 g" and "0,5 kg" are the same). */
+function sizesDiffer(ownSize: string | null, theirSize: string | null): boolean {
+  const own = parseQuantity(ownSize);
+  const theirs = parseQuantity(theirSize);
+  if (own && theirs) return !sameQuantity(own, theirs);
+  const a = normalizeSize(ownSize);
+  const b = normalizeSize(theirSize);
+  return a !== "" && b !== "" && a !== b;
+}
+
 /**
- * Finds the checkjebon entry for a Lidl product: by article number, else by a
- * name that occurs once in the dataset. A name match is rejected when both
- * sides know the pack size and it differs (same name, other pack).
+ * Finds the checkjebon entry for a Lidl product: by the tile's article number
+ * (erpNumber), else by its permanent article number (nat, which checkjebon
+ * mostly uses), else by a name that occurs once in the dataset. Variants can
+ * share a permanent number and a name, so those matches are rejected when
+ * both sides know the pack size and it differs.
  */
 export function findPrice(
   index: PriceIndex,
   articleNumber: string,
   name: string,
-  unitSize: string | null
+  unitSize: string | null,
+  permanentNumbers: string[] = []
 ): CheckjebonProduct | null {
   const byId = index.byId.get(articleNumber.replace(/^0+/, ""));
   if (byId) return byId;
 
+  for (const number of permanentNumbers) {
+    const byNat = index.byId.get(number.replace(/^0+/, ""));
+    if (byNat && !sizesDiffer(unitSize, byNat.s)) return byNat;
+  }
+
   const candidates = index.byName.get(normalizeName(name)) ?? [];
   if (candidates.length !== 1) return null;
   const candidate = candidates[0];
-  const ownSize = normalizeSize(unitSize);
-  const theirSize = normalizeSize(candidate.s);
-  if (ownSize && theirSize && ownSize !== theirSize) return null;
+  if (sizesDiffer(unitSize, candidate.s)) return null;
   return candidate;
 }
 
@@ -191,7 +226,7 @@ export function mapLidlProduct(tile: LidlGridData, index: PriceIndex): ICatalogP
     price = own.oldPrice;
     priceSource = "supermarket";
   } else {
-    const match = findPrice(index, articleNumber, name, unitSize);
+    const match = findPrice(index, articleNumber, name, unitSize, lidlArticleNumbers(tile));
     if (match) {
       price = match.p;
       priceSource = "checkjebon";
@@ -213,6 +248,7 @@ export function mapLidlProduct(tile: LidlGridData, index: PriceIndex): ICatalogP
     unitPrice: null,
     imageUrl: tile.image ?? null,
     productUrl: tile.canonicalUrl ? `${LIDL_BASE}${tile.canonicalUrl}` : null,
+    articleNumber: lidlArticleNumbers(tile)[0] ?? null,
   };
 }
 

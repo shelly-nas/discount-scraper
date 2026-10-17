@@ -116,7 +116,7 @@ export function namingHabits(
   return habits;
 }
 
-function sameQuantity(a: Quantity | null, b: Quantity | null): boolean {
+export function sameQuantity(a: Quantity | null, b: Quantity | null): boolean {
   if (!a || !b || a.unit !== b.unit) return false;
   return Math.abs(a.value - b.value) <= Math.max(a.value, b.value) * QUANTITY_TOLERANCE;
 }

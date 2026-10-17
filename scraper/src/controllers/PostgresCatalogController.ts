@@ -26,6 +26,34 @@ export interface CatalogRunRow {
   duration_seconds: number | null;
 }
 
+/** How long a regular price the supermarket itself showed beats an outside dataset. */
+export const OBSERVED_PRICE_MAX_AGE_DAYS = 180;
+
+interface ExistingProduct {
+  id: number;
+  regular_price: string | null;
+  price_source: string | null;
+  price_observed_at: Date | null;
+}
+
+/**
+ * Whether a catalog run keeps the stored price instead of the delivered one:
+ * the run has no price of the supermarket's own (only an outside dataset or
+ * none), while the supermarket itself showed the stored price in the last
+ * OBSERVED_PRICE_MAX_AGE_DAYS days (Lidl's regular price next to an offer).
+ */
+export function keepsObservedPrice(
+  existing: Pick<ExistingProduct, "regular_price" | "price_source" | "price_observed_at">,
+  product: Pick<ICatalogProduct, "price" | "priceSource">,
+  now: Date
+): boolean {
+  if (product.price !== null && product.priceSource === "supermarket") return false;
+  if (existing.price_source !== "supermarket" || existing.regular_price === null) return false;
+  if (!existing.price_observed_at) return false;
+  const ageDays = (now.getTime() - new Date(existing.price_observed_at).getTime()) / 86_400_000;
+  return ageDays <= OBSERVED_PRICE_MAX_AGE_DAYS;
+}
+
 /** Stores catalog products (regular prices) and catalog run bookkeeping. */
 class PostgresCatalogController {
   private db: PostgresDataContext;
@@ -68,45 +96,54 @@ class PostgresCatalogController {
     runStartedAt: Date
   ): Promise<{ created: boolean; priceChanged: boolean } | "skipped"> {
     // Already seen in this run (product listed in several categories).
-    const byExternal = await client.query<{ id: number; regular_price: string | null; catalog_updated_at: Date | null }>(
-      `SELECT id, regular_price, catalog_updated_at FROM products
+    const byExternal = await client.query<ExistingProduct & { catalog_updated_at: Date | null }>(
+      `SELECT id, regular_price, price_source, price_observed_at, catalog_updated_at FROM products
        WHERE supermarket = $1 AND external_id = $2`,
       [supermarket, product.externalId]
     );
-    let existing = byExternal.rows[0];
-    if (existing?.catalog_updated_at && existing.catalog_updated_at >= runStartedAt) {
+    let existing: ExistingProduct | undefined = byExternal.rows[0];
+    if (byExternal.rows[0]?.catalog_updated_at && byExternal.rows[0].catalog_updated_at >= runStartedAt) {
       return "skipped";
     }
 
     let name = product.name;
     if (!existing) {
-      const byName = await client.query<{ id: number; regular_price: string | null; external_id: string | null }>(
-        `SELECT id, regular_price, external_id FROM products WHERE supermarket = $1 AND name = $2`,
+      const byName = await client.query<ExistingProduct & { external_id: string | null }>(
+        `SELECT id, regular_price, price_source, price_observed_at, external_id FROM products
+         WHERE supermarket = $1 AND name = $2`,
         [supermarket, name]
       );
       const sameName = byName.rows[0];
       if (sameName && sameName.external_id === null) {
-        existing = { id: sameName.id, regular_price: sameName.regular_price, catalog_updated_at: null };
+        existing = sameName;
       } else if (sameName) {
         // Two different products with the same title: make the name unique.
         name = await this.uniqueName(client, supermarket, product);
       }
     }
 
-    const values = [
+    // A price the supermarket itself showed recently (e.g. next to an offer)
+    // beats one from an outside dataset.
+    const keep = existing !== undefined && keepsObservedPrice(existing, product, new Date());
+    const price = keep ? parseFloat(existing!.regular_price!) : product.price;
+    const priceSource = keep ? "supermarket" : price === null ? null : product.priceSource;
+    const observedAt = keep ? existing!.price_observed_at : priceSource === "supermarket" ? new Date() : null;
+
+    const values: (string | number | Date | null)[] = [
       product.externalId,
       product.brand,
       product.unitSize,
       product.imageUrl,
-      product.price,
+      price,
       product.unitPrice,
       product.productUrl,
-      product.price === null ? null : product.priceSource,
+      priceSource,
     ];
     const quantity = product.quantity !== undefined ? product.quantity : parseQuantity(product.unitSize);
     values.push(quantity?.value ?? null, quantity?.unit ?? null);
     const match = matchFields(product.name, product.brand);
     values.push(normalizeEan(product.ean), match.matchBrand, match.matchTokens);
+    values.push(observedAt, product.articleNumber ?? null);
 
     if (existing) {
       await client.query(
@@ -116,19 +153,20 @@ class PostgresCatalogController {
            product_url = COALESCE($8, product_url), price_source = $9,
            quantity_value = $10, quantity_unit = $11,
            ean = COALESCE($12, ean), match_brand = $13, match_tokens = $14,
-           category = $15, in_catalog = true, catalog_updated_at = NOW()
+           price_observed_at = $15, article_number = COALESCE($16, article_number),
+           category = $17, in_catalog = true, catalog_updated_at = NOW()
          WHERE id = $1`,
         [existing.id, ...values, product.category]
       );
       // Without a price (the supermarket does not publish it) there is nothing
       // to record; the product is still in the catalog.
-      if (product.price === null) return { created: false, priceChanged: false };
+      if (price === null) return { created: false, priceChanged: false };
       const previous = existing.regular_price === null ? null : parseFloat(existing.regular_price);
-      const changed = previous !== null && Math.abs(previous - product.price) >= 0.005;
+      const changed = previous !== null && Math.abs(previous - price) >= 0.005;
       // A first price (offer-only product joining the catalog) is recorded but
       // is not a change.
       if (previous === null || changed) {
-        await this.recordPrice(client, existing.id, product.price);
+        await this.recordPrice(client, existing.id, price);
       }
       return { created: false, priceChanged: changed };
     }
@@ -137,12 +175,12 @@ class PostgresCatalogController {
       `INSERT INTO products
          (name, category, supermarket, external_id, brand, unit_size, image_url,
           regular_price, unit_price, product_url, price_source, quantity_value, quantity_unit,
-          ean, match_brand, match_tokens, in_catalog, catalog_updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, true, NOW())
+          ean, match_brand, match_tokens, price_observed_at, article_number, in_catalog, catalog_updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, true, NOW())
        RETURNING id`,
       [name, product.category, supermarket, ...values]
     );
-    if (product.price !== null) await this.recordPrice(client, inserted.rows[0].id, product.price);
+    if (price !== null) await this.recordPrice(client, inserted.rows[0].id, price);
     return { created: true, priceChanged: false };
   }
 
