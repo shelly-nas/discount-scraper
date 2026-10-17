@@ -13,6 +13,7 @@ import AldiAlgolia, {
   aldiQuantity,
   isAldiOffer,
 } from "./aldi/AldiAlgolia";
+import { aldiFoodFilter } from "./aldi/AldiFood";
 
 /**
  * The regular product an offer belongs to: the same article id, or the id
@@ -104,13 +105,22 @@ class AldiApiClient extends ApiClient {
     const folder = await this.api.folder();
     const regular = new Map((await this.api.all()).filter((p) => !isAldiOffer(p)).map((p) => [p.objectID, p]));
 
+    // Only food and drink: an offer of a regular product follows that
+    // product's category, other offers are judged by name and brand.
+    const isFood = aldiFoodFilter([...regular.values()]);
+    const nonFood = new Set<string>();
+
     const now = new Date();
     const discounts: IProductDiscountDetails[] = [];
     const seen = new Set<string>();
     for (const category of folder.categories) {
       for (const id of category.productIds) {
         const product = folder.products.get(id);
-        if (!product || seen.has(id)) continue;
+        if (!product || seen.has(id) || nonFood.has(id)) continue;
+        if (!isFood(regular.get(aldiLinkedId(product.objectID, regular) ?? "") ?? product)) {
+          nonFood.add(id);
+          continue;
+        }
         const discount = mapAldiDiscount(product, regular, category.endDate, now);
         if (!discount) continue;
         seen.add(id);
@@ -118,6 +128,7 @@ class AldiApiClient extends ApiClient {
       }
     }
     if (discounts.length === 0) throw new Error("Aldi: no current offers found");
+    scraperLogger.info(`Aldi: ${nonFood.size} folder products skipped as non-food`);
 
     const expireDate = folderExpireDate(discounts);
     scraperLogger.info(

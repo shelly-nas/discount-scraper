@@ -12,6 +12,7 @@ import AldiAlgolia, {
   aldiQuantity,
   isAldiOffer,
 } from "../aldi/AldiAlgolia";
+import { aldiFoodFilter } from "../aldi/AldiFood";
 
 /** Maps one regular Aldi product to the catalog shape; null for offers and unusable ones. */
 export function mapAldiProduct(product: AldiProduct): ICatalogProduct | null {
@@ -47,9 +48,12 @@ class AldiCatalogClient extends CatalogClient {
   }
 
   async fetchCatalog(onPage: (products: ICatalogProduct[]) => Promise<void>): Promise<void> {
-    const products = (await this.api.all())
-      .map(mapAldiProduct)
-      .filter((p): p is ICatalogProduct => p !== null);
+    const regular = (await this.api.all()).filter((p) => !isAldiOffer(p));
+    // Only food and drink is kept from Aldi.
+    const isFood = aldiFoodFilter(regular);
+    const food = regular.filter(isFood);
+    scraperLogger.info(`Aldi catalog: ${regular.length - food.length} of ${regular.length} products skipped as non-food`);
+    const products = food.map(mapAldiProduct).filter((p): p is ICatalogProduct => p !== null);
     if (products.length === 0) throw new Error("Aldi: no catalog products with a price");
     scraperLogger.info(`Aldi catalog: ${products.length} products with a price`);
     // Delivered in chunks like the paged catalogs, so each upsert stays small.
