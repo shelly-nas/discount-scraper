@@ -143,6 +143,16 @@
   margin-bottom: 14px;
 }
 
+.section-title:has(+ .section-subtitle) {
+  margin-bottom: 4px;
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: var(--notion-text-secondary);
+  margin: 0 0 14px;
+}
+
 .supermarket-grid {
   display: grid;
   grid-template-columns: 1fr;

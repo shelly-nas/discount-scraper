@@ -26,8 +26,8 @@ Until October 2026 this project was called `discount-scraper`; see "Rename from 
 Create `.env` file in the project root:
 
 ```properties
-DB_NAME=discount
-DB_USER=discount_user
+DB_NAME=supermarket
+DB_USER=supermarket_user
 DB_PASSWORD=discount_pass
 LOG_LEVEL=INFO
 ```
@@ -197,7 +197,7 @@ Where `:supermarket` is one of: `albert-heijn`, `ah`, `dirk`, or `plus`
 
 ```bash
 # Access database directly
-docker exec -it supermarket-scraper-db psql -U discount_user -d discount
+docker exec -it supermarket-scraper-db psql -U supermarket_user -d supermarket
 
 # Example queries
 SELECT * FROM products WHERE supermarket = 'Albert Heijn' LIMIT 10;
