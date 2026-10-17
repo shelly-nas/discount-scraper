@@ -21,4 +21,6 @@ export interface ICatalogProduct {
   productUrl: string | null;
   /** Barcode (EAN), when the supermarket publishes it; checked with utils/ProductMatch.normalizeEan. */
   ean?: string | null;
+  /** Permanent article number when it differs from externalId (Lidl `nat`); offers are linked by it. */
+  articleNumber?: string | null;
 }

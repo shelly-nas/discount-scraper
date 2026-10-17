@@ -1,5 +1,5 @@
 import PostgresDiscountController from "../controllers/PostgresDiscountController";
-import PostgresProductController from "../controllers/PostgresProductController";
+import PostgresProductController, { ArticleLink } from "../controllers/PostgresProductController";
 import PostgresScraperRunController from "../controllers/PostgresScraperRunController";
 import PostgresScheduledRunController from "../controllers/PostgresScheduledRunController";
 import { scraperLogger } from "../utils/Logger";
@@ -11,6 +11,15 @@ import { getDatabaseConfig } from "../config/database";
 /** Offers are matched on the supermarket's product id when known, else on name. */
 const productKey = (item: IProductDiscountDetails) =>
   item.externalId ? `id:${item.externalId}` : `name:${item.name}`;
+
+const offerQuantity = (item: IProductDiscountDetails) =>
+  item.quantity !== undefined ? item.quantity : parseQuantity(item.name);
+
+/** Article numbers and quantity to find the offer's catalog row, when it has them. */
+const articleLink = (item: IProductDiscountDetails): ArticleLink | undefined =>
+  item.articleNumbers?.length
+    ? { articleNumbers: item.articleNumbers, quantity: offerQuantity(item) }
+    : undefined;
 
 export class PostgresDataManager {
   private productController: PostgresProductController;
@@ -73,14 +82,17 @@ export class PostgresDataManager {
     let updated = 0;
 
     const uniqueProductArray = Array.from(uniqueProducts.values());
+    let regularPrices = 0;
     for (const product of uniqueProductArray) {
+      const quantity = offerQuantity(product);
       const result = product.externalId
         ? await this.productController.addProductByExternalId(
             product.name,
             product.category,
             supermarket,
             product.productUrl ?? null,
-            product.externalId
+            product.externalId,
+            articleLink(product)
           )
         : await this.productController.addProductWithTracking(
             product.name,
@@ -88,7 +100,10 @@ export class PostgresDataManager {
             supermarket,
             product.productUrl ?? null
           );
-      const quantity = product.quantity !== undefined ? product.quantity : parseQuantity(product.name);
+      if (typeof product.regularPrice === "number" && product.regularPrice > 0) {
+        await this.productController.setRegularPriceFromOffer(result.id, product.regularPrice);
+        regularPrices++;
+      }
       const match = matchFields(product.name, product.brand);
       await this.productController.setOfferDetails(result.id, {
         quantity,
@@ -107,6 +122,9 @@ export class PostgresDataManager {
     scraperLogger.info(
       `Processed '${uniqueProductArray.length}' unique products: ${created} created, ${updated} updated (from ${products.length} scraped items).`
     );
+    if (regularPrices > 0) {
+      scraperLogger.info(`Stored ${regularPrices} regular prices shown next to ${supermarket} offers.`);
+    }
 
     return { created, updated };
   }
@@ -150,7 +168,11 @@ export class PostgresDataManager {
     const uniqueDiscountArray = Array.from(uniqueDiscounts.values());
     for (const discount of uniqueDiscountArray) {
       const productId = discount.externalId
-        ? await this.productController.getProductIdByExternalId(discount.externalId, supermarket)
+        ? await this.productController.getProductIdByExternalId(
+            discount.externalId,
+            supermarket,
+            articleLink(discount)
+          )
         : await this.productController.getProductId(discount.name, supermarket);
 
       if (productId === -1) {
