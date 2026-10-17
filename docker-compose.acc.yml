@@ -56,6 +56,15 @@ services:
         aliases:
           - discount-scraper-acc-api
       default:
+    labels:
+      # /api goes from Traefik straight to this API, never through the web
+      # nginx: on shelly-network "scraper-api" is also the production API, so
+      # nginx would reach either stack.
+      - "traefik.enable=true"
+      - "traefik.docker.network=shelly-network"
+      - "traefik.http.routers.supermarkets-acc-api.rule=Host(`supermarkets-acc.shelly-nas.nl`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.supermarkets-acc-api.entrypoints=web"
+      - "traefik.http.services.supermarkets-acc-api.loadbalancer.server.port=3001"
 
   web:
     image: ${REGISTRY}/supermarket-scraper-web:${IMAGE_TAG:?IMAGE_TAG is required}

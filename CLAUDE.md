@@ -97,6 +97,8 @@ The Baskit app (separate repo `shelly-nas/baskit`) reads discount data exclusive
 
 ### Environments and pipelines
 
+In prod and acc, `/api` goes from Traefik straight to `scraper-api` (routers `supermarkets-api` / `supermarkets-acc-api`, `Host && PathPrefix(/api)`, port 3001), never through the web nginx: both stacks' APIs are on `shelly-network` under the service name `scraper-api`, so nginx's `proxy_pass http://scraper-api:3001` (only meant for local use) would reach either stack.
+
 - `.github/workflows/github-pipeline.yaml` — every push to `main` builds the three images (`latest`) and deploys `docker-compose.prod.yml` to `/volume1/docker/supermarket-scraper` (production). The database volume is external and pinned to its pre-rename name `discount-scraper_postgres_data` (passed as `persistent_volumes`); the `retire-discount-scraper` job first checks that volume exists and stops the stacks still in `/volume1/docker/discount-scraper(-acc)` (nothing is deleted). Also tears down acc once its commit is in production.
 - `.github/workflows/acc.yml` — every pull request is built (tag `acc-<commit>`) and deployed to acceptance `supermarkets-acc.shelly-nas.nl` (`docker-compose.acc.yml`, `/volume1/docker/supermarket-scraper-acc`) via the shared `deploy-acceptance.yml`; torn down when the PR closes (`teardown-acceptance.yml`). The acc database is rebuilt on every deploy: `schema.sql` + `migrate.sql` from the image, then `database/demo/seed-demo.sql` (demo offers for all 7 supermarkets with expiry relative to the deploy, expired offers as history, run logs). The demo seed is never in the database image, so never in production. Acc runs with `CATALOG_ENABLED=false`; its API joins `shelly-network` as `supermarket-scraper-acc-api` for the Baskit acc stack.
 
