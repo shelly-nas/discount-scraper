@@ -73,31 +73,9 @@ jobs:
     secrets:
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
-  # Until October 2026 acc ran as discount-scraper-acc. That stack is stopped
-  # (not deleted) so its container name, which the new stack keeps as an alias
-  # for Baskit acc, exists only once on shelly-network.
-  retire-discount-scraper-acc:
-    name: Stop the acc stack deployed as discount-scraper-acc
-    needs: [prepare, build-database, build-scraper, build-web]
-    runs-on: shelly
-    steps:
-      # By compose project label (the old directory name), so the old compose
-      # file and its .env are not needed. Only containers are removed; volumes
-      # and the old directory stay.
-      - name: Stop the old acc stack
-        run: |
-          project=discount-scraper-acc
-          ids=$(docker ps -aq --filter "label=com.docker.compose.project=$project")
-          if [ -z "$ids" ]; then echo "Compose project $project has no containers"; fi
-          for id in $ids; do
-            echo "Stopping $(docker inspect --format '{{.Name}}' "$id")"
-            docker stop "$id" > /dev/null
-            docker rm "$id" > /dev/null
-          done
-
   deploy-acc:
     name: Deploy to Acceptance
-    needs: [prepare, build-database, build-scraper, build-web, retire-discount-scraper-acc]
+    needs: [prepare, build-database, build-scraper, build-web]
     uses: shelly-nas/shared-workflows/.github/workflows/deploy-acceptance.yml@main
     with:
       registry: ${{ vars.REGISTRY_URL }}
