@@ -93,7 +93,7 @@ reads the API as `supermarket-scraper-api` (acc: `supermarket-scraper-acc-api`).
 
 - ✅ **Product Catalog**
 
-  - Weekly full assortment scrape with regular prices (Albert Heijn, Lidl food assortment)
+  - Weekly full assortment scrape with regular prices for all seven supermarkets (Albert Heijn, Aldi, Dirk, Hoogvliet, Jumbo, Lidl food assortment, PLUS)
   - Price history and catalog run tracking; on-demand runs from the "Full Assortment" section of the admin UI ("Run Catalog")
 
 - ✅ **Public Consumer API**
@@ -629,7 +629,7 @@ flowchart TD
 | FR-001.2  | System SHALL scrape discount data from Dirk website                          | HIGH     | ✅ Implemented |
 | FR-001.3  | System SHALL scrape discount data from PLUS website                          | HIGH     | ✅ Implemented |
 | FR-001.4  | System SHALL handle cookie consent popups automatically                      | HIGH     | ✅ Implemented |
-| FR-001.5  | System SHALL extract promotion expiration dates                              | HIGH     | ✅ Implemented |
+| FR-001.5  | System SHALL extract promotion expiration dates per offer; the run's expiry (which schedules the next run) is the weekly folder's end date, i.e. the most common end date, so long-running promotions do not postpone the next run. Lidl reads each tile's own end date (`storeEndDate`) from the offers page | HIGH     | ✅ Implemented |
 | FR-001.6  | System SHALL extract product names, categories, prices, discount details, and product URLs | HIGH     | ✅ Implemented |
 | FR-001.7  | System SHALL use Playwright for browser automation                           | HIGH     | ✅ Implemented |
 | FR-001.8  | System SHALL support configurable web identifiers per supermarket            | MEDIUM   | ✅ Implemented |
@@ -688,16 +688,17 @@ flowchart TD
 
 | ID       | Requirement                                                                                           | Priority | Status         |
 | -------- | ----------------------------------------------------------------------------------------------------- | -------- | -------------- |
-| FR-007.1 | System SHALL scrape the full assortment with regular prices for supermarkets that have a catalog client | HIGH   | ✅ Albert Heijn, Lidl |
+| FR-007.1 | System SHALL scrape the full assortment with regular prices for supermarkets that have a catalog client | HIGH   | ✅ All seven supermarkets |
 | FR-007.2 | System SHALL store the supermarket product id, brand, pack size, unit price, image and regular price   | HIGH     | ✅ Implemented |
 | FR-007.3 | System SHALL record a price history row only when a regular price changes                             | MEDIUM   | ✅ Implemented |
 | FR-007.4 | System SHALL mark products missing from a run as not in the catalog, unless the run saw under 50% of the known products | MEDIUM | ✅ Implemented |
 | FR-007.5 | System SHALL run catalog scrapes weekly (`CATALOG_CRON`, default Monday 03:17; `CATALOG_ENABLED=false` disables) and on demand from the admin UI | MEDIUM | ✅ Implemented |
 | FR-007.6 | System SHALL track every catalog run (status, counts, duration, error) in `catalog_runs`             | MEDIUM   | ✅ Implemented |
 | FR-007.7 | System SHALL apply schema migrations from `scraper/migrations` on startup                              | HIGH     | ✅ Implemented |
-| FR-007.8 | Catalog clients for Dirk, PLUS and Aldi                                                                | MEDIUM   | Planned        |
+| FR-007.8 | Catalog clients for Dirk, PLUS and Aldi                                                                | MEDIUM   | ✅ Implemented |
 | FR-007.10 | System SHALL store each catalog product's pack quantity normalised to kg, l or stuk (`quantity_value`, `quantity_unit`; supplied by the client or read from the pack size such as "500 g", "6 x 330 ml", "4 stuks") and expose `pricePerUnit` (current price / quantity) in the public API | HIGH | ✅ Implemented |
-| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Hoogvliet, Jumbo |
+| FR-007.12 | System SHALL store an offer's pack quantity (kg, l or stuk) on its product when the catalog does not keep that product, so offers get a `pricePerUnit` too: from the client (`quantity`: Jumbo pack size, Hoogvliet sub title, Lidl's pack size under the price such as "400 g" or "6x500 ml", else its key facts or title) or else read from the offer name ("Spekreepjes 2x190 g"). A catalog product keeps the catalog's quantity | HIGH | ✅ Implemented |
+| FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Aldi, Dirk, Hoogvliet, Jumbo, PLUS (AH and Lidl offers still by name) |
 
 **Jumbo catalog and offers.** Both use jumbo.com's own GraphQL API
 (`POST https://www.jumbo.com/api/graphql`) with the web client's headers
@@ -748,6 +749,62 @@ skipped; the products they bundle carry the promotion themselves.
   price, "25% korting" and "2e halve prijs" (0.75 of the regular price) are
   worked out from the label. The run's expiry date is the most common end date
   (the weekly folder), since some promotions run for months.
+
+**Dirk catalog and offers.** Both use Dirk's web gateway
+(`https://web-gateway.dirk.nl/graphql`, the GraphQL API dirk.nl itself uses;
+introspection is off, the site's own queries work without a login).
+`listDepartments` gives the departments with their web groups (17 and 146 on
+16 October 2026); `listWebGroupProducts(webGroupId)` with
+`productAssortment(storeId: 66)` returns every product of a web group with its
+regular price (`normalPrice`), offer price, pack size, brand and image at
+dirk.nl's default store. Products that store does not sell come back as null
+and are skipped.
+
+- The catalog client stores every product at its regular price with its quantity
+  (on 16 October 2026: 7,516 products, 99% with a quantity).
+- The discount scraper (`DirkApiClient`) reads `listOffers` per department. A
+  folder offer can cover many products ("Hak groente of appelmoes": 29 jars),
+  so it becomes one discount per product, looked up with
+  `products(storeId, productIds)` and linked by Dirk's product id at that
+  product's own regular price. An offer whose products cannot be looked up is
+  kept as one discount by name, as before.
+
+**PLUS catalog and offers.** plus.nl is an OutSystems app behind Imperva, so it
+is read through a headless browser (`clients/plus/PlusSite.ts`). The site's
+product list call (`DataActionGetProductListAndCategoryInfo`) without a
+category lists the whole assortment, 12 products per page (17,389 products on
+1,450 pages on 16 October 2026). The scraper opens plus.nl, takes the request
+the page itself sends as a template (it carries the current module and API
+versions and the week period) and requests every page from inside the page.
+
+- The catalog client stores each product's regular price (`OriginalPrice`),
+  pack size ("Per 1000 ml", "Per kilo" as 1 kg) and SKU.
+- The discount scraper (`PlusApiClient`) uses the same call with the "Nu in de
+  aanbieding" filter (about 2,300 products), linked by SKU. The price per item
+  comes from `NewPrice` or the label ("2 VOOR 6.00", "1+1 GRATIS",
+  "50 % KORTING"); delivery offers are skipped.
+
+**Aldi catalog and offers.** aldi.nl is built on an Algolia index whose
+application id and search-only key ship in the site's JavaScript. One query
+without a search term returns the whole index (3,806 objects on 16 October
+2026, 1,000 per page): the regular assortment and the week offers as separate
+objects in category `offer`.
+
+- The catalog client stores every regular product with a price (2,335 on
+  16 October 2026), with its pack size (`salesUnit`) and its shelf (the
+  top-level category of its main category).
+- The discount scraper (`AldiApiClient`) reads the current folder from the
+  offers page (`aanbiedingen.html`, plain HTTP): its `__NEXT_DATA__` holds
+  `OFFER_GET` with the folder categories ("Vanaf maandag", "Vanaf woensdag",
+  ...), each with a start and end date and its products (215 products, all
+  ending 18 October, on 16 October 2026). Each offer is valid until the end of
+  its category; the offer objects' own validity in the index is not used, as
+  most of them run weeks past the folder. An offer is linked to the regular
+  product with the same id, or with its id after a leading 9; other offers are
+  week articles of their own ("OP=OP"), linked by their own id. The regular
+  price is the struck-through price (`strikePrice`), else the linked product's
+  price. "2 VOOR" with price 2.00 is 1.00 per item.
+
 | FR-007.9 | System SHALL record where a regular price comes from (`price_source`: `supermarket` or `checkjebon`) and keep catalog products without a known price (`regular_price` null; excluded from price comparison) | HIGH | ✅ Implemented |
 
 **Lidl catalog.** Lidl does not publish regular prices online. The Lidl catalog
@@ -1167,7 +1224,7 @@ erDiagram
 
 - Scheduler checks every minute for rows where `next_run_at <= NOW() AND enabled=true`
 - After successful scraper run, `next_run_at` is calculated based on new `promotion_expire_date`
-- Typically scheduled to run on or just after promotion expiry
+- Typically scheduled to run on or just after promotion expiry (the most common end date of the run's offers)
 - Can be disabled per supermarket via `enabled=false`
 
 ### 5.3 Database Indexes Strategy

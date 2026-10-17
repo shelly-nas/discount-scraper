@@ -14,4 +14,9 @@ interface IProductDiscountDetails {
    * (e.g. two pack sizes) stay apart and offers land on the catalog row.
    */
   externalId?: string | null;
+  /**
+   * Pack quantity (kg, l or stuk) for the price per unit. When left out it is
+   * read from the name ("Spekreepjes 2x190 g"); null means unknown.
+   */
+  quantity?: import("../utils/Quantity").Quantity | null;
 }

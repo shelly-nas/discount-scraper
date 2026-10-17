@@ -11,6 +11,9 @@ import AhCatalogClient from "../clients/catalog/AhCatalogClient";
 import LidlCatalogClient from "../clients/catalog/LidlCatalogClient";
 import HoogvlietCatalogClient from "../clients/catalog/HoogvlietCatalogClient";
 import JumboCatalogClient from "../clients/catalog/JumboCatalogClient";
+import DirkCatalogClient from "../clients/catalog/DirkCatalogClient";
+import PlusCatalogClient from "../clients/catalog/PlusCatalogClient";
+import AldiCatalogClient from "../clients/catalog/AldiCatalogClient";
 import { serverLogger } from "./Logger";
 
 export function getSupermarketClient(name: string): ApiClient {
@@ -38,7 +41,7 @@ export function getSupermarketClient(name: string): ApiClient {
 }
 
 /** Supermarkets with a full catalog scraper (see getCatalogClient). */
-export const CATALOG_SUPERMARKETS = ["Albert Heijn", "Lidl", "Hoogvliet", "Jumbo"];
+export const CATALOG_SUPERMARKETS = ["Albert Heijn", "Aldi", "Dirk", "Hoogvliet", "Jumbo", "Lidl", "PLUS"];
 
 export function getCatalogClient(name: string): CatalogClient | null {
   switch (name) {
@@ -50,6 +53,12 @@ export function getCatalogClient(name: string): CatalogClient | null {
       return new HoogvlietCatalogClient();
     case "Jumbo":
       return new JumboCatalogClient();
+    case "Dirk":
+      return new DirkCatalogClient();
+    case "PLUS":
+      return new PlusCatalogClient();
+    case "Aldi":
+      return new AldiCatalogClient();
     default:
       return null;
   }

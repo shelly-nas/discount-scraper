@@ -1,6 +1,8 @@
 import axios, { AxiosInstance } from "axios";
 import { scraperLogger } from "../../utils/Logger";
-import { parseQuantity, pricePerUnit, Quantity } from "../../utils/Quantity";
+import { parseQuantity, Quantity, unitPriceText } from "../../utils/Quantity";
+
+export { unitPriceText };
 
 // jumbo.com's own GraphQL API (the one its search pages use). It needs the
 // web client's Apollo headers; introspection is off, but plain queries work.
@@ -56,8 +58,6 @@ const MONTHS: Record<string, number> = {
   jan: 0, feb: 1, mrt: 2, apr: 3, mei: 4, jun: 5, jul: 6, aug: 7, sep: 8, okt: 9, nov: 10, dec: 11,
 };
 
-const UNIT_LABELS: Record<string, string> = { kg: "per kilo", l: "per liter", stuk: "per stuk" };
-
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Jumbo's unit words ("kg", "l", "pieces", "wb" = wasbeurt) as quantity units. */
@@ -92,12 +92,6 @@ export function jumboQuantity(product: JumboProduct): Quantity | null {
   return unit === "stuk"
     ? { value: Math.max(1, Math.round(value)), unit }
     : { value: Math.round(value * 1000) / 1000, unit };
-}
-
-/** "€5.18 per kilo" for a price (euro) and quantity. */
-export function unitPriceText(price: number | null, quantity: Quantity | null): string | null {
-  const perUnit = pricePerUnit(price, quantity);
-  return perUnit ? `€${perUnit.value.toFixed(2)} ${UNIT_LABELS[perUnit.unit]}` : null;
 }
 
 /**

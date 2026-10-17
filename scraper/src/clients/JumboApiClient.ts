@@ -53,6 +53,7 @@ export function mapJumboDiscount(
       originalPrice: regular,
       discountPrice,
       unitPrice: unitPriceText(discountPrice, jumboQuantity(product)),
+      quantity: jumboQuantity(product),
       specialDiscount: label,
       category: product.category?.trim() || "Overig",
       supermarket: "Jumbo",

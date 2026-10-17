@@ -1,188 +1,93 @@
-import { Browser, BrowserContext, Page } from "playwright";
-import { chromium } from "playwright-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import moment from "moment";
 import ApiClient from "./ApiClient";
 import { scraperLogger } from "../utils/Logger";
-import moment from "moment";
+import { folderExpireDate, promotionPrice } from "../utils/Promotion";
+import { unitPriceText } from "../utils/Quantity";
+import PlusSite, {
+  PLUS_OFFER_FILTER,
+  PlusProduct,
+  plusCategory,
+  plusPrice,
+  plusProductUrl,
+  plusQuantity,
+} from "./plus/PlusSite";
 
-chromium.use(StealthPlugin());
+/**
+ * Maps a product on offer to a discount, linked by its SKU; null for labels
+ * that are not about the price ("Gratis bezorging bij 10.00 euro"). The price
+ * per item comes from NewPrice when PLUS gives one, else from the label
+ * ("2 VOOR 6.00", "1+1 GRATIS", "2E HALVE PRIJS").
+ */
+export function mapPlusDiscount(product: PlusProduct, now: Date = new Date()): IProductDiscountDetails | null {
+  const name = product.Name?.trim();
+  const regular = plusPrice(product.OriginalPrice);
+  if (!name || !product.SKU || regular === null || product.IsFreeDeliveryOffer) return null;
 
-const PLUS_URL = "https://www.plus.nl/aanbiedingen";
-const PROMOTION_ENDPOINT = "DataActionGetPromotionList_Optimization";
+  const label = [product.PromotionLabel, product.PromotionBasedLabel].map((l) => l?.trim()).filter(Boolean).join(" | ");
+  const discountPrice = promotionPrice(product.PromotionLabel, regular, plusPrice(product.NewPrice));
+  if (discountPrice === null) return null;
 
-interface PlusOffer {
-  Name: string;
-  Brand: string;
-  NewPrice: string;
-  PriceOriginal_Lowest: string;
-  PriceOriginal_Highest: string;
-  DisplayInfo_Label: string;
-  StartDate: string;
-  EndDate: string;
-  Package: string;
-  IsFreeDeliveryOffer: boolean;
-}
+  const end = moment(product.PromotionEndDate, "YYYY-MM-DD", true);
+  const expireDate = end.isValid() && end.year() > 1900
+    ? end.endOf("day").toISOString(true)
+    : moment(now).endOf("isoWeek").toISOString(true);
+  if (new Date(expireDate) < now) return null;
+  const quantity = plusQuantity(product);
 
-interface PlusCategory {
-  CategoryId: string;
-  CategoryLabel: string;
-  Offers: { List: PlusOffer[] };
-}
-
-interface PlusPromoItem {
-  Category: PlusCategory;
-}
-
-interface PlusPromoResponse {
-  data: {
-    PromotionOfferList: {
-      List: PlusPromoItem[];
-    };
+  return {
+    name,
+    originalPrice: regular,
+    discountPrice,
+    unitPrice: unitPriceText(discountPrice, quantity),
+    quantity,
+    specialDiscount: label,
+    category: plusCategory(product),
+    supermarket: "PLUS",
+    expireDate,
+    productUrl: plusProductUrl(product),
+    externalId: product.SKU,
   };
 }
 
 class PlusApiClient extends ApiClient {
   public name = "PLUS";
 
-  private browser: Browser | null = null;
-  private context: BrowserContext | null = null;
-  private page: Page | null = null;
+  private createSite: () => PlusSite;
 
-  constructor() {
+  constructor(createSite: () => PlusSite = () => new PlusSite()) {
     super();
+    this.createSite = createSite;
     scraperLogger.debug(`Created a '${this.name}' API Client instance.`);
-  }
-
-  private async init(): Promise<void> {
-    this.browser = await chromium.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
-    this.context = await this.browser.newContext({
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      locale: "nl-NL",
-      timezoneId: "Europe/Amsterdam",
-      extraHTTPHeaders: { "Accept-Language": "nl-NL,nl;q=0.9" },
-    });
-    this.page = await this.context.newPage();
-  }
-
-  private async close(): Promise<void> {
-    await this.browser?.close();
   }
 
   public async fetchDiscounts(): Promise<{
     discounts: IProductDiscountDetails[];
     expireDate: string;
   }> {
-    scraperLogger.info(`Fetching PLUS discounts via intercepted API response`);
+    scraperLogger.info(`Fetching PLUS discounts via the plus.nl product list (offers filter)`);
 
-    await this.init();
-    if (!this.page) throw new Error("Page not initialized");
-
-    let promoData: PlusPromoResponse | null = null;
-
-    this.page.on("response", async (resp) => {
-      if (resp.url().includes(PROMOTION_ENDPOINT)) {
-        try {
-          const text = await resp.text();
-          promoData = JSON.parse(text);
-        } catch {
-          scraperLogger.warn("Failed to parse PLUS promotion response");
-        }
-      }
-    });
-
-    scraperLogger.info(`Navigating to ${PLUS_URL}`);
-    await this.page.goto(PLUS_URL, { waitUntil: "networkidle", timeout: 60000 });
-
+    const site = this.createSite();
+    const onOffer: PlusProduct[] = [];
     try {
-      await this.page.click(".btn-cookies-accept", { timeout: 5000 });
-      await this.page.waitForTimeout(1000);
-    } catch {
-      scraperLogger.debug("No cookie popup found");
+      await site.open();
+      await site.forEachPage(PLUS_OFFER_FILTER, async (products) => {
+        onOffer.push(...products);
+      });
+    } finally {
+      await site.close();
     }
 
-    // Trigger lazy-load of the promotion API call if not already fired
-    if (!promoData) {
-      for (let i = 0; i < 5; i++) {
-        await this.page.evaluate(() => {
-          const c = document.querySelector(".active-screen.screen-container") as HTMLElement;
-          if (c) c.scrollBy(0, 400); else window.scrollBy(0, 400);
-        });
-        await this.page.waitForTimeout(600);
-        if (promoData) break;
-      }
-    }
+    const now = new Date();
+    const discounts = onOffer
+      .map((product) => mapPlusDiscount(product, now))
+      .filter((d): d is IProductDiscountDetails => d !== null);
+    if (discounts.length === 0) throw new Error("PLUS: no discounts found");
 
-    await this.close();
-
-    if (!promoData) {
-      throw new Error("PLUS promotion API response was not captured");
-    }
-
-    return this.parsePromoData(promoData);
-  }
-
-  private parsePromoData(promoData: PlusPromoResponse): {
-    discounts: IProductDiscountDetails[];
-    expireDate: string;
-  } {
-    const list = promoData.data?.PromotionOfferList?.List ?? [];
-    const discounts: IProductDiscountDetails[] = [];
-    let latestExpireDate = "";
-
-    for (const item of list) {
-      const cat = item.Category;
-      if (!cat) continue;
-
-      const offers = cat.Offers?.List ?? [];
-      for (const offer of offers) {
-        if (offer.IsFreeDeliveryOffer) continue;
-
-        const name = [offer.Brand, offer.Name, offer.Package]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-
-        const discountPrice = parseFloat(offer.NewPrice) || 0;
-        const originalPrice =
-          parseFloat(offer.PriceOriginal_Lowest) ||
-          parseFloat(offer.PriceOriginal_Highest) ||
-          0;
-
-        // Normalize to end-of-day so discounts stay active through the full last day
-        const expireDate = moment(offer.EndDate, "YYYY-MM-DD").endOf("day").toISOString(true);
-
-        discounts.push({
-          name,
-          originalPrice,
-          discountPrice,
-          unitPrice: null,
-          specialDiscount: offer.DisplayInfo_Label,
-          category: cat.CategoryLabel,
-          supermarket: this.name,
-          expireDate,
-          productUrl: PLUS_URL,
-        });
-
-        if (!latestExpireDate || expireDate > latestExpireDate) {
-          latestExpireDate = expireDate;
-        }
-      }
-    }
-
+    const expireDate = folderExpireDate(discounts);
     scraperLogger.info(
-      `Total PLUS discounts: ${discounts.length}, expire: ${latestExpireDate}`
+      `Total PLUS discounts: ${discounts.length} of ${onOffer.length} products on offer, folder expires: ${expireDate}`
     );
-
-    return { discounts, expireDate: latestExpireDate };
+    return { discounts, expireDate };
   }
 }
 

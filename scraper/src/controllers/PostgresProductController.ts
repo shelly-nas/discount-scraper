@@ -1,6 +1,7 @@
 import PostgresDataContext from "../data/PostgresDataContext";
 import ProductModel from "../models/ProductModel";
 import { scraperLogger } from "../utils/Logger";
+import { Quantity } from "../utils/Quantity";
 
 class PostgresProductController {
   private db: PostgresDataContext;
@@ -193,6 +194,19 @@ class PostgresProductController {
       [sameName ? `${name} (${externalId})` : name, category, supermarket, productUrl, externalId]
     );
     return { id: inserted.rows[0].id, wasCreated: true };
+  }
+
+  /**
+   * Stores an offer's pack quantity on a product the catalog does not keep;
+   * a catalog row keeps the catalog's quantity.
+   */
+  async setOfferQuantity(id: number, quantity: Quantity): Promise<void> {
+    await this.db.query(
+      `UPDATE products SET quantity_value = $2, quantity_unit = $3
+       WHERE id = $1 AND catalog_updated_at IS NULL
+         AND (quantity_value IS DISTINCT FROM $2 OR quantity_unit IS DISTINCT FROM $3)`,
+      [id, quantity.value, quantity.unit]
+    );
   }
 
   async getProductIdByExternalId(externalId: string, supermarket: string): Promise<number> {
