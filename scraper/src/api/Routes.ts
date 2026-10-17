@@ -195,6 +195,8 @@ router.get("/discounts", async (req: Request, res: Response) => {
         p.category,
         p.supermarket,
         p.product_url,
+        p.image_url,
+        p.brand,
         p.created_at,
         p.updated_at,
         json_build_object(

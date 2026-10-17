@@ -7,6 +7,7 @@ import PlusSite, {
   PLUS_OFFER_FILTER,
   PlusProduct,
   plusCategory,
+  plusImageUrl,
   plusPrice,
   plusProductUrl,
   plusQuantity,
@@ -46,6 +47,8 @@ export function mapPlusDiscount(product: PlusProduct, now: Date = new Date()): I
     expireDate,
     productUrl: plusProductUrl(product),
     externalId: product.SKU,
+    imageUrl: plusImageUrl(product),
+    brand: product.Brand?.trim() || null,
   };
 }
 

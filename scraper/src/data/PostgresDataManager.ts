@@ -4,6 +4,7 @@ import PostgresScraperRunController from "../controllers/PostgresScraperRunContr
 import PostgresScheduledRunController from "../controllers/PostgresScheduledRunController";
 import { scraperLogger } from "../utils/Logger";
 import { parseQuantity } from "../utils/Quantity";
+import { matchFields, normalizeEan } from "../utils/ProductMatch";
 import PostgresDataContext from "./PostgresDataContext";
 import { getDatabaseConfig } from "../config/database";
 
@@ -88,7 +89,15 @@ export class PostgresDataManager {
             product.productUrl ?? null
           );
       const quantity = product.quantity !== undefined ? product.quantity : parseQuantity(product.name);
-      if (quantity) await this.productController.setOfferQuantity(result.id, quantity);
+      const match = matchFields(product.name, product.brand);
+      await this.productController.setOfferDetails(result.id, {
+        quantity,
+        brand: product.brand?.trim() || null,
+        matchBrand: match.matchBrand,
+        matchTokens: match.matchTokens,
+        imageUrl: product.imageUrl || null,
+        ean: normalizeEan(product.ean),
+      });
       if (result.wasCreated) {
         created++;
       } else {

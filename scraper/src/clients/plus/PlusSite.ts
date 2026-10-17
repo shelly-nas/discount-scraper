@@ -65,6 +65,16 @@ export function plusQuantity(product: PlusProduct): Quantity | null {
   return parseQuantity(product.Product_Subtitle) ?? parseQuantity(product.Name);
 }
 
+/**
+ * The product image at 400 px as WebP: PLUS images are on Contentful, whose
+ * image API scales on request (the original PNG is often over 1 MB).
+ */
+export function plusImageUrl(product: PlusProduct): string | null {
+  const url = product.ImageURL?.trim();
+  if (!url) return null;
+  return /images\.ctfassets\.net/.test(url) && !url.includes("?") ? `${url}?w=400&fm=webp` : url;
+}
+
 export function plusProductUrl(product: PlusProduct): string | null {
   return product.Slug ? `${PLUS_BASE}/product/${product.Slug}` : null;
 }

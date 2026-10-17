@@ -3,7 +3,13 @@ import ApiClient from "./ApiClient";
 import { scraperLogger } from "../utils/Logger";
 import { folderExpireDate, promotionPrice } from "../utils/Promotion";
 import { unitPriceText } from "../utils/Quantity";
-import DirkGraphql, { DirkOffer, DirkProduct, dirkProductUrl, dirkQuantity } from "./dirk/DirkGraphql";
+import DirkGraphql, {
+  DirkOffer,
+  DirkProduct,
+  dirkImageUrl,
+  dirkProductUrl,
+  dirkQuantity,
+} from "./dirk/DirkGraphql";
 
 const DIRK_OFFERS_URL = "https://www.dirk.nl/aanbiedingen";
 
@@ -41,6 +47,8 @@ export function mapDirkOfferProduct(
     expireDate: offer.endDate,
     productUrl: dirkProductUrl(product),
     externalId: String(product.productId),
+    imageUrl: dirkImageUrl(product),
+    brand: product.productInformation?.brand?.trim() || null,
   };
 }
 

@@ -25,6 +25,7 @@ export function mapJumboProduct(product: JumboProduct): ICatalogProduct | null {
     unitPrice: unitPriceText(price, quantity),
     imageUrl: product.image ?? null,
     productUrl: jumboProductUrl(product),
+    ean: product.ean ?? null,
   };
 }
 

@@ -7,6 +7,7 @@ import { unitPriceText } from "../utils/Quantity";
 import AldiAlgolia, {
   AldiProduct,
   aldiCategory,
+  aldiImageUrl,
   aldiName,
   aldiProductUrl,
   aldiQuantity,
@@ -78,6 +79,8 @@ export function mapAldiDiscount(
     expireDate,
     productUrl: aldiProductUrl(offer),
     externalId: linkedId ?? offer.objectID,
+    imageUrl: aldiImageUrl(offer),
+    brand: offer.brandName?.trim() || null,
   };
 }
 

@@ -2,6 +2,16 @@ import PostgresDataContext from "../data/PostgresDataContext";
 import ProductModel from "../models/ProductModel";
 import { scraperLogger } from "../utils/Logger";
 import { Quantity } from "../utils/Quantity";
+import { matchFields } from "../utils/ProductMatch";
+
+export interface OfferDetails {
+  quantity: Quantity | null;
+  brand: string | null;
+  matchBrand: string | null;
+  matchTokens: string;
+  imageUrl: string | null;
+  ean: string | null;
+}
 
 class PostgresProductController {
   private db: PostgresDataContext;
@@ -200,12 +210,57 @@ class PostgresProductController {
    * Stores an offer's pack quantity on a product the catalog does not keep;
    * a catalog row keeps the catalog's quantity.
    */
-  async setOfferQuantity(id: number, quantity: Quantity): Promise<void> {
+  /**
+   * Fills match_brand / match_tokens for products stored before they existed
+   * (migration 005). Runs on startup; a no-op once every row has them.
+   */
+  async backfillMatchFields(batchSize = 2000): Promise<number> {
+    let total = 0;
+    for (;;) {
+      const rows = await this.db.query<{ id: number; name: string; brand: string | null }>(
+        "SELECT id, name, brand FROM products WHERE match_brand IS NULL AND match_tokens IS NULL LIMIT $1",
+        [batchSize]
+      );
+      if (rows.rows.length === 0) return total;
+      const fields = rows.rows.map((row) => matchFields(row.name, row.brand));
+      await this.db.query(
+        `UPDATE products p SET match_brand = f.brand, match_tokens = f.tokens
+         FROM UNNEST($1::int[], $2::text[], $3::text[]) AS f(id, brand, tokens)
+         WHERE p.id = f.id`,
+        [rows.rows.map((r) => r.id), fields.map((f) => f.matchBrand), fields.map((f) => f.matchTokens)]
+      );
+      total += rows.rows.length;
+    }
+  }
+
+  /**
+   * Details an offer knows about its product. A catalog product keeps its own
+   * quantity, brand and match fields (the catalog data is more complete); the
+   * image and barcode only fill in what is still missing.
+   */
+  async setOfferDetails(id: number, details: OfferDetails): Promise<void> {
     await this.db.query(
-      `UPDATE products SET quantity_value = $2, quantity_unit = $3
-       WHERE id = $1 AND catalog_updated_at IS NULL
-         AND (quantity_value IS DISTINCT FROM $2 OR quantity_unit IS DISTINCT FROM $3)`,
-      [id, quantity.value, quantity.unit]
+      `UPDATE products SET
+         quantity_value = CASE WHEN catalog_updated_at IS NULL AND $2::numeric IS NOT NULL
+                               THEN $2 ELSE quantity_value END,
+         quantity_unit = CASE WHEN catalog_updated_at IS NULL AND $2::numeric IS NOT NULL
+                              THEN $3 ELSE quantity_unit END,
+         brand = CASE WHEN catalog_updated_at IS NULL THEN COALESCE($4, brand) ELSE brand END,
+         match_brand = CASE WHEN catalog_updated_at IS NULL THEN $5 ELSE match_brand END,
+         match_tokens = CASE WHEN catalog_updated_at IS NULL THEN $6 ELSE match_tokens END,
+         image_url = COALESCE(image_url, $7),
+         ean = COALESCE(ean, $8)
+       WHERE id = $1`,
+      [
+        id,
+        details.quantity?.value ?? null,
+        details.quantity?.unit ?? null,
+        details.brand,
+        details.matchBrand,
+        details.matchTokens,
+        details.imageUrl,
+        details.ean,
+      ]
     );
   }
 

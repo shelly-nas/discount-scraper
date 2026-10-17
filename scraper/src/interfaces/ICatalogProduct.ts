@@ -19,4 +19,6 @@ export interface ICatalogProduct {
   unitPrice: string | null;
   imageUrl: string | null;
   productUrl: string | null;
+  /** Barcode (EAN), when the supermarket publishes it; checked with utils/ProductMatch.normalizeEan. */
+  ean?: string | null;
 }

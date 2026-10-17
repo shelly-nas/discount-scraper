@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { scraperLogger } from "../../utils/Logger";
 import { parseQuantity, Quantity } from "../../utils/Quantity";
+import { normalizeEan } from "../../utils/ProductMatch";
 
 // Hoogvliet's webshop (Next.js on Magento 2) exposes Magento's public GraphQL
 // API. categoryList lists the products per category but leaves Hoogvliet's own
@@ -53,6 +54,8 @@ export interface HoogvlietProduct {
   /** "GroupedProduct" is a folder entry bundling several products ("Kitkat, Bros of Smarties"). */
   __typename?: string;
   promotion_meta_data: HoogvlietPromotion | null;
+  /** Label texts; "bijsluiter" links to the GDSN label image, whose path holds the GTIN. */
+  product_information?: { title: string | null; content: unknown }[] | null;
 }
 
 /** A product with the top-level category it was listed under. */
@@ -65,7 +68,39 @@ class GraphqlError extends Error {}
 const DETAIL_FIELDS = `sku name url_key small_image { url }
   price_range { minimum_price { regular_price { value } final_price { value } } }
   sub_title_attributes { volume unit qty_unit price_per_qty_unit }
-  is_promotion promotion_meta_data { korting_label valid_from valid_to } __typename`;
+  is_promotion promotion_meta_data { korting_label valid_from valid_to }
+  product_information { title content } __typename`;
+
+const compact = (text: string) =>
+  text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+
+/**
+ * Hoogvliet names leave the brand out ("Vol" for Chocomel Vol), but the url
+ * key is brand + name + sku ("chocomel-vol-076401000"): the brand is what is
+ * left of it before the name. Null when the name already is the whole key.
+ */
+export function hoogvlietBrand(product: Pick<HoogvlietProduct, "sku" | "name" | "url_key">): string | null {
+  if (!product.url_key || !product.name) return null;
+  const slug = product.url_key.replace(new RegExp(`-${product.sku}$`), "").replace(/-apos-/g, "'");
+  const segments = slug.split("-").filter(Boolean);
+  const name = compact(product.name);
+  for (let i = 1; i < segments.length; i++) {
+    if (compact(segments.slice(i).join("")) === name) {
+      return segments
+        .slice(0, i)
+        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+        .join(" ");
+    }
+  }
+  return null;
+}
+
+/** The barcode in the GDSN label link (".../08712800188322/528/Media/..."), if any. */
+export function hoogvlietEan(product: Pick<HoogvlietProduct, "product_information">): string | null {
+  const label = product.product_information?.find((info) => info?.title === "bijsluiter")?.content;
+  if (typeof label !== "string") return null;
+  return normalizeEan(label.match(/\/(\d{14})\//)?.[1]);
+}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

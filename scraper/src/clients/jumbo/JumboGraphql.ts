@@ -38,6 +38,8 @@ export interface JumboProduct {
   image: string | null;
   link: string | null;
   inAssortment: boolean | null;
+  /** Barcode; empty for some products (loose fruit, Jumbo's own fresh products). */
+  ean?: string | null;
   /** Prices in cents; pricePerUnit follows the current (promotion) price. */
   price: {
     price: number;
@@ -47,7 +49,7 @@ export interface JumboProduct {
   promotions: JumboPromotion[] | null;
 }
 
-const PRODUCT_FIELDS = `sku title brand category: rootCategory subtitle: packSizeDisplay image link inAssortment
+const PRODUCT_FIELDS = `sku title brand category: rootCategory subtitle: packSizeDisplay image link inAssortment ean
   price { price promoPrice pricePerUnit { price unit } }
   promotions { id tags { text } start { date monthShort } end { date monthShort } }`;
 

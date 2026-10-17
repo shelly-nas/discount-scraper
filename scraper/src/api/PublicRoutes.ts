@@ -4,6 +4,7 @@ import PostgresDataManager from "../data/PostgresDataManager";
 import {
   SUPERMARKETS,
   CURRENT_DISCOUNT_JOIN,
+  imageProxyPath,
   mapSearchRow,
   parseScope,
   parseSupermarkets,
@@ -12,8 +13,10 @@ import {
   searchProducts,
   supermarketKey,
 } from "./ProductSearch";
-import { pricePerUnit } from "../utils/Quantity";
+import { formatQuantity, pricePerUnit } from "../utils/Quantity";
 import { compareList, CompareItem, MAX_COMPARE_ITEMS } from "./PriceComparison";
+import { findSameProducts } from "./SameProducts";
+import ImageProxy from "./ImageProxy";
 
 /**
  * Public, read-only API for consumer apps (e.g. Baskit).
@@ -25,6 +28,7 @@ import { compareList, CompareItem, MAX_COMPARE_ITEMS } from "./PriceComparison";
 const router = Router();
 
 const dataManager = new PostgresDataManager();
+const imageProxy = new ImageProxy(dataManager.db);
 
 export { SUPERMARKETS };
 
@@ -207,6 +211,36 @@ router.post("/compare", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * A product's image, fetched from the supermarket once and then served from
+ * this API's cache. 404 when the product has no (reachable) image.
+ */
+router.get("/images/:id", async (req: Request, res: Response) => {
+  const id = parseInt(String(req.params.id), 10);
+  if (Number.isNaN(id)) {
+    res.status(400).json({ error: "Invalid product id" });
+    return;
+  }
+  try {
+    const image = await imageProxy.get(id);
+    if (!image) {
+      res.set("Cache-Control", "public, max-age=3600");
+      res.status(404).json({ error: "Image not found" });
+      return;
+    }
+    res.set("Cache-Control", "public, max-age=604800");
+    res.set("ETag", image.etag);
+    if (req.headers["if-none-match"] === image.etag) {
+      res.status(304).end();
+      return;
+    }
+    res.type(image.contentType).send(image.body);
+  } catch (error: any) {
+    serverLogger.error(`Public API: error serving image ${id}: ${error.message}`);
+    res.status(500).json({ error: "Failed to fetch image" });
+  }
+});
+
 // Single product with its current discount and discount history
 router.get("/products/:id", async (req: Request, res: Response) => {
   const id = parseInt(String(req.params.id), 10);
@@ -219,7 +253,7 @@ router.get("/products/:id", async (req: Request, res: Response) => {
     const productResult = await dataManager.db.query(
       `SELECT id, name, category, supermarket, product_url, updated_at,
               brand, unit_size, image_url, regular_price, price_source, unit_price, in_catalog,
-              quantity_value, quantity_unit
+              quantity_value, quantity_unit, ean, match_brand, match_tokens
        FROM products WHERE id = $1`,
       [id]
     );
@@ -258,13 +292,21 @@ router.get("/products/:id", async (req: Request, res: Response) => {
     const currentDiscount = history.find((d) => d.active) ?? null;
     const regularPrice =
       product.regular_price === null ? null : parseFloat(product.regular_price);
+    const quantity = rowQuantity(product);
+    const sameProduct = (await findSameProducts(dataManager.db, product)).map(mapSearchRow);
 
     res.status(200).json({
       id: product.id,
       name: product.name,
+      brand: product.brand ?? null,
       category: product.category,
       supermarket: { key: toKey(product.supermarket), name: product.supermarket },
       productUrl: product.product_url ?? null,
+      imageUrl: product.image_url ?? null,
+      imageProxyUrl: product.image_url ? imageProxyPath(product.id) : null,
+      ean: product.ean ?? null,
+      quantity,
+      packSize: product.unit_size ?? formatQuantity(quantity),
       updatedAt: product.updated_at,
       price: currentDiscount?.discountPrice ?? regularPrice,
       pricePerUnit: pricePerUnit(currentDiscount?.discountPrice ?? regularPrice, rowQuantity(product)),
@@ -285,6 +327,8 @@ router.get("/products/:id", async (req: Request, res: Response) => {
         price: parseFloat(r.price),
         recordedAt: r.recorded_at,
       })),
+      /** The same product at other supermarkets (search item shape), cheapest first. */
+      sameProduct,
     });
   } catch (error: any) {
     serverLogger.error(`Public API: error fetching product ${id}: ${error.message}`);

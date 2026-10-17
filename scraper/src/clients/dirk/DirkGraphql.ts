@@ -11,6 +11,7 @@ import { parseQuantity, Quantity } from "../../utils/Quantity";
 export const DIRK_BASE = "https://www.dirk.nl";
 const GRAPHQL_URL = "https://web-gateway.dirk.nl/graphql";
 const IMAGE_BASE = "https://web-fileserver.dirk.nl/";
+const IMAGE_WIDTH = 400;
 // dirk.nl's default store; prices are the same in every store.
 export const DIRK_STORE_ID = 66;
 const REQUEST_DELAY_MS = 300;
@@ -85,9 +86,10 @@ export function dirkProductUrl(product: DirkProduct): string {
   return `${DIRK_BASE}/boodschappen/${parts.join("/")}/${product.productId}`;
 }
 
+/** The product image at 400 px wide: the file server scales on request (the original is ~1 MB). */
 export function dirkImageUrl(product: DirkProduct): string | null {
   const image = product.productInformation?.image;
-  return image ? `${IMAGE_BASE}${image}` : null;
+  return image ? `${IMAGE_BASE}${image}?width=${IMAGE_WIDTH}` : null;
 }
 
 /** Pack quantity from the packaging ("340 g", "6 x 330 ml"), else the title. */

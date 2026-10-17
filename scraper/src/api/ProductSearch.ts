@@ -1,5 +1,5 @@
 import PostgresDataContext from "../data/PostgresDataContext";
-import { pricePerUnit, Quantity, QuantityUnit } from "../utils/Quantity";
+import { formatQuantity, pricePerUnit, Quantity, QuantityUnit } from "../utils/Quantity";
 
 /**
  * Product search shared by the public API endpoints.
@@ -84,6 +84,23 @@ export const CURRENT_DISCOUNT_JOIN = `
     LIMIT 1
   ) d ON true`;
 
+/** Product and current discount columns that mapSearchRow reads (products `p`, discount `d`). */
+export const PRODUCT_COLUMNS = `
+  p.id, p.name, p.category, p.supermarket, p.product_url, p.updated_at,
+  p.brand, p.unit_size, p.image_url, p.regular_price, p.price_source,
+  p.quantity_value, p.quantity_unit, p.ean, p.match_brand, p.match_tokens,
+  p.unit_price AS catalog_unit_price, p.in_catalog,
+  d.id AS discount_id, d.original_price, d.discount_price, d.unit_price,
+  d.special_discount, d.expire_date,
+  CASE WHEN d.original_price > 0 AND d.original_price > d.discount_price
+       THEN ROUND((1 - d.discount_price / d.original_price) * 100)
+       ELSE NULL END AS discount_percentage`;
+
+/** Path of a product's image through this API's image proxy (relative to the host). */
+export function imageProxyPath(productId: number): string {
+  return `/api/public/v1/images/${productId}`;
+}
+
 export function scopeFilter(scope: SearchScope): string {
   return scope === "all" ? "(p.in_catalog = true OR d.id IS NOT NULL)" : "d.id IS NOT NULL";
 }
@@ -150,15 +167,7 @@ export async function searchProducts(
   const offsetParam = `$${params.length}`;
 
   const result = await db.query(
-    `SELECT p.id, p.name, p.category, p.supermarket, p.product_url, p.updated_at,
-            p.brand, p.unit_size, p.image_url, p.regular_price, p.price_source,
-            p.quantity_value, p.quantity_unit,
-            p.unit_price AS catalog_unit_price, p.in_catalog,
-            d.id AS discount_id, d.original_price, d.discount_price, d.unit_price,
-            d.special_discount, d.expire_date,
-            CASE WHEN d.original_price > 0 AND d.original_price > d.discount_price
-                 THEN ROUND((1 - d.discount_price / d.original_price) * 100)
-                 ELSE NULL END AS discount_percentage,
+    `SELECT ${PRODUCT_COLUMNS},
             ${relevance} AS relevance
      FROM products p
      ${CURRENT_DISCOUNT_JOIN}
@@ -222,9 +231,17 @@ export function mapSearchRow(row: any) {
   return {
     id: row.id,
     name: row.name,
+    brand: row.brand ?? null,
     category: row.category,
     supermarket: { key: supermarketKey(row.supermarket), name: row.supermarket },
     productUrl: row.product_url ?? null,
+    /** The image at the supermarket; imageProxyUrl serves the same image cached by this API. */
+    imageUrl: row.image_url ?? null,
+    imageProxyUrl: row.image_url ? imageProxyPath(row.id) : null,
+    ean: row.ean ?? null,
+    /** Pack quantity in kg, l or stuk, and the pack size to show ("6 x 200 ml", "1,5 liter"). */
+    quantity,
+    packSize: row.unit_size ?? formatQuantity(quantity),
     /** What the product costs right now: the offer price, else the regular price. */
     price,
     /** The current price per kg, l or stuk, for comparing pack sizes; null without a quantity. */

@@ -5,6 +5,7 @@ import { scraperLogger } from "../../utils/Logger";
 import PlusSite, {
   PlusProduct,
   plusCategory,
+  plusImageUrl,
   plusPrice,
   plusProductUrl,
   plusQuantity,
@@ -28,7 +29,7 @@ export function mapPlusProduct(product: PlusProduct): ICatalogProduct | null {
     price,
     priceSource: "supermarket",
     unitPrice: unitPriceText(price, quantity),
-    imageUrl: product.ImageURL || null,
+    imageUrl: plusImageUrl(product),
     productUrl: plusProductUrl(product),
   };
 }

@@ -1,11 +1,13 @@
 import PostgresDataContext from "../data/PostgresDataContext";
 import {
   CURRENT_DISCOUNT_JOIN,
+  PRODUCT_COLUMNS,
   SUPERMARKETS,
   mapSearchRow,
   scopeFilter,
   supermarketKey,
 } from "./ProductSearch";
+import { findSameProducts } from "./SameProducts";
 
 /**
  * Prices a shopping list at every supermarket.
@@ -16,6 +18,8 @@ import {
  * liter or piece (offer or regular catalog price over the pack quantity);
  * products without a known quantity follow by price. When nothing matches,
  * size tokens such as "1L" or "500g" are dropped and the match is retried.
+ * An item added from a product (productId) first gets that same product at
+ * the other supermarkets (api/SameProducts); the search only fills the rest.
  */
 
 export interface CompareItem {
@@ -46,16 +50,10 @@ function tokenize(query: string): string[] {
     .slice(0, MAX_QUERY_TOKENS);
 }
 
-const SELECT_COLUMNS = `
-  p.id, p.name, p.category, p.supermarket, p.product_url, p.updated_at,
-  p.brand, p.unit_size, p.image_url, p.regular_price, p.price_source,
-  p.quantity_value, p.quantity_unit,
-  p.unit_price AS catalog_unit_price, p.in_catalog,
-  d.id AS discount_id, d.original_price, d.discount_price, d.unit_price,
-  d.special_discount, d.expire_date,
-  CASE WHEN d.original_price > 0 AND d.original_price > d.discount_price
-       THEN ROUND((1 - d.discount_price / d.original_price) * 100)
-       ELSE NULL END AS discount_percentage`;
+const SELECT_COLUMNS = PRODUCT_COLUMNS;
+
+/** How a line's product was found: the item's own product, the same product elsewhere, or a name search. */
+export type MatchKind = "own" | "same" | "search";
 
 /** Best match per supermarket for one set of tokens. */
 async function bestMatches(
@@ -130,20 +128,27 @@ export async function compareList(
 ) {
   const names = supermarketNames.length > 0 ? supermarketNames : SUPERMARKETS.map((s) => s.name);
 
-  // matches[itemIndex][supermarketName] = row
-  const matches: Map<string, any>[] = [];
+  // matches[itemIndex][supermarketName] = { row, match }
+  const matches: Map<string, { row: any; match: MatchKind }>[] = [];
   for (const item of items) {
-    const perSupermarket = new Map<string, any>();
+    const perSupermarket = new Map<string, { row: any; match: MatchKind }>();
 
     if (item.productId !== undefined) {
       const own = await productById(db, item.productId);
-      if (own && names.includes(own.supermarket)) perSupermarket.set(own.supermarket, own);
+      if (own) {
+        if (names.includes(own.supermarket)) perSupermarket.set(own.supermarket, { row: own, match: "own" });
+        // The same product elsewhere beats a name search ("Chocomel Vol 1 L" is
+        // "Chocomel Chocolademelk vol" at Dirk).
+        for (const row of await findSameProducts(db, own, names)) {
+          perSupermarket.set(row.supermarket, { row, match: "same" });
+        }
+      }
     }
 
     const remaining = names.filter((n) => !perSupermarket.has(n));
     const tokens = tokenize(item.query);
     for (const row of await bestMatches(db, tokens, remaining)) {
-      perSupermarket.set(row.supermarket, row);
+      perSupermarket.set(row.supermarket, { row, match: "search" });
     }
 
     // Retry without size tokens ("1L", "500g", "6x1,5L") where nothing matched.
@@ -151,7 +156,7 @@ export async function compareList(
     const withoutSizes = tokens.filter((t) => !/\d/.test(t));
     if (unmatched.length > 0 && withoutSizes.length > 0 && withoutSizes.length < tokens.length) {
       for (const row of await bestMatches(db, withoutSizes, unmatched)) {
-        perSupermarket.set(row.supermarket, row);
+        perSupermarket.set(row.supermarket, { row, match: "search" });
       }
     }
 
@@ -161,12 +166,12 @@ export async function compareList(
   const supermarkets = names.map((name) => {
     let total = 0;
     const lines = items.map((item, index) => {
-      const row = matches[index].get(name);
-      if (!row) return { itemId: item.id, count: item.count, product: null, lineTotal: null };
-      const product = mapSearchRow(row);
+      const found = matches[index].get(name);
+      if (!found) return { itemId: item.id, count: item.count, product: null, match: null, lineTotal: null };
+      const product = mapSearchRow(found.row);
       const lineTotal = Math.round((product.price ?? 0) * item.count * 100) / 100;
       total += lineTotal;
-      return { itemId: item.id, count: item.count, product, lineTotal };
+      return { itemId: item.id, count: item.count, product, match: found.match, lineTotal };
     });
     const matched = lines.filter((l) => l.product !== null).length;
     return {

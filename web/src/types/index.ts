@@ -4,6 +4,9 @@ export interface Product {
   category: string;
   supermarket: string;
   product_url: string | null;
+  /** Image at the supermarket; shown through the API's image proxy. */
+  image_url?: string | null;
+  brand?: string | null;
   created_at: string;
   updated_at: string;
 }

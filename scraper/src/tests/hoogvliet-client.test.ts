@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import HoogvlietGraphql, {
   HoogvlietListedProduct,
+  hoogvlietBrand,
+  hoogvlietEan,
   hoogvlietQuantity,
   hoogvlietUnitPrice,
 } from "../clients/hoogvliet/HoogvlietGraphql";
@@ -61,7 +63,31 @@ describe("Hoogvliet product fields", () => {
       unitPrice: "€5.18 per kilo",
       imageUrl: "https://img/117005000.jpg",
       productUrl: "https://hoogvliet.nl/product/product-117005000",
+      ean: null,
     });
+  });
+
+  it("reads the brand from the url key", () => {
+    expect(hoogvlietBrand({ sku: "076401000", name: "Vol", url_key: "chocomel-vol-076401000" })).toBe("Chocomel");
+    expect(
+      hoogvlietBrand({
+        sku: "1",
+        name: "Pindakaas 100% Fijngemalen Pinda's",
+        url_key: "calve-pindakaas-100-fijngemalen-pinda-apos-s-1",
+      })
+    ).toBe("Calve");
+    expect(hoogvlietBrand({ sku: "2", name: "Zero sugar 4-pack", url_key: "cocacola-zero-sugar-4pack-2" })).toBe("Cocacola");
+    expect(hoogvlietBrand({ sku: "3", name: "Chocomelange", url_key: "g-apos-woon-chocomelange-3" })).toBe("G'woon");
+    // The name is the whole url key: no brand.
+    expect(hoogvlietBrand({ sku: "4", name: "Bananen", url_key: "bananen-4" })).toBeNull();
+  });
+
+  it("reads the barcode from the GDSN label link", () => {
+    const label =
+      "https://gdsnprodwebstorage.blob.core.windows.net/x/8710912888888/08712800188322/528/Media/1/08712800188322_H1N1.png";
+    expect(hoogvlietEan({ product_information: [{ title: "bijsluiter", content: label }] })).toBe("8712800188322");
+    expect(hoogvlietEan({ product_information: [{ title: "ingredienten", content: "melk" }] })).toBeNull();
+    expect(hoogvlietEan({ product_information: null })).toBeNull();
   });
 
   it("keeps the regular price in the catalog while the product is on offer", () => {

@@ -34,6 +34,15 @@ interface AhPromotion {
   promotionLabels: AhPromotionLabel[];
   extraDescriptions: string[];
   price: AhPrice | null;
+  /** Promotion images, largest first; not every bonus response carries them. */
+  images?: { url?: string | null; width?: number | null }[] | null;
+}
+
+/** The largest promotion image, if the bonus data has one. */
+export function ahPromotionImage(promo: Pick<AhPromotion, "images">): string | null {
+  const images = (promo.images ?? []).filter((image) => image?.url);
+  images.sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
+  return images[0]?.url ?? null;
 }
 
 interface AhBonusCategory {
@@ -170,6 +179,7 @@ class AhApiClient extends ApiClient {
           supermarket: this.name,
           expireDate,
           productUrl: AH_URL,
+          imageUrl: ahPromotionImage(promo),
         });
 
         if (!latestExpireDate || expireDate > latestExpireDate) {

@@ -76,6 +76,31 @@ export function parseQuantity(text: string | null | undefined): Quantity | null 
   return null;
 }
 
+const STRIP_PATTERNS = [
+  new RegExp(MULTIPACK.source, "gi"),
+  new RegExp(SINGLE.source, "gi"),
+  /\bper\s+(stuk|st|kilo|kg|liter|l)\b/gi,
+];
+
+/** The text without pack sizes: "Chocomel Vol 1,5 L" becomes "Chocomel Vol". */
+export function stripQuantity(text: string): string {
+  return STRIP_PATTERNS.reduce((result, pattern) => result.replace(pattern, " "), text)
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const formatNumber = (value: number) =>
+  String(Math.round(value * 1000) / 1000).replace(".", ",");
+
+/** A quantity as people write it: "500 g", "1,5 liter", "750 ml", "6 stuks". */
+export function formatQuantity(quantity: Quantity | null | undefined): string | null {
+  if (!quantity || quantity.value <= 0) return null;
+  const { value, unit } = quantity;
+  if (unit === "kg") return value < 1 ? `${formatNumber(value * 1000)} g` : `${formatNumber(value)} kg`;
+  if (unit === "l") return value < 1 ? `${formatNumber(value * 1000)} ml` : `${formatNumber(value)} liter`;
+  return value === 1 ? "1 stuk" : `${formatNumber(value)} stuks`;
+}
+
 /** Price per kilo, liter or piece, rounded to cents; null without a quantity. */
 export function pricePerUnit(
   price: number | null | undefined,
