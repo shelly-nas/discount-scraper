@@ -94,7 +94,7 @@ reads the API as `supermarket-scraper-api` (acc: `supermarket-scraper-acc-api`).
 - ✅ **Product Catalog**
 
   - Weekly full assortment scrape with regular prices (Albert Heijn, Lidl food assortment)
-  - Price history and catalog run tracking; on-demand runs from the admin UI
+  - Price history and catalog run tracking; on-demand runs from the "Full Assortment" section of the admin UI ("Run Catalog")
 
 - ✅ **Public Consumer API**
 
@@ -413,7 +413,7 @@ sequenceDiagram
     participant External as Supermarket Website
     participant DB as Database
 
-    Admin->>Web: Click "Run Scraper" for Albert Heijn
+    Admin->>Web: Click "Run Offers" for Albert Heijn (Weekly Offers section)
     Web->>Admin: Show confirmation dialog
     Admin->>Web: Confirm
     Web->>API: POST /api/scraper/run/albert-heijn
@@ -457,7 +457,7 @@ sequenceDiagram
 **Main Flow:**
 
 1. Administrator navigates to Configurations page
-2. Administrator clicks "Run Scraper" for desired supermarket
+2. Administrator clicks "Run Offers" for the desired supermarket in the Weekly Offers section
 3. System displays confirmation dialog
 4. Administrator confirms action
 5. System creates scraper_run record with "running" status
@@ -783,7 +783,7 @@ On 15 October 2026 a run found about 2,360 food products, about half of them wit
 | FR-005.7  | System SHALL display default sorting by expiration, category, name | MEDIUM   | ✅ Implemented |
 | FR-005.8  | System SHALL provide Configurations dashboard                      | MEDIUM   | ✅ Implemented |
 | FR-005.9  | System SHALL display KPIs (runs, success rate, products)           | MEDIUM   | ✅ Implemented |
-| FR-005.10 | System SHALL provide manual scraper trigger buttons                | MEDIUM   | ✅ Implemented |
+| FR-005.10 | System SHALL provide manual scraper trigger buttons in two sections: "Weekly Offers" (current discounts, "Run Offers") and "Full Assortment" (catalog at regular price, "Run Catalog") | MEDIUM | ✅ Implemented |
 | FR-005.11 | System SHALL display scraper run logs with pagination              | MEDIUM   | ✅ Implemented |
 | FR-005.12 | System SHALL use Notion-inspired design aesthetics                 | LOW      | ✅ Implemented |
 | FR-005.13 | System SHALL be responsive for mobile devices                      | LOW      | ✅ Implemented |
