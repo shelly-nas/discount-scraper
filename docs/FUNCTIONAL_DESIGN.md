@@ -698,6 +698,7 @@ flowchart TD
 | FR-007.8 | Catalog clients for Dirk, PLUS and Aldi                                                                | MEDIUM   | ✅ Implemented |
 | FR-007.10 | System SHALL store each catalog product's pack quantity normalised to kg, l or stuk (`quantity_value`, `quantity_unit`; supplied by the client or read from the pack size such as "500 g", "6 x 330 ml", "4 stuks") and expose `pricePerUnit` (current price / quantity) in the public API | HIGH | ✅ Implemented |
 | FR-007.12 | System SHALL store an offer's pack quantity (kg, l or stuk) on its product when the catalog does not keep that product, so offers get a `pricePerUnit` too: from the client (`quantity`: Jumbo pack size, Hoogvliet sub title, Lidl's pack size under the price such as "400 g" or "6x500 ml", else its key facts or title) or else read from the offer name ("Spekreepjes 2x190 g"). A catalog product keeps the catalog's quantity | HIGH | ✅ Implemented |
+| FR-007.13 | System SHALL store only food and drink from Aldi: no clothing, home goods, tools, plants, toys, drugstore, household or pet products, in the catalog and in the offers | HIGH | ✅ Implemented |
 | FR-007.11 | System SHALL link offers to products on the supermarket's own product id when the scraper provides one (`externalId`), so products sharing a name stay separate and offers land on the catalog row; without an id, offers are linked by name | HIGH | ✅ Aldi, Dirk, Hoogvliet, Jumbo, PLUS (AH and Lidl offers still by name) |
 
 **Jumbo catalog and offers.** Both use jumbo.com's own GraphQL API
@@ -804,6 +805,22 @@ objects in category `offer`.
   week articles of their own ("OP=OP"), linked by their own id. The regular
   price is the struck-through price (`strikePrice`), else the linked product's
   price. "2 VOOR" with price 2.00 is 1.00 per item.
+- Only food and drink is stored (`clients/aldi/AldiFood.ts`). A regular product
+  is food when one of its top-level categories is a food category (fresh,
+  dairy, meat, drinks, ...) and non-food when it is "Baby en drogisterij",
+  "Huishouden" or "Huisdieren"; mixed ranges (house brands, seasonal ranges)
+  are decided by the subcategory ("Snoepgoed" food, "Speelgoed" non-food).
+  Folder products have no category: one of a regular product follows that
+  product, the others are judged by a word model (naive Bayes over name words
+  and brand) learned on each run from the categorised regular products.
+  Products with a weight or volume are kept when the model leans to food (not
+  shampoo, detergent or pet food); products sold per piece, pair or set only
+  when their words clearly say food, so clothing, tools, home goods and plants
+  are skipped. On 16 October 2026 this kept 118 of the 215 folder products
+  (all of "Vanaf woensdag" and "Vanaf zaterdag" skipped, no food dropped) and
+  1,992 catalog products.
+  Migration 006 removed the Aldi products stored before this filter; the next
+  offer and catalog runs bring the food back.
 
 | FR-007.9 | System SHALL record where a regular price comes from (`price_source`: `supermarket` or `checkjebon`) and keep catalog products without a known price (`regular_price` null; excluded from price comparison) | HIGH | ✅ Implemented |
 
