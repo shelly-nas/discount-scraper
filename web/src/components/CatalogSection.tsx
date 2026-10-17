@@ -50,7 +50,8 @@ const CatalogSection: React.FC = () => {
 
   return (
     <div className="supermarket-section">
-      <h2 className="section-title">Product Catalog</h2>
+      <h2 className="section-title">Full Assortment</h2>
+      <p className="section-subtitle">All products at regular price, every Monday 03:17</p>
       {error && <p className="supermarket-expire supermarket-expire--expired">{error}</p>}
       <div className="supermarket-grid">
         {supported.map((s) => {
@@ -96,8 +97,8 @@ const CatalogSection: React.FC = () => {
       </div>
       {unsupported.length > 0 && (
         <p className="supermarket-last-run">
-          No catalog scraper yet: {unsupported.map((s) => s.name).join(', ')}. Scheduled weekly
-          (CATALOG_CRON, default Monday 03:17).
+          No assortment scraper yet: {unsupported.map((s) => s.name).join(', ')}. Only their
+          weekly offers are available.
         </p>
       )}
     </div>

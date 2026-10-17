@@ -37,14 +37,10 @@ services:
       # Mount logs directory for persistence
       - ./logs:/app/logs
     # Joined to shelly-network so the Baskit web container can proxy
-    # /api/discounts to the public API. Baskit uses the name from before the
-    # rename to supermarket-scraper (http://discount-scraper-api:3001), kept
-    # as an alias until Baskit moves to supermarket-scraper-api.
+    # /api/discounts to http://supermarket-scraper-api:3001/api/public/v1
     networks:
-      shelly-network:
-        aliases:
-          - discount-scraper-api
-      default:
+      - shelly-network
+      - default
 
   web:
     image: ${REGISTRY}/supermarket-scraper-web:${IMAGE_TAG:-latest}
@@ -66,13 +62,8 @@ services:
       - "traefik.http.services.supermarkets.loadbalancer.server.port=80"
 
 volumes:
-  # The production data lives in the volume compose created when the stack was
-  # deployed from /volume1/docker/discount-scraper. Its name is pinned so the
-  # stack keeps that data after the rename to supermarket-scraper; the deploy
-  # checks it exists first (github-pipeline.yaml).
   postgres_data:
-    external: true
-    name: discount-scraper_postgres_data
+    driver: local
 
 networks:
   shelly-network:

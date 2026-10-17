@@ -10,9 +10,8 @@
 # and migrate.sql from the image, then the workflow loads
 # database/demo/seed-demo.sql. No production data reaches acc.
 #
-# The API joins shelly-network as supermarket-scraper-acc-api (and under its
-# old name discount-scraper-acc-api, which the Baskit acc stack still uses), so
-# the Baskit acc stack can read its public API. The weekly catalog scrape is off on acc;
+# The API joins shelly-network as supermarket-scraper-acc-api, so the Baskit
+# acc stack can read its public API. The weekly catalog scrape is off on acc;
 # "Run Catalog" in the admin UI still works.
 #
 # Keep this file in step with docker-compose.prod.yml; the differences are
@@ -51,11 +50,8 @@ services:
     volumes:
       - ./logs:/app/logs
     networks:
-      shelly-network:
-        # Name from before the rename to supermarket-scraper; Baskit acc proxies to it.
-        aliases:
-          - discount-scraper-acc-api
-      default:
+      - shelly-network
+      - default
 
   web:
     image: ${REGISTRY}/supermarket-scraper-web:${IMAGE_TAG:?IMAGE_TAG is required}
